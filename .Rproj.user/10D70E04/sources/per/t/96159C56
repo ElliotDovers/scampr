@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1597740425773.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "999696501",
+    "id" : "96159C56",
+    "lastKnownWriteTime" : 1597740882,
+    "last_content_update" : 1597811438738,
+    "path" : "C:/Users/iamel/Desktop/Uni/scampr/R/summary.scampr.R",
+    "project_path" : "R/summary.scampr.R",
+    "properties" : {
+        "cursorPosition" : "5,10",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
