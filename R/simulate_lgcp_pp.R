@@ -8,7 +8,7 @@
 #' @param latent.range The correlation range of the latent Gaussian field
 #' @param rseed integer for setting the random seed
 #'
-#' @return list of the simulated data frame and information on the attributes of the simulation
+#' @return the simulated data frame with attributes containing sim info
 #' @export
 #'
 #' @examples
@@ -170,5 +170,6 @@ simulate_lgcp_pp <- function(
     # pres.pp = pres.sp,
     info =   temp.info
   )
-  return(data.list)
+  attr(dat, "sim_info") <- temp.info
+  return(dat)
 }

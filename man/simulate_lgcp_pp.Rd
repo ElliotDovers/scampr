@@ -24,7 +24,7 @@ simulate_lgcp_pp(
 \item{rseed}{integer for setting the random seed}
 }
 \value{
-list of simulated data frame, sp point pattern and information on the attributes of the simulation
+the simulated data frame with attributes containing sim info
 }
 \description{
 Simulate's a point pattern from a LGCP with an intercept and slope on a single spatial covariate. Control the correlation range and marginal variance of the latent field
