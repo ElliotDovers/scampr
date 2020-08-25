@@ -22,11 +22,37 @@ make_FRK_bf_matrix(
 )
 }
 \arguments{
+\item{data}{data frame containing locations of both presence-records and quadrature}
+
+\item{coord.names}{vector of character strings describing the column names of the coordinates in data}
+
+\item{manifold}{see FRK package documentation}
+
+\item{regular}{see FRK package documentation}
+
+\item{nres}{see FRK package documentation}
+
+\item{prune}{see FRK package documentation}
+
+\item{max_basis}{see FRK package documentation}
+
+\item{subsamp}{see FRK package documentation}
+
+\item{type}{see FRK package documentation}
+
+\item{isea3h_lo}{see FRK package documentation}
+
+\item{bndary}{see FRK package documentation}
+
+\item{scale_aperture}{see FRK package documentation}
+
+\item{verbose}{see FRK package documentation}
+
 \item{...}{}
 }
 \value{
 
 }
 \description{
-Create an FRK basis function matrix
+Essentially a wrapper on the FRK package function to make correct format
 }

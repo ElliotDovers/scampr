@@ -2,9 +2,15 @@
 % Please edit documentation in R/ippm.R
 \name{ippm}
 \alias{ippm}
-\title{Inhomogeneous Poisson Process}
+\title{Inhomogeneous Poisson Process Model for Point Patterns}
 \usage{
-ippm(formula, data, starting.pars = NULL, se = TRUE)
+ippm(
+  formula,
+  data,
+  quad.weights.name = "quad.size",
+  starting.pars = NULL,
+  se = TRUE
+)
 }
 \arguments{
 \item{formula}{formula describing fixed effects of the linear predictor. Response must be the presence/quadrature identifier.}

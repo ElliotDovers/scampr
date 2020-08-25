@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgcpm.R
 \name{lgcpm}
 \alias{lgcpm}
-\title{Spatially Correlated, Aprroximate Modelling of Presence Records}
+\title{Approximate log-Gaussian Cox Process Model for a Point Pattern}
 \usage{
 lgcpm(
   formula,

@@ -1,18 +1,20 @@
 #' Create an FRK basis function matrix
 #'
-#' @param data
-#' @param coord.names
-#' @param manifold
-#' @param regular
-#' @param nres
-#' @param prune
-#' @param max_basis
-#' @param subsamp
-#' @param type
-#' @param isea3h_lo
-#' @param bndary
-#' @param scale_aperture
-#' @param verbose
+#' @description Essentially a wrapper on the FRK package function to make correct format
+#'
+#' @param data data frame containing locations of both presence-records and quadrature
+#' @param coord.names vector of character strings describing the column names of the coordinates in data
+#' @param manifold see FRK package documentation
+#' @param regular see FRK package documentation
+#' @param nres see FRK package documentation
+#' @param prune see FRK package documentation
+#' @param max_basis see FRK package documentation
+#' @param subsamp see FRK package documentation
+#' @param type see FRK package documentation
+#' @param isea3h_lo see FRK package documentation
+#' @param bndary see FRK package documentation
+#' @param scale_aperture see FRK package documentation
+#' @param verbose see FRK package documentation
 #' @param ...
 #'
 #' @return
