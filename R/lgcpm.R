@@ -129,15 +129,13 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
     tmp.estimates <- cbind(Estimate = res$par, `Std. Error` = rep(NA, length(res$par)))
   }
 
-  # unload the function lib
-  # dyn.unload(TMB::dynlib(paste0("scampr_", approx.with[1], "_loglik")))
-
   # add required information to the results list
   res$fixed.effects <- tmp.estimates[1:length(fixed.names), ]
   res$random.effects <- tmp.estimates[(length(fixed.names) + 1):nrow(tmp.estimates), ]
   row.names(res$fixed.effects) <- fixed.names
   res$starting.pars <- start.pars
   res$data <- data
+  res$fitted <- list(points = as.vector(dat.list$X_pres %*% res$fixed.effects[ , 1] + dat.list$Z_pres %*% res$random.effects[rownames(res$random.effects) == "random", 1]), quad = as.vector(dat.list$X_quad %*% res$fixed.effects[ , 1] + dat.list$Z_quad %*% res$random.effects[rownames(res$random.effects) == "random", 1]))
   res$formula <- formula
   res$approx_type <- approx.with
   res$basis_per_res <- dat.list$bf_per_res
