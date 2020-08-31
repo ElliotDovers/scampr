@@ -85,7 +85,7 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
     X_quad = des.mat[pt.quad.id == 0, ],
     Z_quad = bf.matrix[pt.quad.id == 0, ],
     quad_size = data[ , quad.weights.name][pt.quad.id == 0],
-    bf_per_res = as.numeric(table(attr(bf.matrix, "resolution_id"))),
+    bf_per_res = as.numeric(table(attr(bf.matrix, "basis.fn.info")$res)),
     mod_type = as.integer(which(approx.with[1] == c("ipp", "variational", "laplace")) - 1)
   )
 
@@ -137,9 +137,10 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
   res$data <- data
   res$fitted <- list(points = as.vector(dat.list$X_pres %*% res$fixed.effects[ , 1] + dat.list$Z_pres %*% res$random.effects[rownames(res$random.effects) == "random", 1]), quad = as.vector(dat.list$X_quad %*% res$fixed.effects[ , 1] + dat.list$Z_quad %*% res$random.effects[rownames(res$random.effects) == "random", 1]))
   res$formula <- formula
-  res$approx_type <- approx.with
-  res$basis_per_res <- dat.list$bf_per_res
-  res$coordinates <- coord.names
+  res$approx.type <- approx.with
+  res$basis.per.res <- dat.list$bf_per_res
+  res$coord.names <- coord.names
+  res$basis.fn.info <- attr(bf.matrix, "basis.fn.info")
   class(res) <- "scampr"
   return(res)
 }

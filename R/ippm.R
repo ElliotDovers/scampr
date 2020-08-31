@@ -6,12 +6,14 @@
 #' @param data data frame containing predictors at both presence-records and quadrature
 #' @param starting.pars optional named list or scampr model that gives warm starts for the parameters of the model
 #' @param se logical indicating whether standard errors should be calculated
+#' @param coord.names vector of character strings describing the column names of the coordinates in data
+#' @param quad.weights.name charater string of the column name of quadrature weights in data
 #'
 #' @return scampr model object
 #' @export
 #'
 #' @examples
-ippm <- function(formula, data, quad.weights.name = "quad.size", starting.pars = NULL, se = TRUE) {
+ippm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", starting.pars = NULL, se = TRUE) {
 
   ## checks ##
   # starting parameters are of the correct type
@@ -87,9 +89,12 @@ ippm <- function(formula, data, quad.weights.name = "quad.size", starting.pars =
   row.names(res$fixed.effects) <- fixed.names
   res$starting.pars <- start.pars
   res$data <- data
+  res$fitted <- list(points = as.vector(dat.list$X_pres %*% res$fixed.effects[ , 1]), quad = as.vector(dat.list$X_quad %*% res$fixed.effects[ , 1]))
   res$formula <- formula
-  res$approx_type <- NA
-  res$basis_per_res <- NA
+  res$approx.type <- NA
+  res$basis.per.res <- NA
+  res$coord.names <- coord.names
+  res$basis.fn.info <- NA
   class(res) <- "scampr"
   return(res)
 }

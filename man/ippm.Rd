@@ -7,6 +7,7 @@
 ippm(
   formula,
   data,
+  coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
   starting.pars = NULL,
   se = TRUE
@@ -16,6 +17,10 @@ ippm(
 \item{formula}{formula describing fixed effects of the linear predictor. Response must be the presence/quadrature identifier.}
 
 \item{data}{data frame containing predictors at both presence-records and quadrature}
+
+\item{coord.names}{vector of character strings describing the column names of the coordinates in data}
+
+\item{quad.weights.name}{charater string of the column name of quadrature weights in data}
 
 \item{starting.pars}{optional named list or scampr model that gives warm starts for the parameters of the model}
 

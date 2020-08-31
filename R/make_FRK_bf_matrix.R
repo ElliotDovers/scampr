@@ -17,7 +17,7 @@
 #' @param verbose see FRK package documentation
 #' @param ...
 #'
-#' @return
+#' @return matrix describing the basis functions (columns) value at each location in the data (rows)
 #' @export
 #'
 #' @examples
@@ -47,8 +47,10 @@ make_FRK_bf_matrix <- function(data, coord.names = c("x", "y"), manifold = FRK::
   # Combine into a matrix and make sparse
   Z <- as(as.matrix(do.call(cbind, bf.list)), "sparseMatrix")
 
-  # Add an attribute that is a vector of length # basis functions indicating which resolution each belongs
-  attr(Z, "resolution_id") <- bf.as.functions@df$res
+  # Include the basis function information (node locations, radius and resolution id)
+  tmp <- bf.as.functions@df
+  colnames(tmp)[grepl("loc", colnames(tmp), fixed = T)] <- coord.names
+  attr(Z, "basis.fn.info") <- tmp
 
   return(Z)
 }

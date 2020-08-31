@@ -51,7 +51,7 @@ make_FRK_bf_matrix(
 \item{...}{}
 }
 \value{
-
+matrix describing the basis functions (columns) value at each location in the data (rows)
 }
 \description{
 Essentially a wrapper on the FRK package function to make correct format

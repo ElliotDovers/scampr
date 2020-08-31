@@ -43,7 +43,7 @@ summary.scampr <- function(object) {
   cat(
     "Formula: ", tmp.formula[c(2, 1, 3)], "\n\nAIC: ",
     tmp.aic, "\ ", " approx. marginal logLik: ", tmp.loglik,
-    "\n\nBasis functions per res. ", object$basis_per_res, "\n\nFixed Effects:\n\n"
+    "\n\nBasis functions per res. ", object$basis.per.res, "\n\nFixed Effects:\n\n"
   )
   printCoefmat(tmp.fixed_effects)
   cat(
