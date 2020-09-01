@@ -13,9 +13,12 @@ Suggests:
     RandomFields,
     RandomFieldsUtils,
     spatstat
-Depends: TMB, FRK, RcppEigen
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+Depends: 
+    TMB,
+    FRK,
+    RcppEigen,
+    R (>= 2.10)
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
