@@ -9,7 +9,7 @@ ippm(
   data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  starting.pars = NULL,
+  starting.pars,
   se = TRUE
 )
 }

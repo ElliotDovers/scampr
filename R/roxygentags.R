@@ -2,6 +2,6 @@
 #'
 #' @useDynLib scampr
 #'
-dummy <- function(){
+ROxygenTags <- function(){
   return(NULL)
 }

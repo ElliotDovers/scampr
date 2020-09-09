@@ -9,10 +9,10 @@ lgcpm(
   data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  bf.matrix = NULL,
+  basis.functions,
   approx.with = c("laplace", "variational"),
   se = TRUE,
-  starting.pars = NULL,
+  starting.pars,
   subset,
   na.action
 )
@@ -26,7 +26,7 @@ lgcpm(
 
 \item{quad.weights.name}{charater string of the column name of quadrature weights in data}
 
-\item{bf.matrix}{matrix of basis functions evaulated at the locations in data}
+\item{basis.functions}{object of class 'Basis' from FRK package. If not specified will use default FRK::auto_basis with 2 spatial resolutions}
 
 \item{approx.with}{charater indicating the type of approximation to use for the intractible marginalisation: variational or Laplace}
 
