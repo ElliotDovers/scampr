@@ -2,7 +2,7 @@
 % Please edit documentation in R/vec2mat.R
 \name{vec2mat}
 \alias{vec2mat}
-\title{Title}
+\title{Internal scampr function that converts a vector to matrix given spatial locations. For use in images}
 \usage{
 vec2mat(vec, x.loc, y.loc)
 }
@@ -17,5 +17,5 @@ vec2mat(vec, x.loc, y.loc)
 
 }
 \description{
-Title
+Internal scampr function that converts a vector to matrix given spatial locations. For use in images
 }

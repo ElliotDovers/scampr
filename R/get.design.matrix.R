@@ -1,3 +1,11 @@
+#' Internal scampr function that creates a fixed effect design matrix from a formula and data
+#'
+#' @param formula
+#' @param data
+#'
+#' @return
+#'
+#' @examples
 get.desgin.matrix <- function(formula, data) {
   cl <- match.call()
   mf <- match.call(expand.dots = FALSE)

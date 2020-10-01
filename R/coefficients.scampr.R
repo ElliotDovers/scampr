@@ -6,7 +6,7 @@
 #' @export
 #'
 #' @examples
-coef.scampr <- function(object) {
+coefficients.scampr <- function(object) {
   tmp <- object$random.effects
   if (length(tmp) ==1L) {
     if (is.na(tmp)) {

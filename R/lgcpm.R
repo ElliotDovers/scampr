@@ -2,11 +2,12 @@
 #'
 #' @description Blah blah blah
 #'
-#' @param formula formula describing fixed effects of the linear predictor. Response must be the presence/quadrature identifier.
+#' @param formula formula describing fixed effects of the linear predictor. Response must be the presence/quadrature binary (1/0) column name.
 #' @param data data frame containing predictors at both presence-records and quadrature
 #' @param coord.names vector of character strings describing the column names of the coordinates in data
 #' @param quad.weights.name  charater string of the column name of quadrature weights in data
-#' @param basis.functions object of class 'Basis' from FRK package. If not specified will use default FRK::auto_basis with 2 spatial resolutions
+#' @param FRK.basis.functions object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions
+#' @param simple.basis Alternative to 'FRK.basis.functions', a data.frame of basis functions information created by 'simple_basis()'.
 #' @param approx.with charater indicating the type of approximation to use for the intractible marginalisation: variational or Laplace
 #' @param se logical indicating whether standard errors should be calculated
 #' @param starting.pars optional named list or scampr model that gives warm starts for the parameters of the model
@@ -17,7 +18,7 @@
 #' @export
 #'
 #' @examples
-lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", basis.functions, approx.with = c("laplace", "variational"), se = TRUE, starting.pars, subset, na.action) {
+lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("laplace", "variational"), se = TRUE, starting.pars, subset, na.action) {
 
   ## checks ##
   # coordinate names exist in the data
@@ -51,16 +52,23 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
   fixed.names <- colnames(des.mat)
 
   # When a basis function matrix is not provided use defaults (with 2 spatial resolutions)
-  if (missing(basis.functions)) {
-    # create a spatial pixels data frame as required by FRK::auto_basis
-    sp.data <- data
-    coordinates(sp.data) <- coord.names
-    basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
+  if (missing(simple.basis)) {
+    if (missing(FRK.basis.functions)) {
+      # create a spatial pixels data frame as required by FRK::auto_basis
+      sp.data <- data
+      coordinates(sp.data) <- coord.names
+      FRK.basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
 
+    }
+    bf.matrix <- FRK::eval_basis(basis = FRK.basis.functions, as.matrix(data[ , coord.names]))
+    bf.info <- FRK.basis.functions@df
+    colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
+    class(bf.info) <- c(class(bf.info), "bf.df")
+  } else {
+    bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names])
+    bf.info <- simple.basis
+    FRK.basis.functions <- NULL
   }
-  bf.matrix <- FRK::eval_basis(basis = basis.functions, as.matrix(data[ , coord.names]))
-  bf.info <- basis.functions@df
-  colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
 
   # if starting.pars provided is a scampr model adjust to req. list structure
   if (!missing(starting.pars)) {
@@ -123,7 +131,7 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
   res$pt.quad.id <- pt.quad.id
   res$approx.type <- approx.with
   res$basis.per.res <- dat.list$bf_per_res
-  res$basis.functions <- basis.functions
+  res$FRK.basis.functions <- FRK.basis.functions
   res$basis.fn.info <- bf.info
   class(res) <- "scampr"
   return(res)

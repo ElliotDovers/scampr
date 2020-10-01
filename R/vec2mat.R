@@ -1,4 +1,4 @@
-#' Title
+#' Internal scampr function that converts a vector to matrix given spatial locations. For use in images
 #'
 #' @param vec A vector of field values of equal length to locations x.loc and y.loc
 #' @param x.loc A vector of horizontal locations in 2D

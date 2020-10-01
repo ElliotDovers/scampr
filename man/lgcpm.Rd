@@ -9,7 +9,8 @@ lgcpm(
   data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  basis.functions,
+  FRK.basis.functions,
+  simple.basis,
   approx.with = c("laplace", "variational"),
   se = TRUE,
   starting.pars,
@@ -18,7 +19,7 @@ lgcpm(
 )
 }
 \arguments{
-\item{formula}{formula describing fixed effects of the linear predictor. Response must be the presence/quadrature identifier.}
+\item{formula}{formula describing fixed effects of the linear predictor. Response must be the presence/quadrature binary (1/0) column name.}
 
 \item{data}{data frame containing predictors at both presence-records and quadrature}
 
@@ -26,7 +27,9 @@ lgcpm(
 
 \item{quad.weights.name}{charater string of the column name of quadrature weights in data}
 
-\item{basis.functions}{object of class 'Basis' from FRK package. If not specified will use default FRK::auto_basis with 2 spatial resolutions}
+\item{FRK.basis.functions}{object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions}
+
+\item{simple.basis}{Alternative to 'FRK.basis.functions', a data.frame of basis functions information created by 'simple_basis()'.}
 
 \item{approx.with}{charater indicating the type of approximation to use for the intractible marginalisation: variational or Laplace}
 
