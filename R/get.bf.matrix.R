@@ -16,13 +16,17 @@ get.bf.matrix <- function(object, point.locations) {
   # If the object is a scampr model created without an FRK auto_basis use the basis function info data frame
   object.switch <- T
   if (class(object)[1] == "scampr") {
-    if (!is.null(object$basis.functions)) {
-      bf.mat <- FRK::eval_basis(object$basis.functions, as.matrix(point.locations))
-      attr(bf.mat, "bf.df") <- object$basis.fn.info
-      object.switch <- F
+    if (is.na(object$approx.type)) {
+      stop("Cannot get a basis function matrix from an IPP model")
     } else {
-      tmp <- object$basis.fn.info
-      object <- tmp
+      if (!is.null(object$FRK.basis.functions)) {
+        bf.mat <- FRK::eval_basis(object$FRK.basis.functions, as.matrix(point.locations))
+        attr(bf.mat, "bf.df") <- object$basis.fn.info
+        object.switch <- F
+      } else {
+        tmp <- object$basis.fn.info
+        object <- tmp
+      }
     }
   }
   if (object.switch) {

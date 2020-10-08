@@ -34,7 +34,7 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
   betas <- as.numeric(object$fixed.effects[ , 1L])
   Xb <- X %*% betas
   if (!is.na(object$approx.type) & dens == "posterior") {
-    mu <- as.numeric(object$random.effects[row.names(object$random.effects) == "random", 1L])
+    mu <- as.numeric(object$random.effects[grepl(" Mean ", row.names(object$random.effects), fixed = T), 1L])
     Zmu <- Z %*% mu
   } else {
     Zmu <- 0
@@ -43,7 +43,7 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
   # Calculate the variance correction of the exponential expectation if required
   if (type == "response") {
     if (!is.na(object$approx.type) & dens == "prior") {
-      sigma2 <- object$random.effects[row.names(object$random.effects) == "PriorVar", 1L]
+      sigma2 <- object$random.effects[grepl("Prior Var", row.names(object$random.effects), fixed = T), 1L]
       vars <- rep(sigma2, object$basis.per.res)
       Sigma <- matrix(0, sum(object$basis.per.res), sum(object$basis.per.res))
       diag(Sigma) <- vars
@@ -55,7 +55,7 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
       }
     } else if (!is.na(object$approx.type) & dens == "posterior") {
       if (object$approx.type == "variational") {
-        vars <- object$random.effects[row.names(object$random.effects) == "PosteriorVar", 1L]
+        vars <- object$random.effects[grepl("Posterior Var", row.names(object$random.effects), fixed = T), 1L]
         Sigma <- matrix(0, sum(object$basis.per.res), sum(object$basis.per.res))
         diag(Sigma) <- vars
         Sigma <- as(Sigma, "sparseMatrix")
@@ -65,30 +65,7 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
           ZSigZ[n] <- as.numeric((Z[n, ] %*% Sigma) %*% Z[n, ])
         }
       } else {
-        # Need to re-fit the model to obtain the covariance matrix in the laplace case
-        des.mat <- scampr:::get.desgin.matrix(object$formula, object$data)
-        pt.quad.id <- object$pt.quad.id
-        fixed.names <- colnames(des.mat)
-        bf.matrix <- scampr:::get.bf.matrix(object, object$data[ , object$coord.names])
-        dat.list <- list(
-          X_pres = des.mat[pt.quad.id == 1, ],
-          Z_pres = as(bf.matrix[pt.quad.id == 1, ], "sparseMatrix"),
-          X_quad = des.mat[pt.quad.id == 0, ],
-          Z_quad = as(bf.matrix[pt.quad.id == 0, ], "sparseMatrix"),
-          quad_size = object$data[ , object$quad.weights.name][pt.quad.id == 0],
-          bf_per_res = object$basis.per.res,
-          mod_type = 2
-        )
-        start.pars <- lapply(split(object$par, names(object$par)), unname)
-        start.pars$random <- object$random.effects[row.names(object$random.effects) == "random", 1L]
-        map.in <- start.pars
-        for (p in 1:length(map.in)) {
-          map.in[[p]] <- factor(rep(NA, length(start.pars[[p]])))
-        }
-        obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
-        tmp <- TMB::sdreport(obj, getJointPrecision = T)
-        fullPrecision <- tmp$jointPrecision
-        fullCovMat <- solve(fullPrecision)
+        fullCovMat <- vcov(object)
         Sigma <- fullCovMat[rownames(fullCovMat) == "random", colnames(fullCovMat) == "random"]
         Sigma <- as(Sigma, "sparseMatrix")
         tmp.Z <- as.matrix(Z)
@@ -103,8 +80,8 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
   }
 
   pred <- switch(type,
-                 link = Xb + Zmu,
-                 response = exp(Xb + Zmu + 0.5 * ZSigZ)
+                 link = as.numeric(Xb + Zmu),
+                 response = as.numeric(exp(Xb + Zmu + 0.5 * ZSigZ))
                  )
   return(pred)
 }

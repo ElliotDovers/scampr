@@ -2,9 +2,9 @@
 % Please edit documentation in R/AIC.scampr.R
 \name{AIC.scampr}
 \alias{AIC.scampr}
-\title{AIC for objects of class 'scampr'}
+\title{Akaike's Information Criteria for objects of class 'scampr'}
 \usage{
-\method{AIC}{scampr}(object)
+\method{AIC}{scampr}(object, ...)
 }
 \arguments{
 \item{object}{}
@@ -13,5 +13,5 @@
 
 }
 \description{
-AIC for objects of class 'scampr'
+Akaike's Information Criteria for objects of class 'scampr'
 }

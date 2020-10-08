@@ -12,7 +12,7 @@
 image.scampr <- function(x, z, residual.type, ...) {
 
   # checks
-  if (length(z == 1)) {
+  if (length(z) == 1) {
     if (typeof(z) == "character") {
       if (!(z %in% c(colnames(x$data), 'fitted', 'residuals'))) {
         stop(paste0(z, " must be one of 'fitted', 'residuals' or one of the columns of the model data frame.\nAlternatively supply a vector of z values directly"))
@@ -26,18 +26,18 @@ image.scampr <- function(x, z, residual.type, ...) {
         } else {
           if (missing(residual.type)) {
             z.name <- "Residuals (raw)"
-            tmp.z <- residuals.scampr(x, type = "raw")
+            tmp.z <- scampr:::residuals.scampr(x, type = "raw")
             z <- tmp.z[x$pt.quad.id ==0]
           } else {
             z.name <- paste0("Residuals (", residual.type, ")")
-            tmp.z <- residuals.scampr(x, residual.type)
+            tmp.z <- scampr:::residuals.scampr(x, residual.type)
             z <- tmp.z[x$pt.quad.id ==0]
           }
         }
       }
     }
   } else {
-    z.name <- quote(z)
+    z.name <- quote(z) # can't seem to get this to quote the input argument
   }
   if (length(z) != sum(x$pt.quad.id == 0)) {
     stop("z vector of field values must match the number (and order) of quadrature points in the model provided")

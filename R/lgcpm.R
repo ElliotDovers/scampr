@@ -65,7 +65,7 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
     colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
     class(bf.info) <- c(class(bf.info), "bf.df")
   } else {
-    bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names])
+    bf.matrix <- scampr:::get.bf.matrix(simple.basis, data[ , coord.names])
     bf.info <- simple.basis
     FRK.basis.functions <- NULL
   }
@@ -118,13 +118,35 @@ lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = 
   } else {
     tmp.estimates <- cbind(Estimate = res$par, `Std. Error` = rep(NA, length(res$par)))
   }
+  # get the random component names
+  random.nos <- NULL
+  if (length(dat.list$bf_per_res) == 1L) {
+    random.nos <- 1L:dat.list$bf_per_res
+  } else {
+    for (lvl in 1L:length(dat.list$bf_per_res)) {
+      random.nos <- c(random.nos, paste(lvl, 1L:dat.list$bf_per_res[lvl], sep = "."))
+    }
+  }
+
   # add required information to the results list
+  res$coefficients <- res$par
+  coef.names <- switch(approx.with,
+         variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log sd (bf ", random.nos, ")")),
+         laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
+  )
+  names(res$coefficients) <- coef.names
   res$fixed.effects <- tmp.estimates[1:length(fixed.names), ]
+  rownames(res$fixed.effects) <- fixed.names
   res$random.effects <- tmp.estimates[(length(fixed.names) + 1):nrow(tmp.estimates), ]
-  row.names(res$fixed.effects) <- fixed.names
+  res$random.effects <- res$random.effects[!grepl("log_", rownames(res$random.effects), fixed = T), ]
+  rand.names <- switch(approx.with,
+                       variational = c(paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior Var (bf ", random.nos, ")"), paste0("Prior Var (res. ", 1:length(dat.list$bf_per_res), ")")),
+                       laplace = c(paste0("LP Posterior Mean (bf ", random.nos, ")"), paste0("Prior Var (res. ", 1:length(dat.list$bf_per_res), ")"))
+  )
+  rownames(res$random.effects) <- rand.names
   res$starting.pars <- start.pars
   res$data <- data
-  res$fitted.values <- as.vector(des.mat %*% res$fixed.effects[ , 1] + bf.matrix %*% res$random.effects[rownames(res$random.effects) == "random", 1])
+  res$fitted.values <- as.vector(des.mat %*% res$fixed.effects[ , 1] + bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
   res$formula <- formula
   res$coord.names <- coord.names
   res$quad.weights.name <- quad.weights.name

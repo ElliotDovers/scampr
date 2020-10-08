@@ -77,6 +77,8 @@ ippm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "
     tmp.estimates <- cbind(Estimate = res$pars, `Std. Error` = rep(NA, length(res$pars)))
   }
   # add required information to the results list
+  res$coefficients <- res$par
+  names(res$coefficients) <- fixed.names
   res$fixed.effects <- tmp.estimates[1:length(fixed.names), ]
   res$random.effects <- NA
   row.names(res$fixed.effects) <- fixed.names
@@ -89,8 +91,8 @@ ippm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "
   res$pt.quad.id <- pt.quad.id
   res$approx.type <- NA
   res$basis.per.res <- NA
-  res$basis.functions <- NA
-  res$basis.fn.info <- NA
+  res$FRK.basis.functions <- NULL
+  res$basis.fn.info <- NULL
   class(res) <- "scampr"
   return(res)
 }

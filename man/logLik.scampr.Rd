@@ -7,7 +7,7 @@
 \method{logLik}{scampr}(object)
 }
 \arguments{
-\item{object}{}
+\item{object}{a scampr model}
 }
 \value{
 numeric describing the approximate marginal log-likelihood of the scampr model object

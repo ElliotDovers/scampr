@@ -7,7 +7,7 @@
 \method{print}{scampr}(object)
 }
 \arguments{
-\item{object}{}
+\item{object}{a scampr model}
 }
 \value{
 
