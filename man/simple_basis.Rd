@@ -4,12 +4,19 @@
 \alias{simple_basis}
 \title{Create a single resolution, regular grid of bisquare basis function nodes in flat 2D space}
 \usage{
-simple_basis(nodes.on.long.edge, data, coord.names = c("x", "y"))
+simple_basis(
+  nodes.on.long.edge,
+  data,
+  radius.type = c("diag", "limiting"),
+  coord.names = c("x", "y")
+)
 }
 \arguments{
 \item{nodes.on.long.edge}{integer describing the number of basis function nodes to place along the longest edge of the domain}
 
 \item{data}{a data frame containing the two coordinates described by 'coord.names'}
+
+\item{radius.type}{character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Aread)/log(k).}
 
 \item{coord.names}{vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical}
 }
