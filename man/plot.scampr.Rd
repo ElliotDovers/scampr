@@ -4,7 +4,7 @@
 \alias{plot.scampr}
 \title{Plot function for objects of class 'scampr'}
 \usage{
-plot.scampr(x, add.points = F, ...)
+plot.scampr(x, add.points = F)
 }
 \arguments{
 \item{x}{a scampr model object}

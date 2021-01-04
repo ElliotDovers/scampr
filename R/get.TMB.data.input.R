@@ -134,9 +134,10 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     # if warm starts are provided
     if (!missing(starting.pars)) {
       if (class(starting.pars) == "scampr") {
-        starting.pars <- lapply(split(starting.pars$par, names(starting.pars$par)), unname)
+        mod.obj <- starting.pars
+        starting.pars <- lapply(split(mod.obj$par, names(mod.obj$par)), unname)
         if (model.type == "laplace") {
-          starting.pars$random <- unname(object$random.effects[grepl("LP Posterior Mean", rownames(object$random.effects), fixed = T), 1L])
+          starting.pars$random <- unname(mod.obj$random.effects[grepl("LP Posterior Mean", rownames(mod.obj$random.effects), fixed = T), 1L])
         }
       }
     }
@@ -243,7 +244,11 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     # if warm starts are provided
     if (!missing(starting.pars)) {
       if (class(starting.pars) == "scampr") {
-        starting.pars <- lapply(split(starting.pars$par, names(starting.pars$par)), unname)
+        mod.obj <- starting.pars
+        starting.pars <- lapply(split(mod.obj$par, names(mod.obj$par)), unname)
+        if (model.type == "laplace") {
+          starting.pars$random <- unname(mod.obj$random.effects[grepl("LP Posterior Mean", rownames(mod.obj$random.effects), fixed = T), 1L])
+        }
       }
     }
     # create the appropraite start parameters for the variance component w.r.t. approx. type
@@ -351,7 +356,11 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     # if warm starts are provided
     if (!missing(starting.pars)) {
       if (class(starting.pars) == "scampr") {
-        starting.pars <- lapply(split(starting.pars$par, names(starting.pars$par)), unname)
+        mod.obj <- starting.pars
+        starting.pars <- lapply(split(mod.obj$par, names(mod.obj$par)), unname)
+        if (model.type == "laplace") {
+          starting.pars$random <- unname(mod.obj$random.effects[grepl("LP Posterior Mean", rownames(mod.obj$random.effects), fixed = T), 1L])
+        }
       }
     }
     var.starts <- rep(0, length(dat.list$bf_per_res))

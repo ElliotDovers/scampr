@@ -9,7 +9,7 @@ predict.scampr(
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
-  ...
+  process = c("intensity", "abundance")
 )
 }
 \arguments{
@@ -17,9 +17,11 @@ predict.scampr(
 
 \item{newdata}{a data frame of point locations to predict over as well as predictors involved in the model}
 
-\item{type}{character string indicating the type of linear predictor to be returned. One of 'link' or 'response'}
+\item{type}{a character string indicating the type of linear predictor to be returned. One of 'link' or 'response'}
 
-\item{dens}{character string indicating the pdf of the random effects to draw from}
+\item{dens}{a character string indicating the pdf of the random effects to draw from}
+
+\item{process}{a character string indictating the process to be estimated. one of 'intensity' or 'abundance'. Only available for combined data models.}
 }
 \value{
 

@@ -1,7 +1,8 @@
 #' Extract Model Residuals for objects of class 'scampr'
 #'
-#' @param object
+#' @param object a scampr model object
 #' @param type As in residuals.ppm: A string indicating the type of residuals or weights to be used. Current options are "raw" for the raw residuals, "inverse" for the inverse-lambda residuals, and "pearson" for the Pearson residuals.
+#' @param data.type a character string indicating which data type to produce residuals from.
 #'
 #' @return
 #' @export

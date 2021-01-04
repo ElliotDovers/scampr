@@ -2,17 +2,34 @@
 #'
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
-#' @param type character string indicating the type of linear predictor to be returned. One of 'link' or 'response'
-#' @param dens character string indicating the pdf of the random effects to draw from
+#' @param type a character string indicating the type of linear predictor to be returned. One of 'link' or 'response'
+#' @param dens a character string indicating the pdf of the random effects to draw from
+#' @param process a character string indictating the process to be estimated. one of 'intensity' or 'abundance'. Only available for combined data models.
 #'
 #' @return
 #' @export
 #'
 #' @examples
-predict.scampr <- function(object, newdata, type = c("link", "response"), dens = c("posterior", "prior"), ...) {
+predict.scampr <- function(object, newdata, type = c("link", "response"), dens = c("posterior", "prior"), process = c("intensity", "abundance")) {
+
   ## checks ##
   type <- match.arg(type)
   dens <- match.arg(dens)
+  process <- match.arg(process)
+  # Adjust the calculation based on required prediction (abundance or intensity)
+  if (object$data.model.type == "popa") {
+    data.po <- object$data
+    data.pa <- attr(object$data, "pa")
+    forms <- strsplit(object$formula, " |&| ", fixed = T)
+    form.po <- as.formula(forms[[1]][1])
+    form.pa <- as.formula(forms[[1]][2])
+    if (process == "abundance") {
+      object$formula <- form.pa
+      object$data <- data.pa
+    } else {
+      object$formula <- form.po
+    }
+  }
   if (missing(newdata)) {
     newdata <- object$data
   }
@@ -32,6 +49,13 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
 
   # Calculate components of the linear predictor based on density required
   betas <- as.numeric(object$fixed.effects[ , 1L])
+  intercept.term.id <- grepl("Intercept)", rownames(object$fixed.effects), fixed = T)
+  if (sum(intercept.term.id) > 1) {
+    combined.intercepts <- sum(object$fixed.effects[intercept.term.id , 1L])
+    betas[which(intercept.term.id)] <- NA
+    betas[min(which(intercept.term.id))] <- combined.intercepts
+    betas <- as.vector(na.omit(betas))
+  }
   Xb <- X %*% betas
   if (!is.na(object$approx.type) & dens == "posterior") {
     mu <- as.numeric(object$random.effects[grepl(" Mean ", row.names(object$random.effects), fixed = T), 1L])
@@ -47,7 +71,9 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
       vars <- rep(sigma2, object$basis.per.res)
       Sigma <- matrix(0, sum(object$basis.per.res), sum(object$basis.per.res))
       diag(Sigma) <- vars
-      Sigma <- as(Sigma, "sparseMatrix")
+      if (object$bf.matrix.type == "sparse") {
+        Sigma <- as(Sigma, "sparseMatrix")
+      }
       tmp.Z <- as.matrix(Z)
       ZSigZ <- NULL
       for (n in 1:nrow(tmp.Z)) {
@@ -58,7 +84,9 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
         vars <- object$random.effects[grepl("Posterior Var", row.names(object$random.effects), fixed = T), 1L]
         Sigma <- matrix(0, sum(object$basis.per.res), sum(object$basis.per.res))
         diag(Sigma) <- vars
-        Sigma <- as(Sigma, "sparseMatrix")
+        if (object$bf.matrix.type == "sparse") {
+          Sigma <- as(Sigma, "sparseMatrix")
+        }
         tmp.Z <- as.matrix(Z)
         ZSigZ <- NULL
         for (n in 1:nrow(tmp.Z)) {
@@ -67,7 +95,9 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
       } else {
         fullCovMat <- vcov(object)
         Sigma <- fullCovMat[rownames(fullCovMat) == "random", colnames(fullCovMat) == "random"]
-        Sigma <- as(Sigma, "sparseMatrix")
+        if (object$bf.matrix.type == "sparse") {
+          Sigma <- as(Sigma, "sparseMatrix")
+        }
         tmp.Z <- as.matrix(Z)
         ZSigZ <- NULL
         for (n in 1:nrow(tmp.Z)) {
