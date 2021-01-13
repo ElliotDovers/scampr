@@ -50,7 +50,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     stop("Not all predictors in the PA formula are found in the PO formula")
   }
   if (all(po.pred %in% pa.pred)) {
-    warning("Predictors are the same for PO and PA.\nUnless the presence records are the result of a perfectly observed domain, this is misspecified")
+    stop("Predictors are the same for PO and PA.\nUnless the presence records are the result of a perfectly observed domain, this is misspecified")
   }
   if (!is.logical(se)) {
     stop(paste0("'se' must be a logcial indicating whether or not to calculate standard erros"))
@@ -108,7 +108,24 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   # if starting.pars provided is a scampr model adjust to req. list structure
   if (!missing(starting.pars)) {
     if (class(starting.pars) == "scampr") {
+      tmp.m <- starting.pars
       starting.pars <- lapply(split(starting.pars$par, names(starting.pars$par)), unname)
+      # check the model isn't an IPP
+      if (!is.na(tmp.m$approx.type)) {
+        # make appropriate change to the variance parameter if going from VA to Laplace
+        if (model.type == "laplace" & tmp.m$approx.type == "variational") {
+          starting.pars$log_variance_component <- unname(log(sqrt(tmp.m$random.effects[grepl("Prior Var ", rownames(tmp.m$random.effects), fixed = T), 1])))
+        }
+        # make appropriate change to the variance parameter going from Laplace to VA
+        if (model.type == "variational" & tmp.m$approx.type == "laplace") {
+          starting.pars$log_variance_component <- NULL
+        }
+        # need to add the random parameters if the existing model is laplace
+        if (tmp.m$approx.type == "laplace") {
+          starting.pars$random <- unname(tmp.m$random.effects[grepl("LP Posterior Mean", rownames(tmp.m$random.effects), fixed = T), 1L])
+        }
+      }
+      rm(tmp.m)
     }
   }
   # TMB required data setup

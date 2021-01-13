@@ -81,7 +81,24 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
   # if starting.pars provided is a scampr model adjust to req. list structure
   if (!missing(starting.pars)) {
     if (class(starting.pars) == "scampr") {
+      tmp.m <- starting.pars
       starting.pars <- lapply(split(starting.pars$par, names(starting.pars$par)), unname)
+      # check the model isn't an IPP
+      if (!is.na(tmp.m$approx.type)) {
+        # make appropriate change to the variance parameter if going from VA to Laplace
+        if (model.type == "laplace" & tmp.m$approx.type == "variational") {
+          starting.pars$log_variance_component <- unname(log(sqrt(tmp.m$random.effects[grepl("Prior Var ", rownames(tmp.m$random.effects), fixed = T), 1])))
+        }
+        # make appropriate change to the variance parameter going from Laplace to VA
+        if (model.type == "variational" & tmp.m$approx.type == "laplace") {
+          starting.pars$log_variance_component <- NULL
+        }
+        # need to add the random parameters if the existing model is laplace
+        if (tmp.m$approx.type == "laplace") {
+          starting.pars$random <- unname(tmp.m$random.effects[grepl("LP Posterior Mean", rownames(tmp.m$random.effects), fixed = T), 1L])
+        }
+      }
+      rm(tmp.m)
     }
   }
   # TMB required data setup

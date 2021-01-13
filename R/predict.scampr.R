@@ -18,14 +18,23 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
   process <- match.arg(process)
   # Adjust the calculation based on required prediction (abundance or intensity)
   if (object$data.model.type == "popa") {
-    data.po <- object$data
+    # obtain the pa data
     data.pa <- attr(object$data, "pa")
+    # separate the formulas
     forms <- strsplit(object$formula, " |&| ", fixed = T)
     form.po <- as.formula(forms[[1]][1])
     form.pa <- as.formula(forms[[1]][2])
+    # obtain bias covariates
+    pa.pred <- all.vars(form.pa[[3]])
+    po.pred <- all.vars(form.po[[3]])
+    bias.preds <- po.pred[!po.pred %in% pa.pred]
+    # adjust the model object to reflect abundance if required
     if (process == "abundance") {
       object$formula <- form.pa
       object$data <- data.pa
+      # set the bias coefficients to zero for predicting mean abundance
+      object$fixed.effects[rownames(object$fixed.effects) %in% c("(Bias Intercept)", bias.preds), ] <- NA
+      object$fixed.effects <- na.omit(object$fixed.effects)
     } else {
       object$formula <- form.po
     }
