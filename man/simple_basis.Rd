@@ -21,8 +21,15 @@ simple_basis(
 \item{coord.names}{vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical}
 }
 \value{
-
+a simple basis data frame of class 'bf.df'
 }
 \description{
 Create a single resolution, regular grid of bisquare basis function nodes in flat 2D space
+}
+\examples{
+# Base the basis function nodes on the locations of presence records and quadrature
+simple_basis(9, eucalypt[["po"]])
+
+# Base the basis function nodes on the locations of survey sites from presence/absence data
+simple_basis(9, eucalypt[["pa"]])
 }

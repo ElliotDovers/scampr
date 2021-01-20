@@ -3,19 +3,27 @@
 #' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
 #' @param pa.data a data frame containing predictors and response for the pa.formula.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames
-#' @param FRK.basis.functions an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions
+#' @param FRK.basis.functions an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.
 #' @param simple.basis an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.
 #' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
-#' @param se a logical indicating whether standard errors should be calculated
-#' @param starting.pars an optional named list or scampr model that gives warm starting values for the parameters of the model.
+#' @param se a logical indicating whether standard errors should be calculated.
+#' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional subset of the data to be used.
 #' @param na.action an optional way of handling NA's in the data, default is omit.
 #'
-#' @return
+#' @return a scampr model object
 #' @export
 #'
 #' @examples
+#' # Get the Eucalypt data
+#' dat <- eucalypt[["pa"]]
+#'
+#' # Fit without a shared latent field
+#' m1 <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#'
+#' # Fit with a shared latent field using FRK package default basis functions
+#' m2 <- pa(Y ~ TMP_MIN, dat_pa, model.type = "laplace")
 pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS

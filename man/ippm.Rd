@@ -32,3 +32,13 @@ scampr model object
 \description{
 Fit an inhomogeneous Poisson process model to presence records using numerical quadrature
 }
+\examples{
+#' # Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit an IPP model to the point pattern
+m.ipp <- ippm(pres ~ elev.std, data = dat)
+}

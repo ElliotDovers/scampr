@@ -1,11 +1,13 @@
 #' Internal scampr function that creates a fixed effect design matrix from a formula and data
 #'
-#' @param formula
-#' @param data
+#' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of a model. See GLM function for further formula details.
+#' @param data a data frame containing predictors and response of the formula parameter.
 #'
 #' @return
+#' @noRd
 #'
 #' @examples
+#' scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
 get.desgin.matrix <- function(formula, data) {
   cl <- match.call()
   mf <- match.call(expand.dots = FALSE)

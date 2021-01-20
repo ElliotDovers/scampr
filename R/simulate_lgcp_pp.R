@@ -1,6 +1,6 @@
 #' Simulate a point pattern from log-Gaussian Cox Process
 #'
-#' @description Simulate's a point pattern from a LGCP with an intercept and slope on a single spatial covariate. Control the correlation range and marginal variance of the latent field
+#' @description Simulate a point pattern from a LGCP with an intercept and slope on a single deterministic spatial covariate. Over a hectare domain, includes quadrature. Control the correlation range and marginal variance of the latent field.
 #'
 #' @param Intercept Fixed effect intercept - used to control the expected number of points
 #' @param Slope Fixed effect slope - controls the effect of the spatial covariate on the point pattern
@@ -12,12 +12,21 @@
 #' @export
 #'
 #' @examples
-simulate_lgcp_pp <- function(
-  Intercept = -3,
-  Slope = 1.25,
-  latent.variance = 1,
-  latent.range = 15,
-  rseed = NA) {
+#' # Simulate a point pattern
+#' dat <- sim_lgcp_pp(Intercept = -3, Slope = 1.25, latent.range = 15, rseed = 1)
+#'
+#' # Fit an IPP model to the point pattern
+#' m.ipp <- ippm(pres ~ X, data = dat)
+#'
+#' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+#' bfs <- simple_basis(nodes.on.long.edge = 10, data = dat)
+#'
+#' # Fit a LGCP model to the point pattern
+#' m.lgcp_va <- lgcpm(pres ~ X data = dat, approx.with = "variational", simple.basis = bfs)
+#'
+#' summary(m.ipp)
+#' summary(m.lgcp_va)
+simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, latent.range = 15, rseed = NA) {
 
   # Checks #
   if (!library(spatstat, logical.return = T)) {
@@ -157,19 +166,7 @@ simulate_lgcp_pp <- function(
 
   # Add the presence-quadrature identifier to the data frames and combine
   dat <- rbind(cbind(pres, pres = 1), cbind(quad, pres = 0))
-
-  # # Create the SpatialPoints[DataFrame] for use in inlabru
-  # pres.sp <- SpatialPoints(
-  #   as.matrix(pres[ , c("x", "y")]),
-  # )
-
-  # Compile both data sets and information about the simulaton into a result list
-  temp.info = c(Intercept = Intercept, Slope = Slope, latent.variance = latent.variance, latent.range = latent.range, rseed = rseed, N = pp$n, Expected_N = sum(quad$quad.size * exp(eta.fixed)))
-  data.list <- list(
-    dframe = dat,
-    # pres.pp = pres.sp,
-    info =   temp.info
-  )
+  # include the simulation info
   attr(dat, "sim_info") <- temp.info
   return(dat)
 }

@@ -8,6 +8,22 @@
 #' @export
 #'
 #' @examples
+#' # Get the Eucalypt data
+#' dat_po <- eucalypt[["po"]]
+#' dat_pa <- eucalypt[["pa"]]
+#'
+#' # Fit an IPP model to the point pattern
+#' m.ipp <- ippm(pres ~ elev.std, data = dat)
+#'
+#' # Fit a combined data model
+#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#'
+#' # Fit presence/absence model
+#' m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#'
+#' plot(m.ipp)
+#' plot(m.popa)
+#' plot(m.pa)
 plot.scampr <- function(x, add.points = F) {
   if (x$data.model.type == "pa") {
     plot(1 - exp(-exp(x$fitted.values)), residuals(x, type = "raw", data.type = "pa"),

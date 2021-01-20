@@ -5,7 +5,6 @@
 #' @return
 #' @export
 #'
-#' @examples
 vcov.scampr <- function(object) {
 
   # get an identifier for the model type

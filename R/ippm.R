@@ -13,6 +13,14 @@
 #' @export
 #'
 #' @examples
+#' #' # Get the gorilla nesting data
+#' dat <- gorillas
+#'
+#' # Standardise the elevation covariate
+#' dat$elev.std <- scale(dat$elevation)
+#'
+#' # Fit an IPP model to the point pattern
+#' m.ipp <- ippm(pres ~ elev.std, data = dat)
 ippm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", starting.pars, se = TRUE) {
 
   # Use the model for presence-only data with particular parameters hard-coded

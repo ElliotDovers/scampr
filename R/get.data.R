@@ -3,8 +3,20 @@
 #' @param object
 #'
 #' @return
+#' @noRd
 #'
 #' @examples
+#' # Get the gorilla nesting data
+#' dat <- gorillas
+#'
+#' # Standardise the elevation covariate
+#' dat$elev.std <- scale(dat$elevation)
+#'
+#' # Fit an IPP model to the point pattern
+#' m.ipp <- ippm(pres ~ elev.std, data = dat)
+#'
+#' # Extract data
+#' scampr:::get.data(m.ipp)
 get.data<- function(object) {
   if (object$data.model.type != "pa") {
     dat <- object$data

@@ -5,7 +5,6 @@
 #' @return
 #' @export
 #'
-#' @examples
 summary.scampr <- function(object) {
 
   # Collect elements for reporting #

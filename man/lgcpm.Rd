@@ -13,6 +13,7 @@ lgcpm(
   simple.basis,
   approx.with = c("laplace", "variational"),
   se = TRUE,
+  bf.matrix.type = c("sparse", "dense"),
   starting.pars,
   subset,
   na.action
@@ -35,6 +36,8 @@ lgcpm(
 
 \item{se}{logical indicating whether standard errors should be calculated}
 
+\item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
+
 \item{starting.pars}{optional named list or scampr model that gives warm starts for the parameters of the model}
 
 \item{subset}{optional subset of the data}
@@ -42,8 +45,24 @@ lgcpm(
 \item{na.action}{optional way of handling NA's in the data, default is omit}
 }
 \value{
-scampr model object
+a scampr model object
 }
 \description{
 Blah blah blah
+}
+\examples{
+#' # Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
+
+# Fit a LGCP model using variational approximation
+m.lgcp_va <- lgcpm(pres ~ elev.std, data = dat, approx.with = "variational", simple.basis = bfs)
+
+#' # Fit a LGCP model using Laplace approximation
+m.lgcp_lp <- lgcpm(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/po.R
 \name{po}
 \alias{po}
-\title{Model for Presence-only Data}
+\title{Point Process Model for Presence-only Data}
 \usage{
 po(
   po.formula,
@@ -28,7 +28,7 @@ po(
 
 \item{quad.weights.name}{a charater string of the column name of quadrature weights in the po.data}
 
-\item{FRK.basis.functions}{an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions}
+\item{FRK.basis.functions}{an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.}
 
 \item{simple.basis}{an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.}
 
@@ -36,17 +36,36 @@ po(
 
 \item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 
-\item{se}{a logical indicating whether standard errors should be calculated}
+\item{se}{a logical indicating whether standard errors should be calculated.}
 
-\item{starting.pars}{an optional named list or scampr model that gives warm starting values for the parameters of the model.}
+\item{starting.pars}{an optional named list or scampr model object that gives warm starting values for the parameters of the model.}
 
 \item{subset}{an optional subset of the data to be used.}
 
 \item{na.action}{an optional way of handling NA's in the data, default is omit.}
 }
 \value{
-
+a scampr model object
 }
 \description{
-Model for Presence-only Data
+Point Process Model for Presence-only Data
+}
+\examples{
+# Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit an IPP model to the point pattern
+m.ipp <- po(pres ~ elev.std, data = dat, model.type = "ipp")
+
+# Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
+
+# Fit a LGCP model using variational approximation
+m.lgcp_va <- po(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+
+#' # Fit a LGCP model using Laplace approximation
+m.lgcp_lp <- po(pres ~ elev.std, data = dat, model.type = "laplace", simple.basis = bfs)
 }

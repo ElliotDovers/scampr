@@ -27,5 +27,21 @@ simulate_lgcp_pp(
 the simulated data frame with attributes containing sim info
 }
 \description{
-Simulate's a point pattern from a LGCP with an intercept and slope on a single spatial covariate. Control the correlation range and marginal variance of the latent field
+Simulate a point pattern from a LGCP with an intercept and slope on a single deterministic spatial covariate. Over a hectare domain, includes quadrature. Control the correlation range and marginal variance of the latent field.
+}
+\examples{
+# Simulate a point pattern
+dat <- sim_lgcp_pp(Intercept = -3, Slope = 1.25, latent.range = 15, rseed = 1)
+
+# Fit an IPP model to the point pattern
+m.ipp <- ippm(pres ~ X, data = dat)
+
+# Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+bfs <- simple_basis(nodes.on.long.edge = 10, data = dat)
+
+# Fit a LGCP model to the point pattern
+m.lgcp_va <- lgcpm(pres ~ X data = dat, approx.with = "variational", simple.basis = bfs)
+
+summary(m.ipp)
+summary(m.lgcp_va)
 }

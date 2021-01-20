@@ -4,8 +4,26 @@
 #' @param point.locations either a matrix or data.frame describing the point locations in the same order as in 'object'
 #'
 #' @return
+#' @noRd
 #'
 #' @examples
+#' # Get the gorilla nesting data
+#' dat <- gorillas
+#'
+#' # Standardise the elevation covariate
+#' dat$elev.std <- scale(dat$elevation)
+#'
+#' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+#' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
+#'
+#' # Fit a LGCP model using variational approximation
+#' m.lgcp_va <- po(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+#'
+#' # Get some new locations
+#' new.sites <- dat[sample(1:nrow(dat), 10), c("x", "y")]
+#'
+#' # Calculate the basis function matrix at the new sites
+#' scampr:::get.bf.matrix(m.lgcp_va, new.sites)
 get.bf.matrix <- function(object, point.locations) {
   # Check the object is of one of the two correct types
   if(!"bf.df" %in% class(object)) {

@@ -1,21 +1,28 @@
 #' Internal scampr function that creates a list of data and starting parameters for scampr models
 #'
-#' @param po.formula
-#' @param pa.formula
-#' @param po.data
-#' @param pa.data
-#' @param coord.names
-#' @param quad.weights.name
-#' @param FRK.basis.functions
-#' @param simple.basis
-#' @param model.type
-#' @param bf.matrix.type
-#' @param data.type
-#' @param starting.pars
+#' @param po.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence-only data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.
+#' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
+#' @param po.data a data frame containing predictors at both presence-records and quadrature as well as the po.formula 'response'.
+#' @param pa.data a data frame containing predictors and response for the pa.formula.
+#' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
+#' @param quad.weights.name a charater string of the column name of quadrature weights in the po.data.
+#' @param FRK.basis.functions an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.
+#' @param simple.basis an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.
+#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
+#' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
+#' @param data.type a logical indicating whether standard errors should be calculated.
+#' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #'
-#' @return
+#' @return list of elements required for TMB::MakeADFun
+#' @noRd
 #'
 #' @examples
+#' # Get the Eucalypt data
+#' dat_po <- eucalypt[["po"]]
+#' dat_pa <- eucalypt[["pa"]]
+#'
+#' # Get the TMB data lists for a combined data model without latent field
+#' scampr:::get.TMB.data.input(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), data.type = c("po", "pa", "popa"), starting.pars) {
 
   # parameters of restricted strings

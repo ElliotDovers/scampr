@@ -19,12 +19,12 @@
 \item{pres}{Binary indicating whether the row is a presence record (1) or a quadrat (0).}
 }}
 \source{
-\url{Library `spatstat`}
+\url{Library `inlabru`}
 }
 \usage{
 gorillas
 }
 \description{
-This is the \code{gorillas} dataset from the package \code{spatstat} (also featured in \code{inlabru}), formatted for use with \code{scampr} models. Describes the nesting locations of gorillas, and associated predictors, in a National Park in Cameroon.
+This is the \code{gorillas} dataset from the package \code{spatstat} (also featured in \code{inlabru}), formatted for use with \code{scampr} models. Describes the nesting locations of gorillas, and associated predictors, in Kagwene Gorilla Sanctuary in Cameroon.
 }
 \keyword{datasets}

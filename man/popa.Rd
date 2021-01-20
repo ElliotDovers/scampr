@@ -30,11 +30,11 @@ popa(
 
 \item{pa.data}{a data frame containing predictors and response for the pa.formula.}
 
-\item{coord.names}{a vector of character strings describing the column names of the coordinates in both data frames}
+\item{coord.names}{a vector of character strings describing the column names of the coordinates in both data frames.}
 
-\item{quad.weights.name}{a charater string of the column name of quadrature weights in the po.data}
+\item{quad.weights.name}{a charater string of the column name of quadrature weights in the po.data.}
 
-\item{FRK.basis.functions}{an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions}
+\item{FRK.basis.functions}{an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.}
 
 \item{simple.basis}{an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.}
 
@@ -42,17 +42,31 @@ popa(
 
 \item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 
-\item{se}{a logical indicating whether standard errors should be calculated}
+\item{se}{a logical indicating whether standard errors should be calculated.}
 
-\item{starting.pars}{an optional named list or scampr model that gives warm starting values for the parameters of the model.}
+\item{starting.pars}{an optional named list or scampr model object that gives warm starting values for the parameters of the model.}
 
 \item{subset}{an optional subset of the data to be used.}
 
 \item{na.action}{an optional way of handling NA's in the data, default is omit.}
 }
 \value{
-
+a scampr model object
 }
 \description{
 Combined Model for Presence-only and Presence-Absence Data
+}
+\examples{
+# Get the Eucalypt data
+dat_po <- eucalypt[["po"]]
+dat_pa <- eucalypt[["pa"]]
+
+# Fit without a shared latent field
+m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+
+# Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
+
+# Fit with a shared latent field
+m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
 }

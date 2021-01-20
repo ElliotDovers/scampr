@@ -5,10 +5,15 @@
 #' @param radius.type character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Aread)/log(k).
 #' @param coord.names vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical
 #'
-#' @return
+#' @return a simple basis data frame of class 'bf.df'
 #' @export
 #'
 #' @examples
+#' # Base the basis function nodes on the locations of presence records and quadrature
+#' simple_basis(9, eucalypt[["po"]])
+#'
+#' # Base the basis function nodes on the locations of survey sites from presence/absence data
+#' simple_basis(9, eucalypt[["pa"]])
 simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limiting"), coord.names = c("x", "y")) {
   if (!all(coord.names %in% colnames(data))) {
     stop("at least one of 'coord.names' not found in the data provided")

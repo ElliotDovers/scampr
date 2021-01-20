@@ -23,3 +23,31 @@
 \description{
 Extract Model Residuals for objects of class 'scampr'
 }
+\examples{
+dat_po <- eucalypt[["po"]]
+dat_pa <- eucalypt[["pa"]]
+
+# Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
+
+# Fit an IPP model to the point pattern
+m.ipp <- ippm(pres ~ TMP_MIN, data = dat_po)
+
+# Fit a combined data model
+m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+
+# Fit presence/absence model
+m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+
+# Fit a LGCP model to the point pattern
+m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, model.type = "variational", simple.basis = bfs)
+# Or
+m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, approx.with = "variational", simple.basis = bfs)
+
+residuals(m.ipp, test_po)
+residuals(m.popa, test_po)
+residuals(m.popa, test_pa, data.type = "pa")
+residuals(m.pa, data.type = "pa")
+residuals(m.lgcp_va1)
+residuals(m.lgcp_va2, type = "pearson")
+}

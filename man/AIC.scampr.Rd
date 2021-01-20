@@ -4,10 +4,10 @@
 \alias{AIC.scampr}
 \title{Akaike's Information Criteria for objects of class 'scampr'}
 \usage{
-\method{AIC}{scampr}(object, ...)
+\method{AIC}{scampr}(object, k = 2)
 }
 \arguments{
-\item{object}{}
+\item{object}{a scampr model}
 }
 \value{
 

@@ -3,13 +3,45 @@
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
 #' @param type a character string indicating the type of linear predictor to be returned. One of 'link' or 'response'
-#' @param dens a character string indicating the pdf of the random effects to draw from
-#' @param process a character string indictating the process to be estimated. one of 'intensity' or 'abundance'. Only available for combined data models.
+#' @param dens a character string indicating the probability density of the random effects to draw from
+#' @param process a character string indictating the process to be estimated. One of 'intensity' or 'abundance'. Only available for combined data models.
 #'
 #' @return
 #' @export
 #'
-#' @examples
+#' @examples#' # Get the Eucalypt data
+#' dat_po <- eucalypt[["po"]]
+#' dat_pa <- eucalypt[["pa"]]
+#'
+#' # Set a train and test set
+#' train_po <- dat_po[dat_po$x <= mean(c(dat_po$x, dat_pa$x), ]
+#' test_po <- dat_po[dat_po$x > mean(c(dat_po$x, dat_pa$x), ]
+#' train_pa <- dat_pa[dat_pa$x <= mean(c(dat_po$x, dat_pa$x), ]
+#' test_pa <- dat_pa[dat_pa$x > mean(c(dat_po$x, dat_pa$x), ]
+#'
+#' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
+#' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
+#'
+#' # Fit an IPP model to the point pattern
+#' m.ipp <- ippm(pres ~ TMP_MIN, data = train_po)
+#'
+#' # Fit a combined data model
+#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = train_po, pa.data = train_pa, model.type = "ipp")
+#'
+#' # Fit presence/absence model
+#' m.pa <- pa(Y ~ TMP_MIN, pa.data = train_pa, model.type = "ipp")
+#'
+#' # Fit a LGCP model to the point pattern
+#' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po, model.type = "variational", simple.basis = bfs)
+#' # Or
+#' m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po, approx.with = "variational", simple.basis = bfs)
+#'
+#' predict(m.ipp, test_po)
+#' predict(m.popa, test_po, process = "intensity")
+#' predict(m.popa, test_pa, process = "abundance")
+#' predict(m.pa, test_pa)
+#' predict(m.lgcp_va1, test_po)
+#' predict(m.lgcp_va2, test_po, dens = "prior")
 predict.scampr <- function(object, newdata, type = c("link", "response"), dens = c("posterior", "prior"), process = c("intensity", "abundance")) {
 
   ## checks ##
@@ -33,6 +65,7 @@ predict.scampr <- function(object, newdata, type = c("link", "response"), dens =
       object$formula <- form.pa
       object$data <- data.pa
       # set the bias coefficients to zero for predicting mean abundance
+      object$fixed.effects[is.na(object$fixed.effects)] <- 0 # in case of NA, NaN standard errors
       object$fixed.effects[rownames(object$fixed.effects) %in% c("(Bias Intercept)", bias.preds), ] <- NA
       object$fixed.effects <- na.omit(object$fixed.effects)
     } else {

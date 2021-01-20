@@ -5,8 +5,14 @@
 #' @param y.loc A vector of vertical locations in 2D
 #'
 #' @return
+#' @noRd
 #'
 #' @examples
+#' # Get the quadrature from the gorillas data
+#' quad <- gorillas[gorillas$pres == 0, ]
+#'
+#' elevation <- scampr:::vec2mat(vec = quad$elevation, x.loc = quad$x, y.loc = quad$y)
+#' image(elevation, asp = 1)
 vec2mat <- function(vec, x.loc, y.loc){
   ux <- sort(unique(x.loc))
   uy <- sort(unique(y.loc))

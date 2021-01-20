@@ -1,6 +1,6 @@
 #' Gorilla Nesting Sites
 #'
-#' This is the `gorillas` dataset from the package `spatstat` (also featured in `inlabru`), formatted for use with `scampr` models. Describes the nesting locations of gorillas, and associated predictors, in a National Park in Cameroon.
+#' This is the `gorillas` dataset from the package `spatstat` (also featured in `inlabru`), formatted for use with `scampr` models. Describes the nesting locations of gorillas, and associated predictors, in Kagwene Gorilla Sanctuary in Cameroon.
 #'
 #' @format A data frame with 26020 rows and 11 variables:
 #' \describe{
@@ -16,5 +16,5 @@
 #'   \item{waterdist}{Euclidean distance from nearest water body, in metres.}
 #'   \item{pres}{Binary indicating whether the row is a presence record (1) or a quadrat (0).}
 #' }
-#' @source \url{Library `spatstat`}
+#' @source \url{Library `inlabru`}
 "gorillas"

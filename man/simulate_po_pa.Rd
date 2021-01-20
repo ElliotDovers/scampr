@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_po_pa.R
 \name{simulate_po_pa}
 \alias{simulate_po_pa}
-\title{Simulate presence-only data (point pattern from log-Gaussian Cox Process) and presence/absence data (from the same underlying process)}
+\title{Simulate presence-only and presence/absence data sets}
 \usage{
 simulate_po_pa(
   Intercept.env = -1.75,
@@ -36,5 +36,23 @@ simulate_po_pa(
 
 }
 \description{
-Simulate presence-only data (point pattern from log-Gaussian Cox Process) and presence/absence data (from the same underlying process)
+Simulate presence records from a LGCP with 2 environmental covariates and affected by 2 biasing covariates. Additionally simulates presence/absence survey data from the unbiased process.
+}
+\examples{
+# Simulate data
+dat.list <- simPAPO(Intercept.env = -2, Intercept.bias = -1, Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8), latent.variance = 1, latent.range = 5, rseed = sim.no)
+dat_po <- dat.list$PO
+dat_pa <- dat.list$PA
+
+# Set up a simple 2D grid of basis functions
+bfs <- simple_basis(nodes.on.long.edge = 10, data = dat_po)
+
+# Fit presence/absence model
+m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, simple.basis = bfs)
+
+# Fit the presence-only model
+m.po <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, simple.basis = bfs)
+
+# Fit a combined data model
+m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
 }
