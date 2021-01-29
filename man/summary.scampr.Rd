@@ -4,14 +4,29 @@
 \alias{summary.scampr}
 \title{Summary for objects of class 'scampr'}
 \usage{
-\method{summary}{scampr}(object)
+\method{summary}{scampr}(object, ...)
 }
 \arguments{
-\item{object}{}
+\item{object}{A scampr model object}
+
+\item{...}{NA}
 }
 \value{
-
+printed argument displaying summary information of the model fit.
 }
 \description{
 Summary for objects of class 'scampr'
+}
+\examples{
+# Get the gorilla nesting data
+data(gorillas, package = "scampr")
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit a scampr model to the point pattern
+m <- ippm(pres ~ elev.std, data = dat)
+
+summary(m)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/pa.R
 \name{pa}
 \alias{pa}
-\title{Model for Presence-Absence Data}
+\title{Model for Presence/Absence Data}
 \usage{
 pa(
   pa.formula,
@@ -45,15 +45,12 @@ pa(
 a scampr model object
 }
 \description{
-Model for Presence-Absence Data
+Fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approx. latent field as spatial random effects.
 }
 \examples{
-# Get the Eucalypt data
-dat <- eucalypt[["pa"]]
-
 # Fit without a shared latent field
-m1 <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+m1 <- pa(Y ~ TMP_MIN, pa.data = eucalypt[["pa"]], model.type = "ipp")
 
 # Fit with a shared latent field using FRK package default basis functions
-m2 <- pa(Y ~ TMP_MIN, dat_pa, model.type = "laplace")
+m2 <- pa(Y ~ TMP_MIN, eucalypt[["pa"]], model.type = "laplace")
 }

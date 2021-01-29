@@ -6,8 +6,11 @@
 #' @return
 #' @noRd
 #'
+#' @importFrom stats model.frame model.matrix
+#'
 #' @examples
-#' scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
+#' des.mat <- scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
+#' head(des.mat)
 get.desgin.matrix <- function(formula, data) {
   cl <- match.call()
   mf <- match.call(expand.dots = FALSE)
@@ -19,6 +22,6 @@ get.desgin.matrix <- function(formula, data) {
   mf <- eval(expr = mf, envir = parent.frame())
 
   mt <- attr(x = mf, which = "terms")
-  des.mat <- model.matrix(object = mt, data = mf)
+  des.mat <- stats::model.matrix(object = mt, data = mf)
   return(des.mat)
 }

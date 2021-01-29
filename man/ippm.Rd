@@ -30,7 +30,7 @@ ippm(
 scampr model object
 }
 \description{
-Fit an inhomogeneous Poisson process model to presence records using numerical quadrature
+Fit an inhomogeneous Poisson process model to a point pattern using numerical quadrature (provided with the data, see e.g. scampr::gorillas)
 }
 \examples{
 #' # Get the gorilla nesting data

@@ -1,19 +1,21 @@
-#' Create a single resolution, regular grid of bisquare basis function nodes in flat 2D space
+#' Create a single resolution, regular grid of basis function nodes in flat 2D space
+#'
+#' @description Uses data provided to place points across the range of the provided coordinates. The points are set out along the wider coordinate range according to the number provided. Points along the shorter ranging coordinate then adhere to this spacing. The points are then returned as a data frame of the same format as in 'FRK::auto_basis', the scale is provided based on one of two radius options. For use in bi-square basis functions with local support.
 #'
 #' @param nodes.on.long.edge integer describing the number of basis function nodes to place along the longest edge of the domain
 #' @param data a data frame containing the two coordinates described by 'coord.names'
 #' @param radius.type character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Aread)/log(k).
 #' @param coord.names vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical
 #'
-#' @return a simple basis data frame of class 'bf.df'
+#' @return a simple basis data frame of class 'bf.df'. Consisting of columns: horizontal axis location, vertical axis location, scale (radius), res (resolution id).
 #' @export
 #'
 #' @examples
 #' # Base the basis function nodes on the locations of presence records and quadrature
-#' simple_basis(9, eucalypt[["po"]])
+#' bfs1 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["po"]])
 #'
 #' # Base the basis function nodes on the locations of survey sites from presence/absence data
-#' simple_basis(9, eucalypt[["pa"]])
+#' bfs2 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["pa"]])
 simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limiting"), coord.names = c("x", "y")) {
   if (!all(coord.names %in% colnames(data))) {
     stop("at least one of 'coord.names' not found in the data provided")

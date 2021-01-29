@@ -4,14 +4,28 @@
 \alias{logLik.scampr}
 \title{Marginal log-likelihood for objects of class 'scampr'}
 \usage{
-\method{logLik}{scampr}(object)
+\method{logLik}{scampr}(object, ...)
 }
 \arguments{
 \item{object}{a scampr model}
+
+\item{...}{NA}
 }
 \value{
 numeric describing the approximate marginal log-likelihood of the scampr model object
 }
 \description{
 Marginal log-likelihood for objects of class 'scampr'
+}
+\examples{
+# Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit a scampr model to the point pattern
+m <- ippm(pres ~ elev.std, data = dat)
+
+logLik(m)
 }

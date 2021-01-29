@@ -2,7 +2,7 @@
 % Please edit documentation in R/popa.R
 \name{popa}
 \alias{popa}
-\title{Combined Model for Presence-only and Presence-Absence Data}
+\title{Combined Model for Presence-only and Presence/Absence Data}
 \usage{
 popa(
   po.formula,
@@ -54,7 +54,7 @@ popa(
 a scampr model object
 }
 \description{
-Combined Model for Presence-only and Presence-Absence Data
+Jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection.
 }
 \examples{
 # Get the Eucalypt data
@@ -62,11 +62,15 @@ dat_po <- eucalypt[["po"]]
 dat_pa <- eucalypt[["pa"]]
 
 # Fit without a shared latent field
-m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 
+\dontrun{
 # Fit with a shared latent field
-m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+}
 }

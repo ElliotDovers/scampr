@@ -1,6 +1,6 @@
-#' Approximate log-Gaussian Cox Process Model for a Point Pattern
+#' Approximate log-Gaussian Cox Process Models for Point Patterns
 #'
-#' @description Blah blah blah
+#' @description Fit a log-Gaussian Cox process model to a point pattern using numerical quadrature (provided with the data, see e.g. scampr::gorillas) and one of either a Laplace or variational approximation to marginalise over the latent field.
 #'
 #' @param formula formula describing fixed effects of the linear predictor. Response must be the presence/quadrature binary (1/0) column name.
 #' @param data data frame containing predictors at both presence-records and quadrature
@@ -15,7 +15,7 @@
 #' @param subset optional subset of the data
 #' @param na.action optional way of handling NA's in the data, default is omit
 #'
-#' @return a scampr model object
+#' @return a scampr model object.
 #' @export
 #'
 #' @examples
@@ -31,8 +31,10 @@
 #' # Fit a LGCP model using variational approximation
 #' m.lgcp_va <- lgcpm(pres ~ elev.std, data = dat, approx.with = "variational", simple.basis = bfs)
 #'
-#' #' # Fit a LGCP model using Laplace approximation
+#' \dontrun{
+#' # Fit a LGCP model using Laplace approximation
 #' m.lgcp_lp <- lgcpm(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
+#' }
 lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("laplace", "variational"), se = TRUE, bf.matrix.type = c("sparse", "dense"), starting.pars, subset, na.action) {
 
   approx.with <- match.arg(approx.with)

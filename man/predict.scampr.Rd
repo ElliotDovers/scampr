@@ -4,8 +4,9 @@
 \alias{predict.scampr}
 \title{Predict function for objects of class 'scampr'}
 \usage{
-predict.scampr(
+\method{predict}{scampr}(
   object,
+  ...,
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
@@ -14,6 +15,8 @@ predict.scampr(
 }
 \arguments{
 \item{object}{a scampr model object}
+
+\item{...}{NA}
 
 \item{newdata}{a data frame of point locations to predict over as well as predictors involved in the model}
 
@@ -24,10 +27,10 @@ predict.scampr(
 \item{process}{a character string indictating the process to be estimated. One of 'intensity' or 'abundance'. Only available for combined data models.}
 }
 \value{
-
+a numeric vector of length newdata (or length of fitted data) containing the predictions.
 }
 \description{
-Predict function for objects of class 'scampr'
+Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models (popa) the user can specify whether to return the rate at which presence records occur (process = intensity) or the abundance rate (process = abundance).
 }
 \examples{
 #' # Get the Eucalypt data
@@ -35,10 +38,10 @@ dat_po <- eucalypt[["po"]]
 dat_pa <- eucalypt[["pa"]]
 
 # Set a train and test set
-train_po <- dat_po[dat_po$x <= mean(c(dat_po$x, dat_pa$x), ]
-test_po <- dat_po[dat_po$x > mean(c(dat_po$x, dat_pa$x), ]
-train_pa <- dat_pa[dat_pa$x <= mean(c(dat_po$x, dat_pa$x), ]
-test_pa <- dat_pa[dat_pa$x > mean(c(dat_po$x, dat_pa$x), ]
+train_po <- dat_po[dat_po$x <= mean(c(dat_po$x, dat_pa$x)), ]
+test_po <- dat_po[dat_po$x > mean(c(dat_po$x, dat_pa$x)), ]
+train_pa <- dat_pa[dat_pa$x <= mean(c(dat_po$x, dat_pa$x)), ]
+test_pa <- dat_pa[dat_pa$x > mean(c(dat_po$x, dat_pa$x)), ]
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
@@ -47,15 +50,18 @@ bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 m.ipp <- ippm(pres ~ TMP_MIN, data = train_po)
 
 # Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = train_po, pa.data = train_pa, model.type = "ipp")
+m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+po.data = train_po, pa.data = train_pa, model.type = "ipp")
 
 # Fit presence/absence model
 m.pa <- pa(Y ~ TMP_MIN, pa.data = train_pa, model.type = "ipp")
 
 # Fit a LGCP model to the point pattern
-m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po, model.type = "variational", simple.basis = bfs)
+m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = train_po,
+model.type = "variational", simple.basis = bfs)
 # Or
-m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po, approx.with = "variational", simple.basis = bfs)
+m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po,
+approx.with = "variational", simple.basis = bfs)
 
 predict(m.ipp, test_po)
 predict(m.popa, test_po, process = "intensity")

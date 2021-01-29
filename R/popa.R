@@ -1,4 +1,6 @@
-#' Combined Model for Presence-only and Presence-Absence Data
+#' Combined Model for Presence-only and Presence/Absence Data
+#'
+#' @description Jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection.
 #'
 #' @param po.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence-only data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.
 #' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
@@ -18,19 +20,29 @@
 #' @return a scampr model object
 #' @export
 #'
+#' @importFrom methods as
+#' @importFrom stats as.formula optim
+#' @importFrom sp coordinates
+#' @importFrom FRK auto_basis eval_basis
+#' @importFrom TMB MakeADFun sdreport
+#'
 #' @examples
 #' # Get the Eucalypt data
 #' dat_po <- eucalypt[["po"]]
 #' dat_pa <- eucalypt[["pa"]]
 #'
 #' # Fit without a shared latent field
-#' m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+#' po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 #'
+#' \dontrun{
 #' # Fit with a shared latent field
-#' m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+#' m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+#' po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+#' }
 popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
@@ -65,7 +77,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     stop("Predictors are the same for PO and PA.\nUnless the presence records are the result of a perfectly observed domain, this is misspecified")
   }
   if (!is.logical(se)) {
-    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard erros"))
+    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard errors"))
   }
   # parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -74,15 +86,15 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   ############################################################
 
   # Get the PA design matrix
-  pa.des.mat <- scampr:::get.desgin.matrix(pa.formula, pa.data)
+  pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
   # Determine the bias predictors as those in PO formula and not in PA formula
   bias.preds <- po.pred[!po.pred %in% pa.pred]
   # Separate the PO formulae
-  po.pred.formula <- as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
-  po.bias.formula <- as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
+  po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
+  po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
   # Get the PO design matrices
-  po.des.mat <- scampr:::get.desgin.matrix(po.pred.formula, po.data)
-  po.bias.des.mat <- scampr:::get.desgin.matrix(po.bias.formula, po.data)
+  po.des.mat <-get.desgin.matrix(po.pred.formula, po.data)
+  po.bias.des.mat <- get.desgin.matrix(po.bias.formula, po.data)
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
   # Re-adjust the bias intercept name
@@ -106,8 +118,8 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
       colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
       class(bf.info) <- c(class(bf.info), "bf.df")
     } else { # Otherwise use the provided simple basis
-      po.bf.matrix <- scampr:::get.bf.matrix(simple.basis, po.data[ , coord.names])
-      pa.bf.matrix <- scampr:::get.bf.matrix(simple.basis, pa.data[ , coord.names])
+      po.bf.matrix <- get.bf.matrix(simple.basis, po.data[ , coord.names])
+      pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
       bf.info <- simple.basis
       FRK.basis.functions <- NULL
     }
@@ -148,17 +160,17 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     B_PO_quad = as.matrix(po.bias.des.mat[pt.quad.id == 0, ]),
     X_PA = as.matrix(pa.des.mat),
     Z_PO_pres = if(bf.matrix.type == "sparse") {
-      as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
+      methods::as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
     } else {
       as.matrix(po.bf.matrix[pt.quad.id == 1, ])
     },
     Z_PO_quad = if(bf.matrix.type == "sparse") {
-      as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
+      methods::as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
     } else {
       as.matrix(po.bf.matrix[pt.quad.id == 0, ])
     },
     Z_PA = if(bf.matrix.type == "sparse") {
-      as(pa.bf.matrix, "sparseMatrix")
+      methods::as(pa.bf.matrix, "sparseMatrix")
     } else {
       as.matrix(pa.bf.matrix)
     },
@@ -204,7 +216,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   )
   # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
-  res <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
+  res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required
   if (se) {
     tmp.estimates <- summary(TMB::sdreport(obj))

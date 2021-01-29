@@ -48,7 +48,7 @@ po(
 a scampr model object
 }
 \description{
-Point Process Model for Presence-only Data
+Fit either an inhomogeneous Poisson, or log-Gaussian Cox, process model to presence records. This uses numerical quadrature  (provided with the data, see e.g. scampr::gorillas) to approx. the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
 }
 \examples{
 # Get the gorilla nesting data
@@ -58,14 +58,16 @@ dat <- gorillas
 dat$elev.std <- scale(dat$elevation)
 
 # Fit an IPP model to the point pattern
-m.ipp <- po(pres ~ elev.std, data = dat, model.type = "ipp")
+m.ipp <- po(pres ~ elev.std, po.data = dat, model.type = "ipp")
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 
 # Fit a LGCP model using variational approximation
-m.lgcp_va <- po(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+m.lgcp_va <- po(pres ~ elev.std, po.data = dat, model.type = "variational", simple.basis = bfs)
 
-#' # Fit a LGCP model using Laplace approximation
-m.lgcp_lp <- po(pres ~ elev.std, data = dat, model.type = "laplace", simple.basis = bfs)
+\dontrun{
+# Fit a LGCP model using Laplace approximation
+m.lgcp_lp <- po(pres ~ elev.std, po.data = dat, model.type = "laplace", simple.basis = bfs)
+}
 }

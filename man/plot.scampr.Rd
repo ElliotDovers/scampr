@@ -2,22 +2,22 @@
 % Please edit documentation in R/plot.scampr.R
 \name{plot.scampr}
 \alias{plot.scampr}
-\title{Plot function for objects of class 'scampr'}
+\title{Plot diagnositcs for objects of class 'scampr'}
 \usage{
-plot.scampr(x, add.points = F)
+\method{plot}{scampr}(x, ..., add.points = F)
 }
 \arguments{
 \item{x}{a scampr model object}
 
-\item{add.points}{logical indicating whether to add the presence point locations to plots}
+\item{...}{NA}
 
-\item{...}{}
+\item{add.points}{logical indicating whether to add the presence point locations to plots}
 }
 \value{
-
+See spatstat::plot.ppm
 }
 \description{
-Plot function for objects of class 'scampr'
+Currently plots residuals as in 'spatstat', as well as the fitted intensity, over the quadrature used to model the point pattern. In the case of presence/absence data fitted vs. residuals is plotted.
 }
 \examples{
 # Get the Eucalypt data
@@ -25,10 +25,11 @@ dat_po <- eucalypt[["po"]]
 dat_pa <- eucalypt[["pa"]]
 
 # Fit an IPP model to the point pattern
-m.ipp <- ippm(pres ~ elev.std, data = dat)
+m.ipp <- ippm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po)
 
 # Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 
 # Fit presence/absence model
 m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")

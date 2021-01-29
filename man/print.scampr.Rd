@@ -4,14 +4,28 @@
 \alias{print.scampr}
 \title{Print for objects of class 'scampr'}
 \usage{
-\method{print}{scampr}(object)
+\method{print}{scampr}(x, ...)
 }
 \arguments{
-\item{object}{a scampr model}
+\item{x}{a scampr model object}
+
+\item{...}{NA}
 }
 \value{
-
+printed argument - subset of summary.scampr
 }
 \description{
 Print for objects of class 'scampr'
+}
+\examples{
+# Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit a scampr model to the point pattern
+m <- ippm(pres ~ elev.std, data = dat)
+
+m
 }

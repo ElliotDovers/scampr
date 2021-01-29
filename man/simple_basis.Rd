@@ -2,7 +2,7 @@
 % Please edit documentation in R/simple_basis.R
 \name{simple_basis}
 \alias{simple_basis}
-\title{Create a single resolution, regular grid of bisquare basis function nodes in flat 2D space}
+\title{Create a single resolution, regular grid of basis function nodes in flat 2D space}
 \usage{
 simple_basis(
   nodes.on.long.edge,
@@ -21,15 +21,15 @@ simple_basis(
 \item{coord.names}{vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical}
 }
 \value{
-a simple basis data frame of class 'bf.df'
+a simple basis data frame of class 'bf.df'. Consisting of columns: horizontal axis location, vertical axis location, scale (radius), res (resolution id).
 }
 \description{
-Create a single resolution, regular grid of bisquare basis function nodes in flat 2D space
+Uses data provided to place points across the range of the provided coordinates. The points are set out along the wider coordinate range according to the number provided. Points along the shorter ranging coordinate then adhere to this spacing. The points are then returned as a data frame of the same format as in 'FRK::auto_basis', the scale is provided based on one of two radius options. For use in bi-square basis functions with local support.
 }
 \examples{
 # Base the basis function nodes on the locations of presence records and quadrature
-simple_basis(9, eucalypt[["po"]])
+bfs1 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["po"]])
 
 # Base the basis function nodes on the locations of survey sites from presence/absence data
-simple_basis(9, eucalypt[["pa"]])
+bfs2 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["pa"]])
 }

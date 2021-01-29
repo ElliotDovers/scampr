@@ -2,7 +2,7 @@
 % Please edit documentation in R/lgcpm.R
 \name{lgcpm}
 \alias{lgcpm}
-\title{Approximate log-Gaussian Cox Process Model for a Point Pattern}
+\title{Approximate log-Gaussian Cox Process Models for Point Patterns}
 \usage{
 lgcpm(
   formula,
@@ -45,10 +45,10 @@ lgcpm(
 \item{na.action}{optional way of handling NA's in the data, default is omit}
 }
 \value{
-a scampr model object
+a scampr model object.
 }
 \description{
-Blah blah blah
+Fit a log-Gaussian Cox process model to a point pattern using numerical quadrature (provided with the data, see e.g. scampr::gorillas) and one of either a Laplace or variational approximation to marginalise over the latent field.
 }
 \examples{
 #' # Get the gorilla nesting data
@@ -63,6 +63,8 @@ bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 # Fit a LGCP model using variational approximation
 m.lgcp_va <- lgcpm(pres ~ elev.std, data = dat, approx.with = "variational", simple.basis = bfs)
 
-#' # Fit a LGCP model using Laplace approximation
+\dontrun{
+# Fit a LGCP model using Laplace approximation
 m.lgcp_lp <- lgcpm(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
+}
 }

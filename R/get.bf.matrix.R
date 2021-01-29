@@ -6,6 +6,10 @@
 #' @return
 #' @noRd
 #'
+#' @importFrom FRK eval_basis
+#' @importFrom fields rdist
+#' @importFrom methods as
+#'
 #' @examples
 #' # Get the gorilla nesting data
 #' dat <- gorillas
@@ -56,7 +60,7 @@ get.bf.matrix <- function(object, point.locations) {
       Z[dist.mat <= radius] <- (1 - (dist.mat[dist.mat <= radius] / radius)^2)^2
       bf.mat <- cbind(bf.mat, Z)
     }
-    bf.mat <- as(bf.mat, "sparseMatrix")
+    bf.mat <- methods::as(bf.mat, "sparseMatrix")
     attr(bf.mat, "bf.df") <- object
   }
   return(bf.mat)

@@ -1,6 +1,6 @@
 #' Inhomogeneous Poisson Process Model for Point Patterns
 #'
-#' @description Fit an inhomogeneous Poisson process model to presence records using numerical quadrature
+#' @description Fit an inhomogeneous Poisson process model to a point pattern using numerical quadrature (provided with the data, see e.g. scampr::gorillas)
 #'
 #' @param formula formula describing fixed effects of the linear predictor. Response must be the presence/quadrature identifier.
 #' @param data data frame containing predictors at both presence-records and quadrature

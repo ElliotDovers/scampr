@@ -4,14 +4,30 @@
 \alias{AIC.scampr}
 \title{Akaike's Information Criteria for objects of class 'scampr'}
 \usage{
-\method{AIC}{scampr}(object, k = 2)
+\method{AIC}{scampr}(object, ..., k = 2)
 }
 \arguments{
 \item{object}{a scampr model}
+
+\item{...}{NA}
+
+\item{k}{a numeric describing the penalty per parameter - defaults to k = 2 i.e. classical AIC.}
 }
 \value{
-
+a numeric value with the corresponding AIC (or BIC, or ..., depending on k).
 }
 \description{
 Akaike's Information Criteria for objects of class 'scampr'
+}
+\examples{
+# Get the gorilla nesting data
+dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit a scampr model to the point pattern
+m <- ippm(pres ~ elev.std, data = dat)
+
+AIC(m)
 }

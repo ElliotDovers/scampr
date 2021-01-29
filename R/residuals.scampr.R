@@ -3,8 +3,9 @@
 #' @param object a scampr model object
 #' @param type As in residuals.ppm: A string indicating the type of residuals or weights to be used. Current options are "raw" for the raw residuals, "inverse" for the inverse-lambda residuals, and "pearson" for the Pearson residuals.
 #' @param data.type a character string indicating which data type to produce residuals from.
+#' @param ... NA
 #'
-#' @return
+#' @return a numeric vector, of length of the model data, containing the extracted residuals.
 #' @export
 #'
 #' @examples
@@ -18,23 +19,29 @@
 #' m.ipp <- ippm(pres ~ TMP_MIN, data = dat_po)
 #'
 #' # Fit a combined data model
-#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+#' po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 #'
 #' # Fit presence/absence model
 #' m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
 #'
+#' \dontrun{
 #' # Fit a LGCP model to the point pattern
-#' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, model.type = "variational", simple.basis = bfs)
+#' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = dat_po,
+#' model.type = "variational", simple.basis = bfs)
 #' # Or
-#' m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, approx.with = "variational", simple.basis = bfs)
-#'
-#' residuals(m.ipp, test_po)
-#' residuals(m.popa, test_po)
-#' residuals(m.popa, test_pa, data.type = "pa")
+#' m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po,
+#' approx.with = "variational", simple.basis = bfs)
+#' }
+#' residuals(m.ipp)
+#' residuals(m.popa)
+#' residuals(m.popa, data.type = "pa")
 #' residuals(m.pa, data.type = "pa")
+#' \dontrun{
 #' residuals(m.lgcp_va1)
 #' residuals(m.lgcp_va2, type = "pearson")
-residuals.scampr <- function(object, type = c("raw", "inverse", "pearson"), data.type = c("po", "pa")) {
+#' }
+residuals.scampr <- function(object, ..., type = c("raw", "inverse", "pearson"), data.type = c("po", "pa")) {
   type <- match.arg(type)
   data.type <- match.arg(data.type)
   if (data.type == "po") {
@@ -54,12 +61,12 @@ residuals.scampr <- function(object, type = c("raw", "inverse", "pearson"), data
       stop("Residuals from model and 'data.type' are not compatible")
     } else if (object$data.model.type == "popa") {
       pres_prob <- 1 - exp(-exp(attr(object$fitted.values, "abundance")))
-      tmp <- scampr:::get.data(object)
+      tmp <- get.data(object)
       resp.name <- attr(tmp, "response")[2]
       Y <- as.numeric(attr(object$data, "pa")[ , resp.name] > 0)
     } else {
       pres_prob <- 1 - exp(-exp(object$fitted.values))
-      tmp <- scampr:::get.data(object)
+      tmp <- get.data(object)
       Y <- as.numeric(tmp[ , attr(tmp, "response")] > 0)
     }
     resids <- switch(type,

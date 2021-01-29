@@ -1,6 +1,6 @@
 #' Simulate a point pattern from log-Gaussian Cox Process
 #'
-#' @description Simulate a point pattern from a LGCP with an intercept and slope on a single deterministic spatial covariate. Over a hectare domain, includes quadrature. Control the correlation range and marginal variance of the latent field.
+#' @description Simulate a point pattern from a LGCP with an intercept and slope on a single deterministic spatial covariate. Over a 1 hectare domain, includes quadrature. Control the correlation range and marginal variance of the latent field.
 #'
 #' @param Intercept Fixed effect intercept - used to control the expected number of points
 #' @param Slope Fixed effect slope - controls the effect of the spatial covariate on the point pattern
@@ -8,12 +8,15 @@
 #' @param latent.range The correlation range of the latent Gaussian field
 #' @param rseed integer for setting the random seed
 #'
-#' @return the simulated data frame with attributes containing sim info
+#' @return the simulated data frame with attributes containing sim information/specifications.
 #' @export
+#'
+#' @importFrom spatstat spatstat.options im owin rLGCP
+#' @importFrom RandomFields RFoptions
 #'
 #' @examples
 #' # Simulate a point pattern
-#' dat <- sim_lgcp_pp(Intercept = -3, Slope = 1.25, latent.range = 15, rseed = 1)
+#' dat <- simulate_lgcp_pp(Intercept = -3, Slope = 1.25, latent.range = 15, rseed = 1)
 #'
 #' # Fit an IPP model to the point pattern
 #' m.ipp <- ippm(pres ~ X, data = dat)
@@ -22,25 +25,25 @@
 #' bfs <- simple_basis(nodes.on.long.edge = 10, data = dat)
 #'
 #' # Fit a LGCP model to the point pattern
-#' m.lgcp_va <- lgcpm(pres ~ X data = dat, approx.with = "variational", simple.basis = bfs)
+#' m.lgcp_va <- lgcpm(pres ~ X, data = dat, approx.with = "variational", simple.basis = bfs)
 #'
 #' summary(m.ipp)
 #' summary(m.lgcp_va)
 simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, latent.range = 15, rseed = NA) {
 
   # Checks #
-  if (!library(spatstat, logical.return = T)) {
-    stop("Please install 'spatstat' package before using this function")
-  }
-  if (!library(fields, logical.return = T)) {
-    stop("Please install 'fields' package before using this function")
-  }
-  if (!library(sp, logical.return = T)) {
-    stop("Please install 'sp' package before using this function")
-  }
+  # if (!library(spatstat, logical.return = T)) {
+  #   stop("Please install 'spatstat' package before using this function")
+  # }
+  # if (!library(fields, logical.return = T)) {
+  #   stop("Please install 'fields' package before using this function")
+  # }
+  # if (!library(sp, logical.return = T)) {
+  #   stop("Please install 'sp' package before using this function")
+  # }
 
   # Need to set the number of pixels
-  spatstat.options(npixel=c(101, 101))
+  spatstat::spatstat.options(npixel=c(101, 101))
 
   ############################################################################################################################
   # Convert a vector to a spatstat image object via vector locations #####(mainly for plotting) ##############################
@@ -71,13 +74,13 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
     if (!covar.name %in% colnames(dframe)) {
       stop(paste0(covar.name, " is not a column of ", dframe))
     }
-    sp.fld <- SpatialPixelsDataFrame(points = dframe[,c("x", "y")], data = dframe[ , !colnames(dframe) %in% c("x", "y")])
+    sp.fld <- sp::SpatialPixelsDataFrame(points = dframe[,c("x", "y")], data = dframe[ , !colnames(dframe) %in% c("x", "y")])
 
     # turn coordinates into SpatialPoints object:
-    spp = SpatialPoints(data.frame(x = x.loc,y = y.loc))
+    spp = sp::SpatialPoints(data.frame(x = x.loc,y = y.loc))
 
     # Extract elevation values at spp coords, from our elev SpatialGridDataFrame
-    v <- over(spp, sp.fld[ , covar.name])
+    v <- sp::over(spp, sp.fld[ , covar.name])
     v[is.na(v)] = 0 # NAs are a problem! Remove them
     return(v[,1])
   }
@@ -116,15 +119,16 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
   }
   # Set a seed as required
   if (!is.na(rseed)) {
-    RNGkind(sample.kind = "Rounding")
+    # RNGkind(sample.kind = "Rounding")
     set.seed(rseed)
+    RandomFields::RFoptions(seed=rseed, printlevel = 0)
   }
 
   # Set the observation window
-  wnd <- owin(xrange = c(0, 100), yrange = c(0, 100))
+  wnd <- spatstat::owin(xrange = c(0, 100), yrange = c(0, 100))
 
   # Simulate the LGCP
-  pp <- rLGCP(model = "stable",
+  pp <- spatstat::rLGCP(model = "stable",
               mu =
                 Intercept +
                 (Slope * spatstat::im(X.grid, xcol = grid$x, yrow = grid$y)),
@@ -167,6 +171,13 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
   # Add the presence-quadrature identifier to the data frames and combine
   dat <- rbind(cbind(pres, pres = 1), cbind(quad, pres = 0))
   # include the simulation info
-  attr(dat, "sim_info") <- temp.info
+  attr(dat, "sim_info") <- c(Intercept = Intercept,
+                             Slope = Slope,
+                             latent.variance = latent.variance,
+                             latent.range = latent.range,
+                             rseed = rseed,
+                             N = pp$n,
+                             Expected_N = sum(quad$quad.size * exp(eta.fixed))
+                             )
   return(dat)
 }

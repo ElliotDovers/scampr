@@ -1,4 +1,6 @@
-#' Model for Presence-Absence Data
+#' Model for Presence/Absence Data
+#'
+#' @description Fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approx. latent field as spatial random effects.
 #'
 #' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
 #' @param pa.data a data frame containing predictors and response for the pa.formula.
@@ -15,15 +17,18 @@
 #' @return a scampr model object
 #' @export
 #'
-#' @examples
-#' # Get the Eucalypt data
-#' dat <- eucalypt[["pa"]]
+#' @importFrom methods as
+#' @importFrom stats optim
+#' @importFrom sp coordinates
+#' @importFrom FRK auto_basis eval_basis
+#' @importFrom TMB MakeADFun sdreport
 #'
+#' @examples
 #' # Fit without a shared latent field
-#' m1 <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#' m1 <- pa(Y ~ TMP_MIN, pa.data = eucalypt[["pa"]], model.type = "ipp")
 #'
 #' # Fit with a shared latent field using FRK package default basis functions
-#' m2 <- pa(Y ~ TMP_MIN, dat_pa, model.type = "laplace")
+#' m2 <- pa(Y ~ TMP_MIN, eucalypt[["pa"]], model.type = "laplace")
 pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
@@ -44,7 +49,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
     stop(paste0("coord.names, ", coord.names, ", not found in data set provided"))
   }
   if (!is.logical(se)) {
-    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard erros"))
+    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard errors"))
   }
   # parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -53,7 +58,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   ############################################################
 
   # Get the PA design matrix
-  pa.des.mat <- scampr:::get.desgin.matrix(pa.formula, pa.data)
+  pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
   fixed.names <- colnames(pa.des.mat)
 
   # Determine the basis functions to be used
@@ -62,7 +67,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
       if (missing(FRK.basis.functions)) { # When none is provided use FRK defaults (with 2 spatial resolutions)
         # create a spatial pixels data frame as required by FRK::auto_basis
         sp.data <- pa.data[ , coord.names]
-        coordinates(sp.data) <- coord.names
+        sp::coordinates(sp.data) <- coord.names
         FRK.basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
       }
       pa.bf.matrix <- FRK::eval_basis(basis = FRK.basis.functions, as.matrix(pa.data[ , coord.names]))
@@ -70,7 +75,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
       colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
       class(bf.info) <- c(class(bf.info), "bf.df")
     } else { # Otherwise use the provided simple basis
-      pa.bf.matrix <- scampr:::get.bf.matrix(simple.basis, pa.data[ , coord.names])
+      pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
       bf.info <- simple.basis
       FRK.basis.functions <- NULL
     }
@@ -110,17 +115,17 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
     B_PO_quad = matrix(0, ncol = 1),
     X_PA = as.matrix(pa.des.mat),
     Z_PO_pres = if(bf.matrix.type == "sparse") {
-      as(matrix(0, ncol = 1), "sparseMatrix")
+      methods::as(matrix(0, ncol = 1), "sparseMatrix")
     } else {
       matrix(0, ncol = 1)
     },
     Z_PO_quad = if(bf.matrix.type == "sparse") {
-      as(matrix(0, ncol = 1), "sparseMatrix")
+      methods::as(matrix(0, ncol = 1), "sparseMatrix")
     } else {
       matrix(0, ncol = 1)
     },
     Z_PA = if(bf.matrix.type == "sparse") {
-      as(pa.bf.matrix, "sparseMatrix")
+      methods::as(pa.bf.matrix, "sparseMatrix")
     } else {
       as.matrix(pa.bf.matrix)
     },
@@ -166,7 +171,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   )
   # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
-  res <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
+  res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required
   if (se) {
     tmp.estimates <- summary(TMB::sdreport(obj))

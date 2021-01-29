@@ -33,26 +33,31 @@ simulate_po_pa(
 \item{rseed}{integer for setting the random seed}
 }
 \value{
-
+a named list of length 2. Element 'PO' conatins the simulated presence-only data frame. Element 'PA' contains the simulated presence/absence data frame. The list has attributes containing sim information/specifications.
 }
 \description{
-Simulate presence records from a LGCP with 2 environmental covariates and affected by 2 biasing covariates. Additionally simulates presence/absence survey data from the unbiased process.
+Simulate presence records from a LGCP with 2 environmental covariates and effected by 2 biasing covariates. Additionally simulates presence/absence survey data from the unbiased process.
 }
 \examples{
 # Simulate data
-dat.list <- simPAPO(Intercept.env = -2, Intercept.bias = -1, Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8), latent.variance = 1, latent.range = 5, rseed = sim.no)
+dat.list <- simulate_po_pa(Intercept.env = -2, Intercept.bias = -1,
+Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8),
+latent.variance = 1, latent.range = 5, rseed = 1)
 dat_po <- dat.list$PO
 dat_pa <- dat.list$PA
 
+\dontrun{
 # Set up a simple 2D grid of basis functions
 bfs <- simple_basis(nodes.on.long.edge = 10, data = dat_po)
 
 # Fit presence/absence model
-m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, simple.basis = bfs)
+m.pa <- pa(pa ~ ec1, pa.data = dat_pa, simple.basis = bfs)
 
 # Fit the presence-only model
-m.po <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, simple.basis = bfs)
+m.po <- po(pres ~ ec1 + bc1 + bc2, po.data = dat_po, simple.basis = bfs)
 
 # Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+m.popa <- popa(pres ~ ec1 + bc1 + bc2, pa ~ ec1,
+po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+}
 }

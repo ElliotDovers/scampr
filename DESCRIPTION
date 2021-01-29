@@ -7,23 +7,18 @@ Authors@R:
            role = c("aut", "cre"),
            email = "elliot.dovers@gmail.com",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-Suggests: 
-    fields,
-    RandomFields,
-    RandomFieldsUtils,
-    spatstat
-Depends: 
-    TMB,
-    FRK,
-    RcppEigen,
-    sp,
-    R (>= 2.10)
+Description: Fit log-Gaussian Cox Process regression models to point patterns with
+    extensions, including a joint model for integrating presence-only and
+    presence/absence data. The models are fitted using maximum likelihood estimation
+    via 'TMB' (Template Model Builder). Latent random Gaussian fields are approximated
+    by 'FRK' (Fixed Rank Kriging) and are integrated out using either variational or
+    Laplace approximation. Gradients are calculated using automatic differentiation.
+Suggests: testthat
+Depends: R (>= 3.2.0)
+Imports: methods, fields, stats, FRK, RandomFields, TMB (>= 1.7.14), sp, spatstat, grDevices, graphics
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.0.2
-LinkingTo: 
-    TMB,
-    RcppEigen
+LinkingTo: TMB, RcppEigen

@@ -6,6 +6,7 @@
 \usage{
 \method{residuals}{scampr}(
   object,
+  ...,
   type = c("raw", "inverse", "pearson"),
   data.type = c("po", "pa")
 )
@@ -13,12 +14,14 @@
 \arguments{
 \item{object}{a scampr model object}
 
+\item{...}{NA}
+
 \item{type}{As in residuals.ppm: A string indicating the type of residuals or weights to be used. Current options are "raw" for the raw residuals, "inverse" for the inverse-lambda residuals, and "pearson" for the Pearson residuals.}
 
 \item{data.type}{a character string indicating which data type to produce residuals from.}
 }
 \value{
-
+a numeric vector, of length of the model data, containing the extracted residuals.
 }
 \description{
 Extract Model Residuals for objects of class 'scampr'
@@ -34,20 +37,26 @@ bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 m.ipp <- ippm(pres ~ TMP_MIN, data = dat_po)
 
 # Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 
 # Fit presence/absence model
 m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
 
+\dontrun{
 # Fit a LGCP model to the point pattern
-m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, model.type = "variational", simple.basis = bfs)
+m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = dat_po,
+model.type = "variational", simple.basis = bfs)
 # Or
-m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, approx.with = "variational", simple.basis = bfs)
-
-residuals(m.ipp, test_po)
-residuals(m.popa, test_po)
-residuals(m.popa, test_pa, data.type = "pa")
+m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po,
+approx.with = "variational", simple.basis = bfs)
+}
+residuals(m.ipp)
+residuals(m.popa)
+residuals(m.popa, data.type = "pa")
 residuals(m.pa, data.type = "pa")
+\dontrun{
 residuals(m.lgcp_va1)
 residuals(m.lgcp_va2, type = "pearson")
+}
 }

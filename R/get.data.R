@@ -1,9 +1,11 @@
-#' Internal scampr function that extracts data list of presence and quadrature from a fitted model
+#' Internal scampr function that extracts data information from a fitted model
 #'
 #' @param object
 #'
 #' @return
 #' @noRd
+#'
+#' @importFrom stats as.formula
 #'
 #' @examples
 #' # Get the gorilla nesting data
@@ -16,7 +18,8 @@
 #' m.ipp <- ippm(pres ~ elev.std, data = dat)
 #'
 #' # Extract data
-#' scampr:::get.data(m.ipp)
+#' data.info <- get.data(m.ipp)
+#' str(data.info)
 get.data<- function(object) {
   if (object$data.model.type != "pa") {
     dat <- object$data
@@ -25,8 +28,8 @@ get.data<- function(object) {
     quad <- dat[pres.id == 0, ]
     res <- list(pres = pres, quad = quad)
     if (grepl("|&|", paste(object$formula, collapse = ","), fixed = T)) {
-      po.form <- as.formula(strsplit(object$formula, " |&| ", fixed = T)[[1L]][1L])
-      pa.form <- as.formula(strsplit(object$formula, " |&| ", fixed = T)[[1L]][2L])
+      po.form <- stats::as.formula(strsplit(object$formula, " |&| ", fixed = T)[[1L]][1L])
+      pa.form <- stats::as.formula(strsplit(object$formula, " |&| ", fixed = T)[[1L]][2L])
       attr(res, "response") <- c(all.vars(po.form[[2L]]), all.vars(pa.form[[2]]))
       attr(res, "predictors") <- c(all.vars(po.form[[3L]]), all.vars(po.form[[3L]]))
     } else {

@@ -16,13 +16,19 @@
 #' @return list of elements required for TMB::MakeADFun
 #' @noRd
 #'
+#' @importFrom methods as
+#' @importFrom stats as.formula
+#' @importFrom sp coordinates
+#' @importFrom FRK auto_basis eval_basis
+#'
 #' @examples
 #' # Get the Eucalypt data
 #' dat_po <- eucalypt[["po"]]
 #' dat_pa <- eucalypt[["pa"]]
 #'
 #' # Get the TMB data lists for a combined data model without latent field
-#' scampr:::get.TMB.data.input(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' tmb.input <- scampr:::get.TMB.data.input(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' str(tmp.input)
 get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), data.type = c("po", "pa", "popa"), starting.pars) {
 
   # parameters of restricted strings
@@ -63,15 +69,15 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PA design matrix
-    pa.des.mat <- scampr:::get.desgin.matrix(pa.formula, pa.data)
+    pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
     # Determine the bias predictors as those in PO formula and not in PA formula
     bias.preds <- po.pred[!po.pred %in% pa.pred]
     # Separate the PO formulae
-    po.pred.formula <- as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
-    po.bias.formula <- as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
+    po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
+    po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
     # Get the PO design matrices
-    po.des.mat <- scampr:::get.desgin.matrix(po.pred.formula, po.data)
-    po.bias.des.mat <- scampr:::get.desgin.matrix(po.bias.formula, po.data)
+    po.des.mat <- get.desgin.matrix(po.pred.formula, po.data)
+    po.bias.des.mat <- get.desgin.matrix(po.bias.formula, po.data)
     # Get the presence point/ quadrature point identifier
     pt.quad.id <- po.data[ , po.resp]
     # Re-adjust the bias intercept name
@@ -95,8 +101,8 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        po.bf.matrix <- scampr:::get.bf.matrix(simple.basis, po.data[ , coord.names])
-        pa.bf.matrix <- scampr:::get.bf.matrix(simple.basis, pa.data[ , coord.names])
+        po.bf.matrix <- get.bf.matrix(simple.basis, po.data[ , coord.names])
+        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }
@@ -114,17 +120,17 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
       B_PO_quad = as.matrix(po.bias.des.mat[pt.quad.id == 0, ]),
       X_PA = as.matrix(pa.des.mat),
       Z_PO_pres = if(bf.matrix.type == "sparse") {
-        as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
+        methods::as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
       } else {
         as.matrix(po.bf.matrix[pt.quad.id == 1, ])
       },
       Z_PO_quad = if(bf.matrix.type == "sparse") {
-        as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
+        methods::as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
       } else {
         as.matrix(po.bf.matrix[pt.quad.id == 0, ])
       },
       Z_PA = if(bf.matrix.type == "sparse") {
-        as(pa.bf.matrix, "sparseMatrix")
+        methods::as(pa.bf.matrix, "sparseMatrix")
       } else {
         as.matrix(pa.bf.matrix)
       },
@@ -188,7 +194,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PO design matrix
-    po.des.mat <- scampr:::get.desgin.matrix(po.formula, po.data)
+    po.des.mat <- get.desgin.matrix(po.formula, po.data)
     # Get the presence point/ quadrature point identifier
     pt.quad.id <- po.data[ , po.resp]
     # Set the fixed effect names
@@ -208,7 +214,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        po.bf.matrix <- scampr:::get.bf.matrix(simple.basis, po.data[ , coord.names])
+        po.bf.matrix <- get.bf.matrix(simple.basis, po.data[ , coord.names])
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }
@@ -224,17 +230,17 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
       B_PO_quad = matrix(rep(0, sum(pt.quad.id == 0)), ncol = 1),
       X_PA = matrix(0, ncol = 1),
       Z_PO_pres = if(bf.matrix.type == "sparse") {
-        as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
+        methods::as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
       } else {
         as.matrix(po.bf.matrix[pt.quad.id == 1, ])
       },
       Z_PO_quad = if(bf.matrix.type == "sparse") {
-        as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
+        methods::as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
       } else {
         as.matrix(po.bf.matrix[pt.quad.id == 0, ])
       },
       Z_PA = if(bf.matrix.type == "sparse") {
-        as(matrix(0, ncol = 1), "sparseMatrix")
+        methods::as(matrix(0, ncol = 1), "sparseMatrix")
       } else {
         matrix(0, ncol = 1)
       },
@@ -303,7 +309,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PA design matrix
-    pa.des.mat <- scampr:::get.desgin.matrix(pa.formula, pa.data)
+    pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
     fixed.names <- colnames(pa.des.mat)
 
     # Determine the basis functions to be used
@@ -312,7 +318,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
         if (missing(FRK.basis.functions)) { # When none is provided use FRK defaults (with 2 spatial resolutions)
           # create a spatial pixels data frame as required by FRK::auto_basis
           sp.data <- pa.data[ , coord.names]
-          coordinates(sp.data) <- coord.names
+          sp::coordinates(sp.data) <- coord.names
           FRK.basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
         }
         pa.bf.matrix <- FRK::eval_basis(basis = FRK.basis.functions, as.matrix(pa.data[ , coord.names]))
@@ -320,7 +326,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        pa.bf.matrix <- scampr:::get.bf.matrix(simple.basis, pa.data[ , coord.names])
+        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }
@@ -336,17 +342,17 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
       B_PO_quad = matrix(0, ncol = 1),
       X_PA = as.matrix(pa.des.mat),
       Z_PO_pres = if(bf.matrix.type == "sparse") {
-        as(matrix(0, ncol = 1), "sparseMatrix")
+        methods::as(matrix(0, ncol = 1), "sparseMatrix")
       } else {
         matrix(0, ncol = 1)
       },
       Z_PO_quad = if(bf.matrix.type == "sparse") {
-        as(matrix(0, ncol = 1), "sparseMatrix")
+        methods::as(matrix(0, ncol = 1), "sparseMatrix")
       } else {
         matrix(0, ncol = 1)
       },
       Z_PA = if(bf.matrix.type == "sparse") {
-        as(pa.bf.matrix, "sparseMatrix")
+        methods::as(pa.bf.matrix, "sparseMatrix")
       } else {
         as.matrix(pa.bf.matrix)
       },

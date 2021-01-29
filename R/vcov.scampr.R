@@ -1,11 +1,26 @@
 #' vcov for objects of class 'scampr'
 #'
 #' @param object A scampr model object
+#' @param ... NA
 #'
-#' @return
+#' @return A matrix of the estimated covariances between the parameter estimates in the linear or non-linear predictor of the model. This should have row and column names corresponding to the parameter names given by the coef method.
 #' @export
 #'
-vcov.scampr <- function(object) {
+#' @importFrom stats as.formula
+#' @importFrom TMB MakeADFun sdreport
+#'
+#' @examples
+#' # Get the gorilla nesting data
+#' dat <- gorillas
+#'
+#' # Standardise the elevation covariate
+#' dat$elev.std <- scale(dat$elevation)
+#'
+#' # Fit a scampr model to the point pattern
+#' m <- ippm(pres ~ elev.std, data = dat)
+#'
+#' vcov(m)
+vcov.scampr <- function(object, ...) {
 
   # get an identifier for the model type
   mod.id <- NULL
@@ -25,14 +40,14 @@ vcov.scampr <- function(object) {
         if (!is.na(object$approx.type)) {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
-          inputs <- scampr:::get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+          inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
                                                 coord.names = object$coord.names,
                                                 quad.weights.name = object$quad.weights.name,
                                                 model.type = mod.id,
                                                 data.type = object$data.model.type, starting.pars = object)
         }
       } else {
-        inputs <- scampr:::get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+        inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
                                               coord.names = object$coord.names,
                                               quad.weights.name = object$quad.weights.name,
                                               simple.basis = object$basis.fn.info,
@@ -40,7 +55,7 @@ vcov.scampr <- function(object) {
                                               data.type = object$data.model.type, starting.pars = object)
       }
     } else {
-      inputs <- scampr:::get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+      inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
                                   coord.names = object$coord.names,
                                   quad.weights.name = object$quad.weights.name,
                                   FRK.basis.functions = object$FRK.basis.functions,
@@ -81,14 +96,14 @@ vcov.scampr <- function(object) {
         if (!is.na(object$approx.type)) {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
-          inputs <- scampr:::get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
+          inputs <- get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
                                                 coord.names = object$coord.names,
                                                 quad.weights.name = object$quad.weights.name,
                                                 model.type = mod.id,
                                                 data.type = object$data.model.type, starting.pars = object)
         }
       } else {
-        inputs <- scampr:::get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
+        inputs <- get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
                                               coord.names = object$coord.names,
                                               quad.weights.name = object$quad.weights.name,
                                               simple.basis = object$basis.fn.info,
@@ -96,7 +111,7 @@ vcov.scampr <- function(object) {
                                               data.type = object$data.model.type, starting.pars = object)
       }
     } else {
-      inputs <- scampr:::get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
+      inputs <- get.TMB.data.input(pa.formula = object$formula, pa.data = object$data,
                                             coord.names = object$coord.names,
                                             quad.weights.name = object$quad.weights.name,
                                             FRK.basis.functions = object$FRK.basis.functions,
@@ -136,8 +151,8 @@ vcov.scampr <- function(object) {
     data.po <- object$data
     data.pa <- attr(object$data, "pa")
     forms <- strsplit(object$formula, " |&| ", fixed = T)
-    form.po <- as.formula(forms[[1]][1])
-    form.pa <- as.formula(forms[[1]][2])
+    form.po <- stats::as.formula(forms[[1]][1])
+    form.pa <- stats::as.formula(forms[[1]][2])
 
     # Check the type of basis functions used. Currently supports simple or FRK basis
     if (is.null(object$FRK.basis.functions)) {
@@ -145,7 +160,7 @@ vcov.scampr <- function(object) {
         if (!is.na(object$approx.type)) {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
-          inputs <- scampr:::get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+          inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
                                                 pa.data = data.pa,
                                                 coord.names = object$coord.names,
                                                 quad.weights.name = object$quad.weights.name,
@@ -153,7 +168,7 @@ vcov.scampr <- function(object) {
                                                 data.type = object$data.model.type, starting.pars = object)
         }
       } else {
-        inputs <- scampr:::get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+        inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
                                               pa.data = data.pa,
                                               coord.names = object$coord.names,
                                               quad.weights.name = object$quad.weights.name,
@@ -162,7 +177,7 @@ vcov.scampr <- function(object) {
                                               data.type = object$data.model.type, starting.pars = object)
       }
     } else {
-      inputs <- scampr:::get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+      inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
                                             pa.data = data.pa,
                                             coord.names = object$coord.names,
                                             quad.weights.name = object$quad.weights.name,

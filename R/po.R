@@ -1,5 +1,7 @@
 #' Point Process Model for Presence-only Data
 #'
+#' @description Fit either an inhomogeneous Poisson, or log-Gaussian Cox, process model to presence records. This uses numerical quadrature  (provided with the data, see e.g. scampr::gorillas) to approx. the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
+#'
 #' @param po.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.
 #' @param po.data a data frame containing predictors at both presence-records and quadrature as well as the po.formula 'response'.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames
@@ -16,6 +18,12 @@
 #' @return a scampr model object
 #' @export
 #'
+#' @importFrom methods as
+#' @importFrom stats optim
+#' @importFrom sp coordinates
+#' @importFrom FRK auto_basis eval_basis
+#' @importFrom TMB MakeADFun sdreport
+#'
 #' @examples
 #' # Get the gorilla nesting data
 #' dat <- gorillas
@@ -24,16 +32,18 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- po(pres ~ elev.std, data = dat, model.type = "ipp")
+#' m.ipp <- po(pres ~ elev.std, po.data = dat, model.type = "ipp")
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 #'
 #' # Fit a LGCP model using variational approximation
-#' m.lgcp_va <- po(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+#' m.lgcp_va <- po(pres ~ elev.std, po.data = dat, model.type = "variational", simple.basis = bfs)
 #'
-#' #' # Fit a LGCP model using Laplace approximation
-#' m.lgcp_lp <- po(pres ~ elev.std, data = dat, model.type = "laplace", simple.basis = bfs)
+#' \dontrun{
+#' # Fit a LGCP model using Laplace approximation
+#' m.lgcp_lp <- po(pres ~ elev.std, po.data = dat, model.type = "laplace", simple.basis = bfs)
+#' }
 po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
@@ -57,7 +67,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
     stop(paste0("quad.weights.name, ", quad.weights.name, ", not found in the PO data provided"))
   }
   if (!is.logical(se)) {
-    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard erros"))
+    stop(paste0("'se' must be a logcial indicating whether or not to calculate standard errors"))
   }
   # parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -66,7 +76,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
   ############################################################
 
   # Get the PO design matrix
-  po.des.mat <- scampr:::get.desgin.matrix(po.formula, po.data)
+  po.des.mat <- get.desgin.matrix(po.formula, po.data)
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
   # Set the fixed effect names
@@ -86,7 +96,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
       colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
       class(bf.info) <- c(class(bf.info), "bf.df")
     } else { # Otherwise use the provided simple basis
-      po.bf.matrix <- scampr:::get.bf.matrix(simple.basis, po.data[ , coord.names])
+      po.bf.matrix <- get.bf.matrix(simple.basis, po.data[ , coord.names])
       bf.info <- simple.basis
       FRK.basis.functions <- NULL
     }
@@ -126,17 +136,17 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
     B_PO_quad = matrix(rep(0, sum(pt.quad.id == 0)), ncol = 1),
     X_PA = matrix(0, ncol = 1),
     Z_PO_pres = if(bf.matrix.type == "sparse") {
-      as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
+      methods::as(po.bf.matrix[pt.quad.id == 1, ], "sparseMatrix")
     } else {
       as.matrix(po.bf.matrix[pt.quad.id == 1, ])
     },
     Z_PO_quad = if(bf.matrix.type == "sparse") {
-      as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
+      methods::as(po.bf.matrix[pt.quad.id == 0, ], "sparseMatrix")
     } else {
       as.matrix(po.bf.matrix[pt.quad.id == 0, ])
     },
     Z_PA = if(bf.matrix.type == "sparse") {
-      as(matrix(0, ncol = 1), "sparseMatrix")
+      methods::as(matrix(0, ncol = 1), "sparseMatrix")
     } else {
       matrix(0, ncol = 1)
     },
@@ -182,7 +192,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
   )
   # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
-  res <- optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
+  res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required
   if (se) {
     tmp.estimates <- summary(TMB::sdreport(obj))

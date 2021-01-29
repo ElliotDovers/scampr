@@ -1,6 +1,6 @@
 #' Simulate presence-only and presence/absence data sets
 #'
-#' @description Simulate presence records from a LGCP with 2 environmental covariates and affected by 2 biasing covariates. Additionally simulates presence/absence survey data from the unbiased process.
+#' @description Simulate presence records from a LGCP with 2 environmental covariates and effected by 2 biasing covariates. Additionally simulates presence/absence survey data from the unbiased process.
 #'
 #' @param Intercept.env Fixed effect intercept
 #' @param Intercept.bias Bias effect intercept
@@ -11,52 +11,58 @@
 #' @param sites.sampled number of survey sites to be sampled
 #' @param rseed integer for setting the random seed
 #'
-#' @return
+#' @return a named list of length 2. Element 'PO' conatins the simulated presence-only data frame. Element 'PA' contains the simulated presence/absence data frame. The list has attributes containing sim information/specifications.
 #' @export
+#'
+#' @importFrom RandomFields RFoptions RMgauss RFsimulate
+#' @importFrom spatstat spatstat.options im owin rLGCP
+#' @importFrom sp SpatialPixelsDataFrame SpatialPoints over
+#' @importFrom stats runif rbinom
 #'
 #' @examples
 #' # Simulate data
-#' dat.list <- simPAPO(Intercept.env = -2, Intercept.bias = -1, Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8), latent.variance = 1, latent.range = 5, rseed = sim.no)
+#' dat.list <- simulate_po_pa(Intercept.env = -2, Intercept.bias = -1,
+#' Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8),
+#' latent.variance = 1, latent.range = 5, rseed = 1)
 #' dat_po <- dat.list$PO
 #' dat_pa <- dat.list$PA
 #'
+#' \dontrun{
 #' # Set up a simple 2D grid of basis functions
 #' bfs <- simple_basis(nodes.on.long.edge = 10, data = dat_po)
 #'
 #' # Fit presence/absence model
-#' m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, simple.basis = bfs)
+#' m.pa <- pa(pa ~ ec1, pa.data = dat_pa, simple.basis = bfs)
 #'
 #' # Fit the presence-only model
-#' m.po <- po(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po, simple.basis = bfs)
+#' m.po <- po(pres ~ ec1 + bc1 + bc2, po.data = dat_po, simple.basis = bfs)
 #'
 #' # Fit a combined data model
-#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+#' m.popa <- popa(pres ~ ec1 + bc1 + bc2, pa ~ ec1,
+#' po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
+#' }
 simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(-1.2, 0.75), Tau = c(1.3, -0.8), latent.variance = 1, latent.range = 30, sites.sampled = 1000, rseed = NA) {
 
-  # Checks #
-  if (!library(spatstat, logical.return = T)) {
-    stop("Please install 'spatstat' package before using this function")
-  }
-  if (!library(fields, logical.return = T)) {
-    stop("Please install 'fields' package before using this function")
-  }
-  if (!library(sp, logical.return = T)) {
-    stop("Please install 'sp' package before using this function")
-  }
-  if (!library(RandomFields, logical.return = T)) {
-    stop("Please install 'sp' package before using this function")
-  }
+  # # Checks #
+  # if (!library(spatstat, logical.return = T)) {
+  #   stop("Please install 'spatstat' package before using this function")
+  # }
+  # if (!library(fields, logical.return = T)) {
+  #   stop("Please install 'fields' package before using this function")
+  # }
+  # if (!library(sp, logical.return = T)) {
+  #   stop("Please install 'sp' package before using this function")
+  # }
+  # if (!library(RandomFields, logical.return = T)) {
+  #   stop("Please install 'sp' package before using this function")
+  # }
 
   # Need to set the number of pixels
-  spatstat.options(npixel=c(100, 100))
+  spatstat::spatstat.options(npixel=c(100, 100))
 
   ############################################################################################################################
   # Convert a vector to a spatstat image object via vector locations #####(mainly for plotting) ##############################
   vec2im <- function(vec, x.loc, y.loc){
-    #### spatstat package is needed ####
-    if (!library(spatstat, logical.return = T)) {
-      stop("Please install 'spatstat' package before using this function")
-    }
     ux <- sort(unique(x.loc))
     uy <- sort(unique(y.loc))
     nx <- length(ux)
@@ -74,17 +80,13 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   ############################################################################################################################
   # Interpolate some covariate at x, y locations ###########################################
   interp.covar <- function(x.loc, y.loc, covar.name, data = quad){
-    #### sp package is needed ####
-    if (!library(sp, logical.return = T)) {
-      stop("Please install 'sp' package before using this function")
-    }
-    sp.quad <- SpatialPixelsDataFrame(points = quad[,c("x", "y")], data = quad[ , !colnames(quad) %in% c("x", "y", "quad.size")])
+    sp.quad <- sp::SpatialPixelsDataFrame(points = quad[,c("x", "y")], data = quad[ , !colnames(quad) %in% c("x", "y", "quad.size")])
 
     # turn coordinates into SpatialPoints object:
-    spp = SpatialPoints(data.frame(x = x.loc,y = y.loc))
+    spp = sp::SpatialPoints(data.frame(x = x.loc,y = y.loc))
 
     # Extract elevation values at spp coords, from our elev SpatialGridDataFrame
-    v <- over(spp, sp.quad[ , covar.name])
+    v <- sp::over(spp, sp.quad[ , covar.name])
     v[is.na(v)] = 0 # NAs are a problem! Remove them
     return(v[,1])
   }
@@ -99,27 +101,27 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
     add.seed <- rseed
   }
   # Set the spatial covariates (to be used as either environmental or bias variables)
-  RFoptions(seed=12345 + add.seed)
-  cov.mod <- RMgauss(var = 1, scale = 20)
+  RandomFields::RFoptions(seed=12345 + add.seed, printlevel = 0)
+  cov.mod <- RandomFields::RMgauss(var = 1, scale = 20)
   # ec1 <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
-  tmp <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
+  tmp <- RandomFields::RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
   ec1 <- tmp$variable1
-  RFoptions(seed=12346 + add.seed)
-  cov.mod <- RMgauss(var = 1, scale = 10)
+  RandomFields::RFoptions(seed=12346 + add.seed, printlevel = 0)
+  cov.mod <- RandomFields::RMgauss(var = 1, scale = 10)
   # ec2 <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
-  tmp <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
+  tmp <- RandomFields::RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
   ec2 <- tmp$variable1
-  RFoptions(seed=12347 + add.seed)
-  cov.mod <- RMgauss(var = 1, scale = 20)
+  RandomFields::RFoptions(seed=12347 + add.seed, printlevel = 0)
+  cov.mod <- RandomFields::RMgauss(var = 1, scale = 20)
   # bc1 <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
-  tmp <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
+  tmp <- RandomFields::RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
   bc1 <- tmp$variable1
-  RFoptions(seed=12348 + add.seed)
-  cov.mod <- RMgauss(var = 1, scale = 10)
+  RandomFields::RFoptions(seed=12348 + add.seed, printlevel = 0)
+  cov.mod <- RandomFields::RMgauss(var = 1, scale = 10)
   # bc2 <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
-  tmp <- RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
+  tmp <- RandomFields::RFsimulate(model = cov.mod, x = grid$x, y = grid$y)
   bc2 <- tmp$variable1
-  RFoptions(seed=NA)
+  RandomFields::RFoptions(seed=NA, printlevel = 0)
 
   # par(mfrow = c(2, 2))
   # plot(spatstat::im(ec1, xcol = grid$x, yrow = grid$y), main = "Env. Cov. 1")
@@ -172,13 +174,13 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   # Set a seed as required
   if (!is.na(rseed)) {
     set.seed(rseed)
-    RFoptions(seed=rseed)
+    RandomFields::RFoptions(seed=rseed, printlevel = 0)
   }
   # Get the linear predictor
   eta.fixed <- Intercept.env + (Beta[1] * quad$ec1) + (Beta[2] * quad$ec2) + Intercept.bias + (Tau[1] * quad$bc1) + (Tau[2] * quad$bc2)
 
   # Set the observation window
-  wnd <- owin(xrange = c(1, 100), yrange = c(1, 100))
+  wnd <- spatstat::owin(xrange = c(1, 100), yrange = c(1, 100))
   #
   # # Simulate the LGCP - FOR SOME REASON THIS WAY FLIPS THE COVARIATES AND FUCKS SHIT UP!
   # pp <- rLGCP(model = "stable",
@@ -192,7 +194,7 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   #             var = latent.variance, scale = latent.range, alpha = 2, win = wnd,
   #             saveLambda = TRUE)
   # Simulate the LGCP
-  pp <- rLGCP(model = "stable",
+  pp <- spatstat::rLGCP(model = "stable",
               mu =
                 Intercept.env +
                 (Beta[1] * vec2im(ec1, quad$x, quad$y)) +
@@ -246,7 +248,7 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   dat_po <- rbind(cbind(pres, pres = 1), cbind(quad, pres = 0))
 
   # Create the presence/absence data - sampling at 50 random sites within the domain
-  dat_pa <- as.data.frame(cbind(x = runif(sites.sampled, 1, 100), y = runif(sites.sampled, 1, 100)))
+  dat_pa <- as.data.frame(cbind(x = stats::runif(sites.sampled, 1, 100), y = stats::runif(sites.sampled, 1, 100)))
   dat_pa$ec1 <- interp.covar(x = dat_pa$x, y = dat_pa$y, covar.name = "ec1")
   dat_pa$bc1 <- interp.covar(x = dat_pa$x, y = dat_pa$y, covar.name = "bc1")
   dat_pa$ec2 <- interp.covar(x = dat_pa$x, y = dat_pa$y, covar.name = "ec2")
@@ -255,7 +257,7 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   dat_pa$xi <- interp.covar(x = dat_pa$x, y = dat_pa$y, covar.name = "xi")
   dat_pa$logabund <- interp.covar(x = dat_pa$x, y = dat_pa$y, covar.name = "logabun")
   dat_pa$pprob <- 1 -exp(-exp(dat_pa$logabun))
-  dat_pa$pa <- rbinom(length(dat_pa$pprob), 1, dat_pa$pprob)
+  dat_pa$pa <- stats::rbinom(length(dat_pa$pprob), 1, dat_pa$pprob)
 
   # Compile both data sets and information about the simulaton into a result list
   temp.info = c(Intercept.env, Intercept.bias, Beta, Tau, latent.variance, latent.range, rseed, N_po = pp$n, N_pa_pres = sum(dat_pa$pa), N_pa_sites = sites.sampled)
