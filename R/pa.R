@@ -209,7 +209,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
-    res$approx.type <- model.type
+    res$approx.type <- "laplace" #model.type until PA models can handle VA
     res$fitted.values <- as.vector(pa.des.mat %*% res$fixed.effects[ , 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
   } else {
     res$random.effects <- NA

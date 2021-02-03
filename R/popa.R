@@ -93,7 +93,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
   po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
   # Get the PO design matrices
-  po.des.mat <-get.desgin.matrix(po.pred.formula, po.data)
+  po.des.mat <- get.desgin.matrix(po.pred.formula, po.data)
   po.bias.des.mat <- get.desgin.matrix(po.bias.formula, po.data)
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
@@ -254,7 +254,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
-    res$approx.type <- model.type
+    res$approx.type <- "laplace" #model.type until PA models can handle VA
     res$fitted.values <- as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
   } else {
@@ -269,7 +269,9 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   res$starting.pars <- start.pars
   res$data <- po.data
   attr(res$data, "pa") <- pa.data
-  res$formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
+  # res$formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
+  res$formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred, collapse = " + ")))
+  attr(res$formula, "pa") <- stats::as.formula(paste0(pa.resp, " ~ ", paste(pa.pred, collapse = " + ")))
   res$coord.names <- coord.names
   res$quad.weights.name <- quad.weights.name
   res$pt.quad.id <- pt.quad.id

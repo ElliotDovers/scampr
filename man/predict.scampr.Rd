@@ -20,9 +20,9 @@
 
 \item{newdata}{a data frame of point locations to predict over as well as predictors involved in the model}
 
-\item{type}{a character string indicating the type of linear predictor to be returned. One of 'link' or 'response'}
+\item{type}{a character string indicating the type of prediction to be returned. One of 'link' or 'response' for log-intensity or intensity respectively.}
 
-\item{dens}{a character string indicating the probability density of the random effects to draw from}
+\item{dens}{a character string indicating the probability density of the random effects to take the expectation from.}
 
 \item{process}{a character string indictating the process to be estimated. One of 'intensity' or 'abundance'. Only available for combined data models.}
 }

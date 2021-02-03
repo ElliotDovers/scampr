@@ -38,8 +38,7 @@ plot.scampr <- function(x, ..., add.points = F) {
   } else {
     image.scampr(x, "residuals", residual.type = "pearson")
     if (add.points) {
-      tmp <- get.data(x)
-      graphics::points(tmp$pres[ , x$coord.names])
+      graphics::points(x$data[x$pt.quad.id == 1, x$coord.names])
     }
     if (x$data.model.type == "popa") {
       readline(prompt="Hit <Return> to see next plot:")
@@ -51,7 +50,7 @@ plot.scampr <- function(x, ..., add.points = F) {
     readline(prompt="Hit <Return> to see next plot:")
     image.scampr(x, "fitted")
     if (add.points) {
-      graphics::points(tmp$pres[ , x$coord.names])
+      graphics::points(x$data[x$pt.quad.id == 1, x$coord.names])
     }
   }
 }

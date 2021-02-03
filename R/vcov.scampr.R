@@ -6,7 +6,6 @@
 #' @return A matrix of the estimated covariances between the parameter estimates in the linear or non-linear predictor of the model. This should have row and column names corresponding to the parameter names given by the coef method.
 #' @export
 #'
-#' @importFrom stats as.formula
 #' @importFrom TMB MakeADFun sdreport
 #'
 #' @examples
@@ -150,9 +149,8 @@ vcov.scampr <- function(object, ...) {
 
     data.po <- object$data
     data.pa <- attr(object$data, "pa")
-    forms <- strsplit(object$formula, " |&| ", fixed = T)
-    form.po <- stats::as.formula(forms[[1]][1])
-    form.pa <- stats::as.formula(forms[[1]][2])
+    form.po <- object$formula
+    form.pa <- attr(object$formula, "pa")
 
     # Check the type of basis functions used. Currently supports simple or FRK basis
     if (is.null(object$FRK.basis.functions)) {

@@ -61,13 +61,11 @@ residuals.scampr <- function(object, ..., type = c("raw", "inverse", "pearson"),
       stop("Residuals from model and 'data.type' are not compatible")
     } else if (object$data.model.type == "popa") {
       pres_prob <- 1 - exp(-exp(attr(object$fitted.values, "abundance")))
-      tmp <- get.data(object)
-      resp.name <- attr(tmp, "response")[2]
+      resp.name <- all.vars(attr(object$formula, "pa")[[2L]])
       Y <- as.numeric(attr(object$data, "pa")[ , resp.name] > 0)
     } else {
       pres_prob <- 1 - exp(-exp(object$fitted.values))
-      tmp <- get.data(object)
-      Y <- as.numeric(tmp[ , attr(tmp, "response")] > 0)
+      Y <- as.numeric(object$data[ , all.vars(object$formula[[2L]])] > 0)
     }
     resids <- switch(type,
                      raw = Y - pres_prob,

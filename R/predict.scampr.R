@@ -4,8 +4,8 @@
 #'
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
-#' @param type a character string indicating the type of linear predictor to be returned. One of 'link' or 'response'
-#' @param dens a character string indicating the probability density of the random effects to draw from
+#' @param type a character string indicating the type of prediction to be returned. One of 'link' or 'response' for log-intensity or intensity respectively.
+#' @param dens a character string indicating the probability density of the random effects to take the expectation from.
 #' @param process a character string indictating the process to be estimated. One of 'intensity' or 'abundance'. Only available for combined data models.
 #' @param ... NA
 #'
@@ -13,7 +13,7 @@
 #' @exportS3Method stats::predict scampr
 #'
 #' @importFrom methods as
-#' @importFrom stats as.formula na.omit
+#' @importFrom stats na.omit
 #'
 #' @examples#' # Get the Eucalypt data
 #' dat_po <- eucalypt[["po"]]
@@ -61,10 +61,9 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   if (object$data.model.type == "popa") {
     # obtain the pa data
     data.pa <- attr(object$data, "pa")
-    # separate the formulas
-    forms <- strsplit(object$formula, " |&| ", fixed = T)
-    form.po <- stats::as.formula(forms[[1]][1])
-    form.pa <- stats::as.formula(forms[[1]][2])
+    # obtain the formulas
+    form.po <- object$formula
+    form.pa <- attr(object$formula, "pa")
     # obtain bias covariates
     pa.pred <- all.vars(form.pa[[3]])
     po.pred <- all.vars(form.po[[3]])

@@ -23,8 +23,19 @@
 summary.scampr <- function(object, ...) {
 
   # Collect elements for reporting #
+
   # Model used
-  tmp.formula <- as.character(object$formula)
+  if (x$data.model.type == "popa") {
+    po.formula <- x$formula
+    pa.formula <- attr(x$formula, "pa")
+    pa.resp <- all.vars(pa.formula[[2]])
+    pa.pred <- all.vars(pa.formula[[3]])
+    po.resp <- all.vars(po.formula[[2]])
+    po.pred <- all.vars(po.formula[[3]])
+    tmp.formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
+  } else {
+    tmp.formula <- as.character(x$formula)
+  }
 
   # get an identifier for the model type
   mod.id <- NULL
@@ -63,11 +74,9 @@ summary.scampr <- function(object, ...) {
   tmp.fixed_effects$`z value` <- tmp.fixed_effects$Estimate / tmp.fixed_effects$`Std. Error`
   tmp.fixed_effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed_effects$`z value`), lower.tail = FALSE)
   # Random effects of the model
-  if (length(object$random.effects) == 1) {
-    if (is.na(object$random.effects)) {
-      post.means.summary <- NA
-      prior.variance <- NA
-    }
+  if (mod.id == "ipp") {
+    post.means.summary <- NA
+    prior.variance <- NA
   } else {
     tmp.random_effects <- object$random.effects
     post.means <- tmp.random_effects[grepl(" Mean ", row.names(tmp.random_effects), fixed = T), 1]
@@ -92,12 +101,14 @@ summary.scampr <- function(object, ...) {
     "\n\nBasis functions per res. ", object$basis.per.res, "\n\nFixed Effects:\n\n"
   )
   stats::printCoefmat(tmp.fixed_effects)
-  cat(
-    "---\n\nSpatial Random Effects:\n\nPosterior Means per Spatial Resolution(s):\n"
-  )
-  print(format(post.means.summary, digit = 2))
-  cat(
-    "\nPrior Variance(s):\n"
-  )
-  print(prior.variance)
+  if (mod.id != "ipp") {
+    cat(
+      "---\n\nSpatial Random Effects:\n\nPosterior Means per Spatial Resolution(s):\n"
+    )
+    print(format(post.means.summary, digit = 2))
+    cat(
+      "\nPrior Variance(s):\n"
+    )
+    print(prior.variance)
+  }
 }

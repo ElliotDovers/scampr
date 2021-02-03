@@ -28,18 +28,17 @@
 image.scampr <- function(x, z, residual.type, ...) {
   # check if model is from pa data - no image available so just plot the data
   if (x$data.model.type == "pa") {
-    tmp <- get.data(x)
-    quad <- tmp
-    resp <- quad[ , attr(tmp, "response")] > 0
+    quad <- x$data
+    resp <- quad[ , all.vars(x$formula[[2L]])] > 0
     pa.col <- resp
     pa.col[resp == 0] <- "lightblue"
     pa.col[resp == 1] <- "darkblue"
     pa.pch <- resp
     pa.pch[resp == 0] <- 4
     pa.pch[resp == 1] <- 1
-    graphics::plot.default(quad[ , attr(tmp, "coords")[1]], quad[ , attr(tmp, "coords")[2]],
-         col = pa.col, pch = pa.pch, asp = 1, xlab = attr(tmp, "coords")[1],
-         ylab = attr(tmp, "coords")[2], main = "Presence/Absence Sites"
+    graphics::plot.default(quad[ , x$coord.names[1]], quad[ , x$coord.names[2]],
+         col = pa.col, pch = pa.pch, asp = 1, xlab = x$coord.names[1],
+         ylab = x$coord.names[2], main = "Presence/Absence Sites"
     )
     # warning("Only presence/absence survey sites are shown for this model's image")
   } else {
@@ -74,12 +73,11 @@ image.scampr <- function(x, z, residual.type, ...) {
     if (length(z) != sum(x$pt.quad.id == 0)) {
       stop("z vector of field values must match the number (and order) of quadrature points in the model provided")
     }
-    tmp <- get.data(x)
-    quad <- tmp$quad
-    xs <- sort(unique(quad[ , attr(tmp, "coords")[1]]))
-    ys <- sort(unique(quad[ , attr(tmp, "coords")[2]]))
-    zs <- vec2mat(z, quad[ , attr(tmp, "coords")[1]], quad[ , attr(tmp, "coords")[2]])
+    quad <- x$data[x$pt.quad.id == 0, ]
+    xs <- sort(unique(quad[ , x$coord.names[1]]))
+    ys <- sort(unique(quad[ , x$coord.names[2]]))
+    zs <- vec2mat(z, quad[ , x$coord.names[1]], quad[ , x$coord.names[2]])
     # image(x = xs, y = ys, z = zs, col = topo.colors(100)) # could write my own version with legend to remove need for fields
-    fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = attr(tmp, "coords")[1], ylab = attr(tmp, "coords")[2], main = z.name, bty = 'n')
-    }
+    fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = x$coord.names[1], ylab = x$coord.names[2], main = z.name, bty = 'n')
+  }
 }
