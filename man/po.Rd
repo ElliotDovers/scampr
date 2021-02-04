@@ -11,7 +11,7 @@ po(
   quad.weights.name = "quad.size",
   FRK.basis.functions,
   simple.basis,
-  model.type = c("laplace", "variational", "ipp"),
+  model.type = c("variational", "laplace", "ipp"),
   bf.matrix.type = c("sparse", "dense"),
   se = TRUE,
   starting.pars,

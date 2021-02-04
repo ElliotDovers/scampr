@@ -43,7 +43,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
     stop("Formula can only take a single response")
   }
   if (!all(c(pa.resp, pa.pred) %in% colnames(pa.data))) {
-    stop("PA data does not contain the formula terms")
+    stop("data does not contain the formula terms")
   }
   if (!all(coord.names %in% colnames(pa.data))) {
     stop(paste0("coord.names, ", coord.names, ", not found in data set provided"))

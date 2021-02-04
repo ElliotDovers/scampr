@@ -25,16 +25,16 @@ summary.scampr <- function(object, ...) {
   # Collect elements for reporting #
 
   # Model used
-  if (x$data.model.type == "popa") {
-    po.formula <- x$formula
-    pa.formula <- attr(x$formula, "pa")
+  if (object$data.model.type == "popa") {
+    po.formula <- object$formula
+    pa.formula <- attr(object$formula, "pa")
     pa.resp <- all.vars(pa.formula[[2]])
     pa.pred <- all.vars(pa.formula[[3]])
     po.resp <- all.vars(po.formula[[2]])
     po.pred <- all.vars(po.formula[[3]])
     tmp.formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
   } else {
-    tmp.formula <- as.character(x$formula)
+    tmp.formula <- as.character(object$formula)
   }
 
   # get an identifier for the model type

@@ -44,7 +44,7 @@
 #' # Fit a LGCP model using Laplace approximation
 #' m.lgcp_lp <- po(pres ~ elev.std, po.data = dat, model.type = "laplace", simple.basis = bfs)
 #' }
-po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
+po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("variational", "laplace", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
 
@@ -58,13 +58,13 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
     stop("Formula can only take a single response")
   }
   if (!all(c(po.resp, po.pred) %in% colnames(po.data))) {
-    stop("PO data does not contain the formula terms")
+    stop("data does not contain the formula terms")
   }
   if (!all(coord.names %in% colnames(po.data))) {
-    stop(paste0("coord.names, ", coord.names, ", not found in both data sets provided"))
+    stop(paste0("coord.names, ", coord.names, ", not found in data set provided"))
   }
   if (!quad.weights.name %in% colnames(po.data)) {
-    stop(paste0("quad.weights.name, ", quad.weights.name, ", not found in the PO data provided"))
+    stop(paste0("quad.weights.name, ", quad.weights.name, ", not found in the data provided"))
   }
   if (!is.logical(se)) {
     stop(paste0("'se' must be a logcial indicating whether or not to calculate standard errors"))
