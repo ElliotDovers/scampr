@@ -14,8 +14,6 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
-#' @param subset an optional subset of the data to be used.
-#' @param na.action an optional way of handling NA's in the data, default is omit.
 #'
 #' @return a scampr model object
 #' @export
@@ -43,7 +41,7 @@
 #' m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
 #' po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
 #' }
-popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
+popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
 
@@ -54,7 +52,9 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   po.pred <- all.vars(po.formula[[3]])
 
   ## checks ##
-
+  if (model.type == "variational") {
+    stop("Combined Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
+  }
   if (length(pa.resp) != 1 & length(po.resp) != 1) {
     stop("Both formulae can only take a single response")
   }
@@ -85,16 +85,28 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
 
   ############################################################
 
+  # default na.action is to remove any data rows with na (for terms involved in the model)
+  rm.rows <- attr(na.omit(po.data[ , c(coord.names, quad.weights.name, po.resp, po.pred)]), "na.action")
+  if (!is.null(rm.rows)) {
+    po.data <- po.data[-rm.rows, ]
+  }
+
+  # default na.action is to remove any data rows with na (for terms involved in the model)
+  rm.rows <- attr(na.omit(pa.data[ , c(coord.names, pa.resp, pa.pred)]), "na.action")
+  if (!is.null(rm.rows)) {
+    pa.data <- pa.data[-rm.rows, ]
+  }
+
   # Get the PA design matrix
-  pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
+  pa.des.mat <- get.design.matrix(pa.formula, pa.data)
   # Determine the bias predictors as those in PO formula and not in PA formula
   bias.preds <- po.pred[!po.pred %in% pa.pred]
   # Separate the PO formulae
   po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
   po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
   # Get the PO design matrices
-  po.des.mat <- get.desgin.matrix(po.pred.formula, po.data)
-  po.bias.des.mat <- get.desgin.matrix(po.bias.formula, po.data)
+  po.des.mat <- get.design.matrix(po.pred.formula, po.data)
+  po.bias.des.mat <- get.design.matrix(po.bias.formula, po.data)
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
   # Re-adjust the bias intercept name

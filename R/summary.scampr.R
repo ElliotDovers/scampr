@@ -17,7 +17,7 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit a scampr model to the point pattern
-#' m <- ippm(pres ~ elev.std, data = dat)
+#' m <- ipp(pres ~ elev.std, data = dat)
 #'
 #' summary(m)
 summary.scampr <- function(object, ...) {

@@ -12,8 +12,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
-#' @param subset an optional subset of the data to be used.
-#' @param na.action an optional way of handling NA's in the data, default is omit.
+#' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return a scampr model object
 #' @export
@@ -44,7 +43,7 @@
 #' # Fit a LGCP model using Laplace approximation
 #' m.lgcp_lp <- po(pres ~ elev.std, po.data = dat, model.type = "laplace", simple.basis = bfs)
 #' }
-po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("variational", "laplace", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
+po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("variational", "laplace", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
 
@@ -75,10 +74,41 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
 
   ############################################################
 
-  # Get the PO design matrix
-  po.des.mat <- get.desgin.matrix(po.formula, po.data)
-  # Get the presence point/ quadrature point identifier
+  # Apply subsetting to data if supplied (with checks)
+  if (!missing(subset)) {
+    if (!is.vector(subset)) {
+      stop("subset must be a vector")
+    } else {
+      if (class(subset) == "logical") {
+        if (length(subset) != nrow(po.data)) {
+          stop("Logical subset must be of same dimension as data provided")
+        } else {
+          po.data <- po.data[subset, ]
+        }
+      } else if (class(subset) == "integer" | class(subset) == "numeric") {
+        if (!all(subset %in% 1:nrow(po.data))) {
+          stop("numeric subset must include row numbers of the data provided")
+        }
+        po.data <- po.data[subset, ]
+      } else {
+        stop("subset has an incorrect format")
+      }
+    }
+  }
+
+  # default na.action is to remove any data rows with na (for terms involved in the model)
+  rm.rows <- attr(na.omit(po.data[ , c(coord.names, quad.weights.name, po.resp, po.pred)]), "na.action")
+  if (!is.null(rm.rows)) {
+    po.data <- po.data[-rm.rows, ]
+  }
+
+  # Get the design matrix
+  po.des.mat <- get.design.matrix(po.formula, po.data)
+  fixed.names <- colnames(po.des.mat)
+
+  # Get the presence point/ quadrature point identifier (use get.design.matrix to replicate subsets, etc.)
   pt.quad.id <- po.data[ , po.resp]
+
   # Set the fixed effect names
   fixed.names <- colnames(po.des.mat)
 
@@ -190,7 +220,6 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
                 variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T),
                 laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T)
   )
-  # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
   res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required

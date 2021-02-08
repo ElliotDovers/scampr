@@ -12,8 +12,7 @@
 #' @param se logical indicating whether standard errors should be calculated
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param starting.pars optional named list or scampr model that gives warm starts for the parameters of the model
-#' @param subset optional subset of the data
-#' @param na.action optional way of handling NA's in the data, default is omit
+#' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return a scampr model object.
 #' @export
@@ -29,18 +28,18 @@
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 #'
 #' # Fit a LGCP model using variational approximation
-#' m.lgcp_va <- lgcpm(pres ~ elev.std, data = dat, approx.with = "variational", simple.basis = bfs)
+#' m.lgcp_va <- lgcp(pres ~ elev.std, data = dat, approx.with = "variational", simple.basis = bfs)
 #'
 #' \dontrun{
 #' # Fit a LGCP model using Laplace approximation
-#' m.lgcp_lp <- lgcpm(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
+#' m.lgcp_lp <- lgcp(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
 #' }
-lgcpm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("laplace", "variational"), se = TRUE, bf.matrix.type = c("sparse", "dense"), starting.pars, subset, na.action) {
+lgcp <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("laplace", "variational"), se = TRUE, bf.matrix.type = c("sparse", "dense"), starting.pars, subset) {
 
   approx.with <- match.arg(approx.with)
   bf.matrix.type <- match.arg(bf.matrix.type)
   # Use the model for presence-only data with particular parameters hard-coded
-  mod <- po(formula, data, coord.names = coord.names, quad.weights.name = quad.weights.name, FRK.basis.functions = FRK.basis.functions, simple.basis = simple.basis, model.type = approx.with, bf.matrix.type = bf.matrix.type, se = se, starting.pars = starting.pars, subset = subset, na.action = na.action)
+  mod <- po(formula, data, coord.names = coord.names, quad.weights.name = quad.weights.name, FRK.basis.functions = FRK.basis.functions, simple.basis = simple.basis, model.type = approx.with, bf.matrix.type = bf.matrix.type, se = se, starting.pars = starting.pars, subset = subset)
 
   return(mod)
 }

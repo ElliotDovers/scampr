@@ -8,6 +8,7 @@
 #' @param se logical indicating whether standard errors should be calculated
 #' @param coord.names vector of character strings describing the column names of the coordinates in data
 #' @param quad.weights.name charater string of the column name of quadrature weights in data
+#' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return scampr model object
 #' @export
@@ -20,11 +21,11 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- ippm(pres ~ elev.std, data = dat)
-ippm <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", starting.pars, se = TRUE) {
+#' m.ipp <- ipp(pres ~ elev.std, data = dat)
+ipp <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", starting.pars, se = TRUE, subset) {
 
   # Use the model for presence-only data with particular parameters hard-coded
-  mod <- po(formula, data, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "ipp", starting.pars = starting.pars, se = se)
+  mod <- po(formula, data, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "ipp", starting.pars = starting.pars, se = se, subset = subset)
 
   return(mod)
 }

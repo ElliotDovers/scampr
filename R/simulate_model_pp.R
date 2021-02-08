@@ -8,7 +8,7 @@
 #' @param rseed an integer for setting the random seed.
 #'
 #' @return point pattern object of class 'ppp' from spatstat
-#' @export
+#' @noRd
 #'
 #' @importFrom spatstat rpoispp
 #' @importFrom methods as

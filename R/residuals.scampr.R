@@ -16,7 +16,7 @@
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- ippm(pres ~ TMP_MIN, data = dat_po)
+#' m.ipp <- ipp(pres ~ TMP_MIN, data = dat_po)
 #'
 #' # Fit a combined data model
 #' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
@@ -30,7 +30,7 @@
 #' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = dat_po,
 #' model.type = "variational", simple.basis = bfs)
 #' # Or
-#' m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po,
+#' m.lgcp_va2 <- lgcp(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po,
 #' approx.with = "variational", simple.basis = bfs)
 #' }
 #' residuals(m.ipp)

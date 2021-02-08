@@ -12,7 +12,7 @@
 #' @param rseed integer for setting the random seed
 #'
 #' @return a named list of length 2. Element 'PO' conatins the simulated presence-only data frame. Element 'PA' contains the simulated presence/absence data frame. The list has attributes containing sim information/specifications.
-#' @export
+#' @noRd
 #'
 #' @importFrom RandomFields RFoptions RMgauss RFsimulate
 #' @importFrom spatstat spatstat.options im owin rLGCP

@@ -15,8 +15,7 @@ po(
   bf.matrix.type = c("sparse", "dense"),
   se = TRUE,
   starting.pars,
-  subset,
-  na.action
+  subset
 )
 }
 \arguments{
@@ -40,9 +39,7 @@ po(
 
 \item{starting.pars}{an optional named list or scampr model object that gives warm starting values for the parameters of the model.}
 
-\item{subset}{an optional subset of the data to be used.}
-
-\item{na.action}{an optional way of handling NA's in the data, default is omit.}
+\item{subset}{an optional vector describing a subset of the data to be used.}
 }
 \value{
 a scampr model object

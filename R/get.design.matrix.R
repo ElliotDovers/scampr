@@ -2,19 +2,23 @@
 #'
 #' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of a model. See GLM function for further formula details.
 #' @param data a data frame containing predictors and response of the formula parameter.
+#' @param subset an optional vector specifying a subset of observations to be used in the fitting process.
+#' @param na.action a function which indicates what should happen when the data contain NAs. The default is set by the na.action setting of options, and is na.fail if that is unset. The ‘factory-fresh’ default is na.omit. Another possible value is NULL, no action. Value na.exclude can be useful.
 #'
 #' @return
 #' @noRd
 #'
-#' @importFrom stats model.frame model.matrix
+#' @importFrom stats model.frame model.matrix update.formula
 #'
 #' @examples
 #' des.mat <- scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
 #' head(des.mat)
-get.desgin.matrix <- function(formula, data) {
+get.design.matrix <- function(formula, data, subset, na.action) {
+  # Want this to work if formula response is missing (for predictions at new data)
+  formula <- stats::update.formula(formula, NULL ~ .)
   cl <- match.call()
   mf <- match.call(expand.dots = FALSE)
-  m <- match(x = c("formula", "data"),
+  m <- match(x = c("formula", "data", "subset", "na.action"),
              table = names(mf), nomatch = 0L)
   mf <- mf[c(1L, m)]
   mf$drop.unused.levels <- TRUE

@@ -4,9 +4,9 @@
 #'
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
-#' @param type a character string indicating the type of prediction to be returned. One of 'link' or 'response' for log-intensity or intensity respectively.
-#' @param dens a character string indicating the probability density of the random effects to take the expectation from.
-#' @param process a character string indictating the process to be estimated. One of 'intensity' or 'abundance'. Only available for combined data models.
+#' @param type a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Eitehr log-intensity or intensity respectively.
+#' @param dens a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.
+#' @param process a character string, one of 'intensity' or 'abundance', indictating the process to be estimated. Only available for combined data models.
 #' @param ... NA
 #'
 #' @return a numeric vector of length newdata (or length of fitted data) containing the predictions.
@@ -29,7 +29,7 @@
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- ippm(pres ~ TMP_MIN, data = train_po)
+#' m.ipp <- ipp(pres ~ TMP_MIN, data = train_po)
 #'
 #' # Fit a combined data model
 #' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
@@ -42,7 +42,7 @@
 #' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = train_po,
 #' model.type = "variational", simple.basis = bfs)
 #' # Or
-#' m.lgcp_va2 <- lgcpm(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po,
+#' m.lgcp_va2 <- lgcp(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po,
 #' approx.with = "variational", simple.basis = bfs)
 #'
 #' predict(m.ipp, test_po)
@@ -92,7 +92,7 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   ###
 
   # Obtain the fixed effect matrix and basis function matrix (at new data or fitted)
-  X <- get.desgin.matrix(object$formula, newdata)
+  X <- get.design.matrix(object$formula, newdata)
   if (!is.na(object$approx.type)) {
     Z <- get.bf.matrix(object, newdata[ , object$coord.names])
   }

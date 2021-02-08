@@ -5,8 +5,7 @@ Authors@R:
     person(given = "Elliot",
            family = "Dovers",
            role = c("aut", "cre"),
-           email = "elliot.dovers@gmail.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           email = "elliot.dovers@gmail.com")
 Description: Fit log-Gaussian Cox Process regression models to point patterns with
     extensions, including a joint model for integrating presence-only and
     presence/absence data. The models are fitted using maximum likelihood estimation
@@ -15,7 +14,7 @@ Description: Fit log-Gaussian Cox Process regression models to point patterns wi
     Laplace approximation. Gradients are calculated using automatic differentiation.
 Suggests: testthat
 Depends: R (>= 3.2.0)
-Imports: methods, fields, stats, FRK, RandomFields, TMB (>= 1.7.14), sp, spatstat, grDevices, graphics
+Imports: methods, stats, MASS, fields, FRK, RandomFields, TMB (>= 1.7.14), sp, spatstat, grDevices, graphics
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

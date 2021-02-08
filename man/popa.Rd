@@ -16,9 +16,7 @@ popa(
   model.type = c("laplace", "variational", "ipp"),
   bf.matrix.type = c("sparse", "dense"),
   se = TRUE,
-  starting.pars,
-  subset,
-  na.action
+  starting.pars
 )
 }
 \arguments{
@@ -45,10 +43,6 @@ popa(
 \item{se}{a logical indicating whether standard errors should be calculated.}
 
 \item{starting.pars}{an optional named list or scampr model object that gives warm starting values for the parameters of the model.}
-
-\item{subset}{an optional subset of the data to be used.}
-
-\item{na.action}{an optional way of handling NA's in the data, default is omit.}
 }
 \value{
 a scampr model object

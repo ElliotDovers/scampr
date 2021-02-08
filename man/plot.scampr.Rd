@@ -25,7 +25,7 @@ dat_po <- eucalypt[["po"]]
 dat_pa <- eucalypt[["pa"]]
 
 # Fit an IPP model to the point pattern
-m.ipp <- ippm(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po)
+m.ipp <- ipp(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po)
 
 # Fit a combined data model
 m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,

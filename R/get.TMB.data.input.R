@@ -69,15 +69,15 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PA design matrix
-    pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
+    pa.des.mat <- get.design.matrix(pa.formula, pa.data)
     # Determine the bias predictors as those in PO formula and not in PA formula
     bias.preds <- po.pred[!po.pred %in% pa.pred]
     # Separate the PO formulae
     po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
     po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
     # Get the PO design matrices
-    po.des.mat <- get.desgin.matrix(po.pred.formula, po.data)
-    po.bias.des.mat <- get.desgin.matrix(po.bias.formula, po.data)
+    po.des.mat <- get.design.matrix(po.pred.formula, po.data)
+    po.bias.des.mat <- get.design.matrix(po.bias.formula, po.data)
     # Get the presence point/ quadrature point identifier
     pt.quad.id <- po.data[ , po.resp]
     # Re-adjust the bias intercept name
@@ -194,7 +194,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PO design matrix
-    po.des.mat <- get.desgin.matrix(po.formula, po.data)
+    po.des.mat <- get.design.matrix(po.formula, po.data)
     # Get the presence point/ quadrature point identifier
     pt.quad.id <- po.data[ , po.resp]
     # Set the fixed effect names
@@ -309,7 +309,7 @@ get.TMB.data.input <- function(po.formula, pa.formula, po.data, pa.data, coord.n
     ############################################################
 
     # Get the PA design matrix
-    pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
+    pa.des.mat <- get.design.matrix(pa.formula, pa.data)
     fixed.names <- colnames(pa.des.mat)
 
     # Determine the basis functions to be used

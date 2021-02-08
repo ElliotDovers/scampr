@@ -11,8 +11,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
-#' @param subset an optional subset of the data to be used.
-#' @param na.action an optional way of handling NA's in the data, default is omit.
+#' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return a scampr model object
 #' @export
@@ -29,7 +28,7 @@
 #'
 #' # Fit with a shared latent field using FRK package default basis functions
 #' m2 <- pa(Y ~ TMP_MIN, eucalypt[["pa"]], model.type = "laplace")
-pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset, na.action) {
+pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
 
@@ -38,7 +37,9 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   pa.pred <- all.vars(pa.formula[[3]])
 
   ## checks ##
-
+  if (model.type == "variational") {
+    stop("Presence/Absence Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
+  }
   if (length(pa.resp) != 1) {
     stop("Formula can only take a single response")
   }
@@ -57,8 +58,36 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
 
   ############################################################
 
-  # Get the PA design matrix
-  pa.des.mat <- get.desgin.matrix(pa.formula, pa.data)
+  # Apply subsetting to data if supplied (with checks)
+  if (!missing(subset)) {
+    if (!is.vector(subset)) {
+      stop("subset must be a vector")
+    } else {
+      if (class(subset) == "logical") {
+        if (length(subset) != nrow(pa.data)) {
+          stop("Logical subset must be of same dimension as data provided")
+        } else {
+          pa.data <- pa.data[subset, ]
+        }
+      } else if (class(subset) == "integer" | class(subset) == "numeric") {
+        if (!all(subset %in% 1:nrow(pa.data))) {
+          stop("numeric subset must include row numbers of the data provided")
+        }
+        pa.data <- pa.data[subset, ]
+      } else {
+        stop("subset has an incorrect format")
+      }
+    }
+  }
+
+  # default na.action is to remove any data rows with na (for terms involved in the model)
+  rm.rows <- attr(na.omit(pa.data[ , c(coord.names, pa.resp, pa.pred)]), "na.action")
+  if (!is.null(rm.rows)) {
+    pa.data <- pa.data[-rm.rows, ]
+  }
+
+  # Get the design matrix
+  pa.des.mat <- get.design.matrix(pa.formula, pa.data)
   fixed.names <- colnames(pa.des.mat)
 
   # Determine the basis functions to be used
@@ -169,7 +198,6 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
                 variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T),
                 laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T)
   )
-  # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
   res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required
