@@ -11,7 +11,7 @@ lgcp(
   quad.weights.name = "quad.size",
   FRK.basis.functions,
   simple.basis,
-  approx.with = c("laplace", "variational"),
+  approx.with = c("variational", "laplace"),
   se = TRUE,
   bf.matrix.type = c("sparse", "dense"),
   starting.pars,

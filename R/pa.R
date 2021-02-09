@@ -97,7 +97,7 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
         # create a spatial pixels data frame as required by FRK::auto_basis
         sp.data <- pa.data[ , coord.names]
         sp::coordinates(sp.data) <- coord.names
-        FRK.basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
+        FRK.basis.functions <- FRK::auto_basis(data = sp.data, max_basis = nrow(pa.data)*0.25)
       }
       pa.bf.matrix <- FRK::eval_basis(basis = FRK.basis.functions, as.matrix(pa.data[ , coord.names]))
       bf.info <- FRK.basis.functions@df

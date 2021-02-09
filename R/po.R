@@ -119,7 +119,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
         # create a spatial pixels data frame as required by FRK::auto_basis
         sp.data <- po.data[ ,coord.names]
         sp::coordinates(sp.data) <- coord.names
-        FRK.basis.functions <- FRK::auto_basis(data = sp.data, nres = 2)
+        FRK.basis.functions <- FRK::auto_basis(data = sp.data, max_basis = sum(pt.quad.id)*0.25)
       }
       po.bf.matrix <- FRK::eval_basis(basis = FRK.basis.functions, as.matrix(po.data[ , coord.names]))
       bf.info <- FRK.basis.functions@df

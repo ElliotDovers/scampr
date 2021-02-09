@@ -34,7 +34,7 @@
 #' # Fit a LGCP model using Laplace approximation
 #' m.lgcp_lp <- lgcp(pres ~ elev.std, data = dat, approx.with = "laplace", simple.basis = bfs)
 #' }
-lgcp <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("laplace", "variational"), se = TRUE, bf.matrix.type = c("sparse", "dense"), starting.pars, subset) {
+lgcp <- function(formula, data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, approx.with = c("variational", "laplace"), se = TRUE, bf.matrix.type = c("sparse", "dense"), starting.pars, subset) {
 
   approx.with <- match.arg(approx.with)
   bf.matrix.type <- match.arg(bf.matrix.type)
