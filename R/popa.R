@@ -3,7 +3,7 @@
 #' @description Jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection.
 #'
 #' @param po.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence-only data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.
-#' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
+#' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. All predictor terms must also be included in po.formula. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
 #' @param po.data a data frame containing predictors at both presence-records and quadrature as well as the po.formula 'response'.
 #' @param pa.data a data frame containing predictors and response for the pa.formula.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
@@ -52,9 +52,6 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   po.pred <- all.vars(po.formula[[3]])
 
   ## checks ##
-  if (model.type == "variational") {
-    stop("Combined Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
-  }
   if (length(pa.resp) != 1 & length(po.resp) != 1) {
     stop("Both formulae can only take a single response")
   }
@@ -81,6 +78,9 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   }
   # parameters of restricted strings
   model.type <- match.arg(model.type)
+  if (model.type == "variational") {
+    stop("Combined Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
+  }
   bf.matrix.type <- match.arg(bf.matrix.type)
 
   ############################################################
@@ -99,18 +99,36 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
 
   # Get the PA design matrix
   pa.des.mat <- get.design.matrix(pa.formula, pa.data)
-  # Determine the bias predictors as those in PO formula and not in PA formula
-  bias.preds <- po.pred[!po.pred %in% pa.pred]
-  # Separate the PO formulae
-  po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred[!po.pred %in% bias.preds], collapse = " + ")))
-  po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
+  # Get the full PO design matrix
+  full.po.des.mat <- get.design.matrix(po.formula, po.data)
+  # Get the seperate predictors (and remove intercepts if present - to be dealt with later)
+  po.preds <- colnames(full.po.des.mat)[colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
+  po.preds <- po.preds[!grepl("Intercept", po.preds, fixed = T)]
+  bias.preds <- colnames(full.po.des.mat)[!colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
+  bias.preds <- bias.preds[!grepl("Intercept", bias.preds, fixed = T)]
+  # Add/remove intercept term as required
+  if (any(grepl("Intercept", colnames(full.po.des.mat), fixed = T))) {
+    if (!any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
+      stop("Intercept term found in po.formula and not in pa.formula")
+    }
+    po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.preds, collapse = " + ")))
+    po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
+  } else {
+    if (any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
+      stop("Intercept term found in pa.formula and not in po.formula")
+    }
+    po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(po.preds, collapse = " + ")))
+    po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(bias.preds, collapse = " + ")))
+  }
   # Get the PO design matrices
   po.des.mat <- get.design.matrix(po.pred.formula, po.data)
   po.bias.des.mat <- get.design.matrix(po.bias.formula, po.data)
+  # Adjust the Intercept name if required
+  if (any(grepl("Intercept", colnames(po.bias.des.mat), fixed = T))) {
+    colnames(po.bias.des.mat)[grepl("Intercept", colnames(po.bias.des.mat), fixed = T)] <- "(Bias Intercept)"
+  }
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
-  # Re-adjust the bias intercept name
-  colnames(po.bias.des.mat)[grepl("(Intercept)", colnames(po.bias.des.mat), fixed = T)] <- "(Bias Intercept)"
   # Set the fixed effect names
   fixed.names <- c(colnames(po.des.mat), colnames(po.bias.des.mat))
   fixed.names.bias.id <- c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat)))
@@ -281,9 +299,8 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   res$starting.pars <- start.pars
   res$data <- po.data
   attr(res$data, "pa") <- pa.data
-  # res$formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
-  res$formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.pred, collapse = " + ")))
-  attr(res$formula, "pa") <- stats::as.formula(paste0(pa.resp, " ~ ", paste(pa.pred, collapse = " + ")))
+  res$formula <- po.formula
+  attr(res$formula, "pa") <- pa.formula
   res$coord.names <- coord.names
   res$quad.weights.name <- quad.weights.name
   res$pt.quad.id <- pt.quad.id

@@ -37,9 +37,6 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   pa.pred <- all.vars(pa.formula[[3]])
 
   ## checks ##
-  if (model.type == "variational") {
-    stop("Presence/Absence Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
-  }
   if (length(pa.resp) != 1) {
     stop("Formula can only take a single response")
   }
@@ -54,6 +51,9 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   }
   # parameters of restricted strings
   model.type <- match.arg(model.type)
+  if (model.type == "variational") {
+    stop("Presence/Absence Data Model cannot handle variational approx. at this stage. Try model.type = 'laplace'")
+  }
   bf.matrix.type <- match.arg(bf.matrix.type)
 
   ############################################################
