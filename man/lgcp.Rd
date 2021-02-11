@@ -31,9 +31,9 @@ lgcp(
 
 \item{simple.basis}{Alternative to 'FRK.basis.functions', a data.frame of basis functions information created by 'simple_basis()'.}
 
-\item{approx.with}{charater indicating the type of approximation to use for the intractible marginalisation: variational or Laplace}
+\item{approx.with}{a charater string indicating the type of approximation to use for the intractible marginalisation. One of 'variational' or 'laplace'.}
 
-\item{se}{logical indicating whether standard errors should be calculated}
+\item{se}{a logical indicating whether standard errors should be calculated}
 
 \item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 

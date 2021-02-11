@@ -19,6 +19,19 @@
 #'
 #' AIC(m)
 AIC.scampr <- function(object, ..., k = 2) {
-  aic <- -2*logLik.scampr(object) + k*length(object$coefficients)
+  # get an identifier for the model type
+  mod.id <- NULL
+  if (is.na(object$approx.type)) {
+    mod.id <- "ipp"
+  } else {
+    mod.id <- object$approx.type
+  }
+  # Need to get the random effect coefficients from Laplace models
+  add.coef <- switch(mod.id,
+         ipp = 0,
+         variational = 0,
+         laplace = sum(object$basis.per.res)
+         )
+  aic <- -2*logLik.scampr(object) + k*length(object$coefficients) + k*add.coef
   return(aic)
 }

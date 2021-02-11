@@ -14,7 +14,7 @@
 #' @export
 #'
 #' @examples
-#' #' # Get the gorilla nesting data
+#' # Get the gorilla nesting data
 #' dat <- gorillas
 #'
 #' # Standardise the elevation covariate

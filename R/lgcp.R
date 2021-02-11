@@ -8,8 +8,8 @@
 #' @param quad.weights.name  charater string of the column name of quadrature weights in data
 #' @param FRK.basis.functions object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions
 #' @param simple.basis Alternative to 'FRK.basis.functions', a data.frame of basis functions information created by 'simple_basis()'.
-#' @param approx.with charater indicating the type of approximation to use for the intractible marginalisation: variational or Laplace
-#' @param se logical indicating whether standard errors should be calculated
+#' @param approx.with a charater string indicating the type of approximation to use for the intractible marginalisation. One of 'variational' or 'laplace'.
+#' @param se a logical indicating whether standard errors should be calculated
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param starting.pars optional named list or scampr model that gives warm starts for the parameters of the model
 #' @param subset an optional vector describing a subset of the data to be used.

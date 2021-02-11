@@ -36,7 +36,7 @@ scampr model object
 Fit an inhomogeneous Poisson process model to a point pattern using numerical quadrature (provided with the data, see e.g. scampr::gorillas)
 }
 \examples{
-#' # Get the gorilla nesting data
+# Get the gorilla nesting data
 dat <- gorillas
 
 # Standardise the elevation covariate

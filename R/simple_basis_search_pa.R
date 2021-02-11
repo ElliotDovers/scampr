@@ -1,3 +1,30 @@
+#' Internal Basis Function Search Algorithm for PA models
+#'
+#' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. All predictor terms must also be included in po.formula. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
+#' @param pa.data a data frame containing predictors and response for the pa.formula.
+#' @param pa.fold.id Optional for cross-validation. An integer or factor vector the same length as the pa.data that describes the CV fold that each location falls into.
+#' @param max.basis.functions Optional. An integer describing a rough upper limit to the number of basis functions to search. Defaults to half the number of presences in the data sets.
+#' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
+#' @param radius.type a character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).
+#' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
+#' @param domain.data Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.
+#' @param approx.with a charater string indicating the type of approximation to use for the intractible marginalisation. One of 'variational' or 'laplace'.
+#'
+#' @return a data.frame with columns including- 'nodes.on.long.edge': number used in scampr::simple_basis to create basis configuration. 'bf': the number of basis functions. 'loglik': the fitting marginal log-likelihood. 'aic': the corresponding AIC. Optionally, 'predicted_cll_pa': the conditional (on the latent field) Presence/Absence likelihood. 'roc_auc': Area under the ROC curve on the Presence/Absence data. Optional columns are the results from a cross-validation described by 'pa.fold.id'. (_va or _lp subscript for approx. type if both are calculated)
+#' @noRd
+#'
+#' @importFrom pROC roc auc
+#'
+#' @examples
+#' #' #' # Get the Eucalypt data
+#' dat_po <- eucalypt[["po"]]
+#' dat_pa <- eucalypt[["pa"]]
+#'
+#' \dontrun{
+#' # Fit with a shared latent field
+#' res <- simple_basis_search_pa(Y ~ TMP_MIN,
+#' pa.data = dat_pa)
+#' }
 simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.functions, coord.names = c("x", "y"), radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, approx.with = c("laplace", "variational")) {
 
   # Use provided model data as domain.data if missing and check coords are present
@@ -41,12 +68,12 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    m_ipp <- scampr::pa(pa.formula, pa.data, model.type = "ipp", coord.names = coord.names, bf.matrix.type = bf.matrix.type)
+    m_ipp <- pa(pa.formula, pa.data, model.type = "ipp", coord.names = coord.names, bf.matrix.type = bf.matrix.type)
 
     # Store Results
     nbf[counter] <- 0
-    loglik[counter] <- logLik(m_ipp)
-    aic[counter] <- AIC(m_ipp)
+    loglik[counter] <- logLik.scampr(m_ipp)
+    aic[counter] <- AIC.scampr(m_ipp)
     print(paste0("Completed fit with 0 basis functions (IPP)"))
     counter <- 2
     counter.counter <- c(counter.counter, counter)
@@ -55,7 +82,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
     # Start looping until we hit the max number of basis functions
     while (nrow(bfs) <= max.basis.functions) {
       # Set the current simple basis function configuration
-      bfs <- scampr::simple_basis(counter, data = domain.data, radius.type = radius.type)
+      bfs <- simple_basis(counter, data = domain.data, radius.type = radius.type)
       # try to fit the full model
       m <- NULL
       try(assign("m", pa(pa.formula, pa.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, bf.matrix.type = bf.matrix.type)))
@@ -66,8 +93,8 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
         aic[counter] <- NA
       } else {
         # Store results
-        loglik[counter] <-  logLik(m)
-        aic[counter] <- AIC(m)
+        loglik[counter] <-  logLik.scampr(m)
+        aic[counter] <- AIC.scampr(m)
         m <- NULL
       }
       # Store common results
@@ -94,7 +121,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    m_ipp <- scampr::pa(pa.formula, pa.data, model.type = "ipp", coord.names = coord.names, bf.matrix.type = bf.matrix.type)
+    m_ipp <- pa(pa.formula, pa.data, model.type = "ipp", coord.names = coord.names, bf.matrix.type = bf.matrix.type)
 
     # Initialise Objects #
     train_mods_ipp <- list() # training models
@@ -104,7 +131,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
     # Loop through CV folds
     for (i in sort(unique(pa.fold.id))) {
       train_mods_ipp[[i]] <- pa(pa.formula, pa.data[pa.fold.id != i, ], model.type = "ipp", coord.names = coord.names, bf.matrix.type = bf.matrix.type)
-      test.abund <- c(test.abund, predict(train_mods_ipp[[i]], newdata = pa.data[pa.fold.id == i, ], process = "abundance"))
+      test.abund <- c(test.abund, predict.scampr(train_mods_ipp[[i]], newdata = pa.data[pa.fold.id == i, ], process = "abundance"))
       test.pa.resp <- c(test.pa.resp, as.numeric(pa.data[pa.fold.id == i, pa.resp] > 0))
     }
     # predicted presence probability
@@ -112,13 +139,13 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
     # predicted conditional log-likelihood on the PA data
     pll_pa <- sum((test.pa.resp * log(pres_prob)) - ((1 - test.pa.resp) * exp(test.abund)))
     # area under ROC curve
-    roccurve <- pROC::roc(test.pa.resp, as.vector(pres_prob))
+    roccurve <- pROC::roc(test.pa.resp, as.vector(pres_prob), quiet = T)
     auc_val <- as.numeric(pROC::auc(roccurve))
 
     # Store Results
     nbf[counter] <- 0
-    loglik[counter] <- logLik(m_ipp)
-    aic[counter] <- AIC(m_ipp)
+    loglik[counter] <- logLik.scampr(m_ipp)
+    aic[counter] <- AIC.scampr(m_ipp)
     pred_loglik_pa[counter] <- pll_pa
     roc_auc[counter] <- auc_val
     print(paste0("Completed fits with 0 basis functions (IPP)"))
@@ -130,7 +157,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
     # Start looping until we hit the max number of basis functions
     while (nrow(bfs) <= max.basis.functions) {
       # Set the current simple basis function configuration
-      bfs <- scampr::simple_basis(counter, data = domain.data, radius.type = radius.type)
+      bfs <- simple_basis(counter, data = domain.data, radius.type = radius.type)
       # try to fit the full model
       m <- NULL
       try(assign("m", pa(pa.formula, pa.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, bf.matrix.type = bf.matrix.type)))
@@ -144,7 +171,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
         # Only get predictions if the current model fits
         if (!is.null(tmp.m)) {
           train_mods[[i]] <- tmp.m
-          test.abund <- c(test.abund, predict(train_mods[[i]], newdata = pa.data[pa.fold.id == i, ], process = "abundance"))
+          test.abund <- c(test.abund, predict.scampr(train_mods[[i]], newdata = pa.data[pa.fold.id == i, ], process = "abundance"))
           tmp.m <- NULL
         }
       }
@@ -160,7 +187,7 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
         # predicted conditional log-likelihood on the PA data
         pll_pa <- sum((test.pa.resp * log(pres_prob)) - ((1 - test.pa.resp) * exp(test.abund)))
         # area under ROC curve
-        roccurve <- pROC::roc(test.pa.resp, as.vector(pres_prob))
+        roccurve <- pROC::roc(test.pa.resp, as.vector(pres_prob), quiet = T)
         auc_val <- as.numeric(pROC::auc(roccurve))
 
         # Store results
@@ -175,8 +202,8 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
         aic[counter] <- NA
       } else {
         # Store results
-        loglik[counter] <-  logLik(m)
-        aic[counter] <- AIC(m)
+        loglik[counter] <-  logLik.scampr(m)
+        aic[counter] <- AIC.scampr(m)
         m <- NULL
       }
       # Store common results
@@ -187,11 +214,8 @@ simple_basis_search_pa <- function(pa.formula, pa.data, pa.fold.id, max.basis.fu
     }
   }
 
-  plot(nbf, loglik, xlab = "# Basis Functions", ylab = "log-Likelihood (in-sample)", type = "l")
-  points(nbf, loglik)
-
   # Adjust names of return object accoding to approx. type
-  ret.frame <- as.data.frame(cbind(counter = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik = loglik, aic = aic, predicted_cll_pa = pred_loglik_pa, roc_auc = roc_auc))
+  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik = loglik, aic = aic, predicted_cll_pa = pred_loglik_pa, roc_auc = roc_auc))
   if (approx.with == "variational") {
     attr(ret.frame, "approx") <- "variational"
   } else {

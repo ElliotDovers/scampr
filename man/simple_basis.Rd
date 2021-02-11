@@ -16,7 +16,7 @@ simple_basis(
 
 \item{data}{a data frame containing the two coordinates described by 'coord.names'}
 
-\item{radius.type}{character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Aread)/log(k).}
+\item{radius.type}{character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).}
 
 \item{coord.names}{vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical}
 }
