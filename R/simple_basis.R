@@ -4,7 +4,7 @@
 #'
 #' @param nodes.on.long.edge integer describing the number of basis function nodes to place along the longest edge of the domain
 #' @param data a data frame containing the two coordinates described by 'coord.names'
-#' @param radius.type character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Aread)/log(k).
+#' @param radius.type character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).
 #' @param coord.names vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical
 #'
 #' @return a simple basis data frame of class 'bf.df'. Consisting of columns: horizontal axis location, vertical axis location, scale (radius), res (resolution id).
