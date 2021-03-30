@@ -13,7 +13,7 @@
 
 \item{residual.type}{an optional character string for residual type if z == 'residual'}
 
-\item{...}{NA}
+\item{...}{additional plotting arguments}
 }
 \value{
 See fields::image.plot()

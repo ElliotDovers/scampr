@@ -5,7 +5,7 @@
 #' @param x A scampr model object
 #' @param z Either a single characater string of the variable name (in the model data) or one of 'fitted', 'residuals'. Alternatively, a vector of numeric values to be plotted
 #' @param residual.type an optional character string for residual type if z == 'residual'
-#' @param ... NA
+#' @param ... additional plotting arguments
 #'
 #' @return See fields::image.plot()
 #' @export
@@ -26,6 +26,7 @@
 #' image(m.popa, "residuals")
 #' }
 image.scampr <- function(x, z, residual.type, ...) {
+  xtrargs <- list(...)
   # check if model is from pa data - no image available so just plot the data
   if (x$data.model.type == "pa") {
     quad <- x$data
@@ -36,10 +37,32 @@ image.scampr <- function(x, z, residual.type, ...) {
     pa.pch <- resp
     pa.pch[resp == 0] <- 4
     pa.pch[resp == 1] <- 1
-    graphics::plot.default(quad[ , x$coord.names[1]], quad[ , x$coord.names[2]],
-         col = pa.col, pch = pa.pch, asp = 1, xlab = x$coord.names[1],
-         ylab = x$coord.names[2], main = "Presence/Absence Sites"
-    )
+    # Set the default names if not supplied
+    if (!"xlab" %in% names(xtrargs)) {
+      xtrargs$xlab <- x$coord.names[1]
+    }
+    if (!"ylab" %in% names(xtrargs)) {
+      xtrargs$ylab <- x$coord.names[2]
+    }
+    if (!"main" %in% names(xtrargs)) {
+      xtrargs$main <- "Presence/Absence Sites"
+    }
+    if (!"col" %in% names(xtrargs)) {
+      xtrargs$col <- pa.col
+    }
+    if (!"pch" %in% names(xtrargs)) {
+      xtrargs$pch <- pa.pch
+    }
+    if (!"asp" %in% names(xtrargs)) {
+      xtrargs$asp <- 1
+    }
+    xtrargs$x <- quad[ , x$coord.names[1]]
+    xtrargs$y <- quad[ , x$coord.names[2]]
+    # graphics::plot.default(quad[ , x$coord.names[1]], quad[ , x$coord.names[2]],
+    #      col = pa.col, pch = pa.pch, asp = 1, xlab = x$coord.names[1],
+    #      ylab = x$coord.names[2], main = "Presence/Absence Sites"
+    # )
+    do.call(graphics::plot.default, xtrargs)
     # warning("Only presence/absence survey sites are shown for this model's image")
   } else {
     # checks
@@ -60,7 +83,9 @@ image.scampr <- function(x, z, residual.type, ...) {
               tmp.z <- residuals.scampr(x, type = "raw")
               z <- tmp.z[x$pt.quad.id ==0]
             } else {
-              z.name <- paste0("Residuals (", residual.type, ")")
+              res.name <- residual.type
+              substr(res.name, 1, 1) <- toupper(substr(res.name, 1, 1))
+              z.name <- paste0("Residuals (", res.name, ")")
               tmp.z <- residuals.scampr(x, residual.type)
               z <- tmp.z[x$pt.quad.id ==0]
             }
@@ -77,7 +102,28 @@ image.scampr <- function(x, z, residual.type, ...) {
     xs <- sort(unique(quad[ , x$coord.names[1]]))
     ys <- sort(unique(quad[ , x$coord.names[2]]))
     zs <- vec2mat(z, quad[ , x$coord.names[1]], quad[ , x$coord.names[2]])
-    # image(x = xs, y = ys, z = zs, col = topo.colors(100)) # could write my own version with legend to remove need for fields
-    fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = x$coord.names[1], ylab = x$coord.names[2], main = z.name, bty = 'n')
+    # Set the default names if not supplied
+    if (!"xlab" %in% names(xtrargs)) {
+      xtrargs$xlab <- x$coord.names[1]
+    }
+    if (!"ylab" %in% names(xtrargs)) {
+      xtrargs$ylab <- x$coord.names[2]
+    }
+    if (!"main" %in% names(xtrargs)) {
+      xtrargs$main <- z.name
+    }
+    if (!"col" %in% names(xtrargs)) {
+      xtrargs$col <- grDevices::topo.colors(100)
+    }
+    if (!"asp" %in% names(xtrargs)) {
+      xtrargs$asp <- 1
+    }
+    # Enforce certain plotting elements
+    xtrargs$x <- xs
+    xtrargs$y <- ys
+    xtrargs$z <- zs
+    xtrargs$bty <- 'n'
+    # fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = x$coord.names[1], ylab = x$coord.names[2], main = z.name, bty = 'n')
+    do.call(fields::image.plot, xtrargs)
   }
 }

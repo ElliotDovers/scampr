@@ -4,12 +4,14 @@
 \alias{plot.scampr}
 \title{Plot diagnositcs for objects of class 'scampr'}
 \usage{
-\method{plot}{scampr}(x, ..., add.points = F)
+\method{plot}{scampr}(x, ..., which = c("residuals", "fitted"), add.points = F)
 }
 \arguments{
 \item{x}{a scampr model object}
 
-\item{...}{NA}
+\item{...}{additional plotting arguments}
+
+\item{which}{if a subset of the plots is required, specify one of 'residuals' or 'fitted': plots Pearson residuals and fitted intensity respectively for PPM (for a PA data model: plots fitted vs. raw residuals and the survey data for 'residuals' and 'fitted' resp.).}
 
 \item{add.points}{logical indicating whether to add the presence point locations to plots}
 }

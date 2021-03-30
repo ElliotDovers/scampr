@@ -13,6 +13,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param domain.data Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.
 #' @param approx.with a charater string indicating the type of approximation to use for the intractible marginalisation. One of 'variational' or 'laplace'.
+#' @param trunc.pa.prob Optional. A small positve number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoiding within the cross-validation.
 #'
 #' @return a data.frame with columns including- 'nodes.on.long.edge': number used in scampr::simple_basis to create basis configuration. 'bf': the number of basis functions. 'loglik': the fitting marginal log-likelihood. 'aic': the corresponding AIC. Optionally, 'predicted_cll_po': the conditional (on the latent field) Presence-only likelihood. 'predicted_cll_pa': the conditional (on the latent field) Presence/Absence likelihood. 'roc_auc': Area under the ROC curve on the Presence/Absence data. Optional columns are the results from a cross-validation described by 'po.fold.id' and/or 'pa.fold.id'. (_va or _lp subscript for approx. type if both are calculated)
 #' @noRd
@@ -29,7 +30,7 @@
 #' res <- simple_basis_search_popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
 #' po.data = dat_po, pa.data = dat_pa)
 #' }
-simple_basis_search_popa <- function(po.formula, pa.formula, po.data, pa.data, po.fold.id, pa.fold.id, max.basis.functions, coord.names = c("x", "y"), quad.weights.name = "quad.size", radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, approx.with = c("laplace", "variational")) {
+simple_basis_search_popa <- function(po.formula, pa.formula, po.data, pa.data, po.fold.id, pa.fold.id, max.basis.functions, coord.names = c("x", "y"), quad.weights.name = "quad.size", radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, approx.with = c("laplace", "variational"), trunc.pa.prob = 1e-7) {
 
   # Use provided model data as domain.data if missing and check coords are present
   if (missing(domain.data)) {
@@ -152,8 +153,11 @@ simple_basis_search_popa <- function(po.formula, pa.formula, po.data, pa.data, p
     }
     # predicted presence probability
     pres_prob <- 1 - exp(-exp(test.abund))
+    # NEED TO TRUNCATE PRESENCE PROBABILITY BY 'trunc.pa.prob'
+    pres_prob[pres_prob <= trunc.pa.prob] <- trunc.pa.prob
+    pres_prob[1 - pres_prob <= trunc.pa.prob] <- 1 - trunc.pa.prob
     # predicted conditional log-likelihood on the PA data
-    pll_pa <- sum((test.pa.resp * log(pres_prob)) - ((1 - test.pa.resp) * exp(test.abund)))
+    pll_pa <- sum((test.pa.resp * log(pres_prob)) + ((1 - test.pa.resp) * log(1 - pres_prob)))
     # predicted conditional log-likelihood on the PO data
     pll_po <- sum(test.inten[test.po.resp == 1]) - sum(test.po.quad.sizes[test.po.resp == 0] * exp(test.inten[test.po.resp == 0]))
     # area under ROC curve
@@ -206,8 +210,11 @@ simple_basis_search_popa <- function(po.formula, pa.formula, po.data, pa.data, p
       } else {
         # predicted presence probability
         pres_prob <- 1 - exp(-exp(test.abund))
+        # NEED TO TRUNCATE PRESENCE PROBABILITY BY 'trunc.pa.prob'
+        pres_prob[pres_prob <= trunc.pa.prob] <- trunc.pa.prob
+        pres_prob[1 - pres_prob <= trunc.pa.prob] <- 1 - trunc.pa.prob
         # predicted conditional log-likelihood on the PA data
-        pll_pa <- sum((test.pa.resp * log(pres_prob)) - ((1 - test.pa.resp) * exp(test.abund)))
+        pll_pa <- sum((test.pa.resp * log(pres_prob)) + ((1 - test.pa.resp) * log(1 - pres_prob)))
         # predicted conditional log-likelihood on the PO data
         pll_po <- sum(test.inten[test.po.resp == 1]) - sum(test.po.quad.sizes[test.po.resp == 0] * exp(test.inten[test.po.resp == 0]))
         # area under ROC curve

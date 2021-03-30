@@ -4,7 +4,7 @@ test_that("ipp po model works from fitted quad", {
   dat <- scampr::gorillas
   dat$elev <- scale(dat$elevation)
   mod <- po(pres ~ elev, dat, model.type = "ipp")
-  pp <- simulate(mod)
+  pp <- simulate(mod, return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -16,7 +16,7 @@ test_that("ipp popa model works from fitted quad", {
   dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
   dat_po$rd <- scale(dat_po$D_MAIN_RDS)
   mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "ipp")
-  pp <- simulate(mod)
+  pp <- simulate(mod, return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -24,7 +24,7 @@ test_that("ipp po model works from provided quad", {
   dat <- scampr::gorillas
   dat$elev <- scale(dat$elevation)
   mod <- po(pres ~ elev, dat, model.type = "ipp")
-  pp <- simulate(mod, domain.data = dat[dat$pres == 0, ])
+  pp <- simulate(mod, domain.data = dat[dat$pres == 0, ], return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -52,7 +52,7 @@ test_that("lgcp (va) po model works with expected posterior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "variational", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "expected")
+  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "expected", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -61,7 +61,7 @@ test_that("lgcp (laplace) po model works with expected posterior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "expected")
+  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "expected", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -70,7 +70,7 @@ test_that("lgcp (va) po model works with expected prior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "variational", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "expected")
+  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "expected", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -79,7 +79,7 @@ test_that("lgcp (laplace) po model works with expected prior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "expected")
+  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "expected", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -88,7 +88,7 @@ test_that("lgcp (va) po model works with sampled posterior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "variational", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample")
+  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -97,7 +97,7 @@ test_that("lgcp (laplace) po model works with sampled posterior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample")
+  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -106,7 +106,7 @@ test_that("lgcp (va) po model works with sampled prior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "variational", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "sample")
+  pp <- simulate(mod, rcoef.density = "prior", which.intensity = "sample", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -115,7 +115,7 @@ test_that("lgcp (laplace) po model works with sampled prior intensity", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample")
+  pp <- simulate(mod, rcoef.density = "posterior", which.intensity = "sample", return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -123,7 +123,7 @@ test_that("ipp model works with multiple sims", {
   dat <- scampr::gorillas
   dat$elev <- scale(dat$elevation)
   mod <- po(pres ~ elev, dat, model.type = "ipp")
-  pp <- simulate(mod, nsim = 3)
+  pp <- simulate(mod, nsim = 3, return.type = "ppp")
   testthat::expect_equal(class(pp),  c("ppplist", "solist", "anylist", "listof", "list"))
 })
 
@@ -132,7 +132,7 @@ test_that("lgcp (va) po model works with multiple sims (sampled intensity)", {
   dat$elev <- scale(dat$elevation)
   bfs <- simple_basis(nodes.on.long.edge = 3, data = dat)
   mod <- po(pres ~ elev, dat, model.type = "variational", simple.basis = bfs)
-  pp <- simulate(mod, which.intensity = "sample", nsim = 3)
+  pp <- simulate(mod, which.intensity = "sample", nsim = 3, return.type = "ppp")
   testthat::expect_equal(class(pp), c("ppplist", "solist", "anylist", "listof", "list"))
 })
 
@@ -179,7 +179,7 @@ test_that("lgcp popa model works from fitted quad", {
   dat_po$rd <- scale(dat_po$D_MAIN_RDS)
   bfs <- simple_basis(nodes.on.long.edge = 5, data = dat_po)
   mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod)
+  pp <- simulate(mod, return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
@@ -205,6 +205,6 @@ test_that("lgcp popa model works with multiple simulations", {
   dat_po$rd <- scale(dat_po$D_MAIN_RDS)
   bfs <- simple_basis(nodes.on.long.edge = 5, data = dat_po)
   mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
-  pp <- simulate(mod, nsim = 3)
+  pp <- simulate(mod, nsim = 3, return.type = "ppp")
   testthat::expect_equal(class(pp[[1L]]), "ppp")
 })

@@ -98,7 +98,7 @@ summary.scampr <- function(object, ...) {
   cat(
     "Model Type: ", Model.Desc, "\n\nFormula: ", if (length(tmp.formula) > 1) { tmp.formula[c(2, 1, 3)] } else { tmp.formula }, "\n\nAIC: ",
     AIC.scampr(object), "\ ", " approx.", if (mod.id != "ipp") {"marginal"} else {""}, "logLik: ", logLik.scampr(object),
-    "\n\nBasis functions per res. ", object$basis.per.res, "\n\nFixed Effects:\n\n"
+    if (mod.id != "ipp") {paste0("\n\nBasis functions per res. ", paste(object$basis.per.res, collapse = ", "))} else {""}, "\n\nFixed Effects:\n\n"
   )
   stats::printCoefmat(tmp.fixed_effects)
   if (mod.id != "ipp") {

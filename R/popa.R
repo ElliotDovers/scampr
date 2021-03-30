@@ -284,7 +284,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
-    res$approx.type <- "laplace" #model.type until PA models can handle VA
+    res$approx.type <- "laplace" #model.type until POPA models can handle VA
     res$fitted.values <- as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
   } else {

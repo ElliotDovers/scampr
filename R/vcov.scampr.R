@@ -39,14 +39,14 @@ vcov.scampr <- function(object, ...) {
         if (!is.na(object$approx.type)) {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
-          inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+          inputs <- get.TMB.data.input(formula = object$formula, data = object$data,
                                                 coord.names = object$coord.names,
                                                 quad.weights.name = object$quad.weights.name,
                                                 model.type = mod.id,
                                                 data.type = object$data.model.type, starting.pars = object)
         }
       } else {
-        inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+        inputs <- get.TMB.data.input(formula = object$formula, data = object$data,
                                               coord.names = object$coord.names,
                                               quad.weights.name = object$quad.weights.name,
                                               simple.basis = object$basis.fn.info,
@@ -54,7 +54,7 @@ vcov.scampr <- function(object, ...) {
                                               data.type = object$data.model.type, starting.pars = object)
       }
     } else {
-      inputs <- get.TMB.data.input(po.formula = object$formula, po.data = object$data,
+      inputs <- get.TMB.data.input(formula = object$formula, data = object$data,
                                   coord.names = object$coord.names,
                                   quad.weights.name = object$quad.weights.name,
                                   FRK.basis.functions = object$FRK.basis.functions,
@@ -158,7 +158,7 @@ vcov.scampr <- function(object, ...) {
         if (!is.na(object$approx.type)) {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
-          inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+          inputs <- get.TMB.data.input(formula = form.po, pa.formula = form.pa, data = data.po,
                                                 pa.data = data.pa,
                                                 coord.names = object$coord.names,
                                                 quad.weights.name = object$quad.weights.name,
@@ -166,7 +166,7 @@ vcov.scampr <- function(object, ...) {
                                                 data.type = object$data.model.type, starting.pars = object)
         }
       } else {
-        inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+        inputs <- get.TMB.data.input(formula = form.po, pa.formula = form.pa, data = data.po,
                                               pa.data = data.pa,
                                               coord.names = object$coord.names,
                                               quad.weights.name = object$quad.weights.name,
@@ -175,7 +175,7 @@ vcov.scampr <- function(object, ...) {
                                               data.type = object$data.model.type, starting.pars = object)
       }
     } else {
-      inputs <- get.TMB.data.input(po.formula = form.po, pa.formula = form.pa, po.data = data.po,
+      inputs <- get.TMB.data.input(formula = form.po, pa.formula = form.pa, data = data.po,
                                             pa.data = data.pa,
                                             coord.names = object$coord.names,
                                             quad.weights.name = object$quad.weights.name,

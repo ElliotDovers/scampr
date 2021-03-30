@@ -281,7 +281,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
   }
 
   # Adjust names of return object accoding to approx. type
-  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik_Va = loglik_va, loglik_lp = loglik_lp, aic_va = aic_va, aic_lp = aic_lp, predicted_cll_po_Va = pred_loglik_po_va, predicted_cll_po_lp = pred_loglik_po_lp))
+  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik_va = loglik_va, loglik_lp = loglik_lp, aic_va = aic_va, aic_lp = aic_lp, predicted_cll_po_va = pred_loglik_po_va, predicted_cll_po_lp = pred_loglik_po_lp))
   attr(ret.frame, "approx") <- "both"
   return(ret.frame)
 }

@@ -242,7 +242,7 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
   res$coefficients <- res$par
   coef.names <- switch(model.type,
                        ipp = fixed.names,
-                       variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log sd (bf ", random.nos, ")")),
+                       variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log Var (bf ", random.nos, ")")),
                        laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
   )
   names(res$coefficients) <- coef.names

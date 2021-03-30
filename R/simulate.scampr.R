@@ -7,11 +7,11 @@
 #' @param seed an integer for setting the random seed.
 #' @param ... NA
 #' @param domain.data optionally, a data frame of point locations that adequately cover the domain of interest, as well as, predictors involved in the model. If missing model quadrature is used. NOTE: if model quadrature is used and is an inadequate cover of the domain, simulation may be effected as interpolated variables will contain  many NA values.
-#' @param type a character string, one of 'link' or 'response', indicating the type of prediction to be returned. For log-intensity or intensity respectively.
 #' @param rcoef.density a character string indicating the probability density of the random effects to draw from.
 #' @param which.intensity a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.
-#' @param return.type a character string, one of 'ppp' or 'data.frame', indicating the object type of the simulation to be returned.
+#' @param return.type a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat::envelope} e.g.
 #' @param nsurv an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.
+#' @param log.expected a logical indicating whether to take the expectation of the log-intensity (ignores the variance correction). Only relevant to LGCP models for which \code{which.intensity} is 'expected'.
 #'
 #' @return Depends on return.type. Default is a point pattern object of class 'ppp' from spatstat. Otherwise can be set to return a data.frame describing the point pattern (with corresponding quadrature as an attribute). If nsim > 1 then returned as a list of either 'return.type'.
 #' @exportS3Method stats::simulate scampr
@@ -26,10 +26,14 @@
 #' dat$elev <- scale(dat$elevation)
 #' mod <- po(pres ~ elev, dat, model.type = "ipp")
 #' \dontrun{pp <- simulate(mod)}
-simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, type = c("link", "response"), rcoef.density = c("posterior", "prior"), which.intensity = c("expected", "sample"), return.type = c("ppp", "data.frame"), nsurv) {
+simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rcoef.density = c("posterior", "prior"), which.intensity = c("expected", "sample"), return.type = c("data.frame", "ppp"), nsurv, log.expected = T) {
 
   ## checks ##
-  type <- match.arg(type)
+  if (log.expected) {
+    type <- "link"
+  } else {
+    type <- "response"
+  }
   rcoef.density <- match.arg(rcoef.density)
   which.intensity <- match.arg(which.intensity)
   return.type <- match.arg(return.type)
@@ -236,6 +240,8 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, typ
         }
       }
       colnames(pres) <- c(coord.names, quad.wts.name, resp.name, pred.names) # names consistent with model
+      pres$process.intensity <- spatstat::interp.im(vec2im(quad$process.intensity, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+      pres$latent.field <- spatstat::interp.im(vec2im(quad$latent.field, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
       attr(pres, "quad") <- quad
       pp <- pres
     } else { # adjust for multiple simulations
@@ -263,6 +269,8 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, typ
           }
         }
         colnames(pres) <- c(coord.names, quad.wts.name, resp.name, pred.names) # names consistent with model
+        pres$process.intensity <- spatstat::interp.im(vec2im(tmp.quad$process.intensity, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+        pres$latent.field <- spatstat::interp.im(vec2im(tmp.quad$latent.field, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
         attr(pres, "quad") <- tmp.quad
         tmp[[i]] <- pres
         rm(pres)

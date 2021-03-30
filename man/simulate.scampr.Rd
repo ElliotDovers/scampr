@@ -10,11 +10,11 @@
   seed = NULL,
   ...,
   domain.data,
-  type = c("link", "response"),
   rcoef.density = c("posterior", "prior"),
   which.intensity = c("expected", "sample"),
-  return.type = c("ppp", "data.frame"),
-  nsurv
+  return.type = c("data.frame", "ppp"),
+  nsurv,
+  log.expected = T
 )
 }
 \arguments{
@@ -28,15 +28,15 @@
 
 \item{domain.data}{optionally, a data frame of point locations that adequately cover the domain of interest, as well as, predictors involved in the model. If missing model quadrature is used. NOTE: if model quadrature is used and is an inadequate cover of the domain, simulation may be effected as interpolated variables will contain  many NA values.}
 
-\item{type}{a character string, one of 'link' or 'response', indicating the type of prediction to be returned. For log-intensity or intensity respectively.}
-
 \item{rcoef.density}{a character string indicating the probability density of the random effects to draw from.}
 
 \item{which.intensity}{a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.}
 
-\item{return.type}{a character string, one of 'ppp' or 'data.frame', indicating the object type of the simulation to be returned.}
+\item{return.type}{a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat::envelope} e.g.}
 
 \item{nsurv}{an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.}
+
+\item{log.expected}{a logical indicating whether to take the expectation of the log-intensity (ignores the variance correction). Only relevant to LGCP models for which \code{which.intensity} is 'expected'.}
 }
 \value{
 Depends on return.type. Default is a point pattern object of class 'ppp' from spatstat. Otherwise can be set to return a data.frame describing the point pattern (with corresponding quadrature as an attribute). If nsim > 1 then returned as a list of either 'return.type'.
