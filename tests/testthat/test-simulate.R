@@ -9,13 +9,10 @@ test_that("ipp po model works from fitted quad", {
 })
 
 test_that("ipp popa model works from fitted quad", {
-  dat_po <- eucalypt[["po"]]
-  dat_pa <- eucalypt[["pa"]]
-  std.tmp <- scale(c(dat_po$TMP_MIN, dat_pa$TMP_MIN))
-  dat_po$mnt <- std.tmp[1:nrow(dat_po)]
-  dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
-  dat_po$rd <- scale(dat_po$D_MAIN_RDS)
-  mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "ipp")
+  dat_po <- flora$po$sp1
+  dat_pa <- flora$pa
+  dat_po <- rbind.data.frame(dat_po, flora$quad)
+  mod <- popa(pres ~ MNT + D.Main, sp1 ~ MNT, dat_po, dat_pa, model.type = "ipp")
   pp <- simulate(mod, return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
@@ -29,21 +26,17 @@ test_that("ipp po model works from provided quad", {
 })
 
 test_that("ipp popa model can return data frame", {
-  dat_po <- eucalypt[["po"]]
-  dat_pa <- eucalypt[["pa"]]
-  std.tmp <- scale(c(dat_po$TMP_MIN, dat_pa$TMP_MIN))
-  dat_po$mnt <- std.tmp[1:nrow(dat_po)]
-  dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
-  dat_po$rd <- scale(dat_po$D_MAIN_RDS)
-  mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "ipp")
+  dat_po <- flora$po$sp1
+  dat_pa <- flora$pa
+  dat_po <- rbind.data.frame(dat_po, flora$quad)
+  mod <- popa(pres ~ MNT + D.Main, sp1 ~ MNT, dat_po, dat_pa, model.type = "ipp")
   pp <- simulate(mod, return.type = "data.frame")
   testthat::expect_equal(class(pp), "data.frame")
 })
 
 test_that("ipp pa model does not work", {
-  dat_pa <- eucalypt[["pa"]]
-  dat_pa$mnt <- scale(dat_pa$TMP_MIN)
-  mod <- pa(Y ~ mnt, dat_pa, model.type = "ipp")
+  dat_pa <- flora$pa
+  mod <- pa(sp1 ~ MNT, dat_pa, model.type = "ipp")
   testthat::expect_error(simulate(mod))
 })
 
@@ -171,40 +164,31 @@ test_that("lgcp (va) po model can return data frame with multiple sims (sampled 
 })
 
 test_that("lgcp popa model works from fitted quad", {
-  dat_po <- eucalypt[["po"]]
-  dat_pa <- eucalypt[["pa"]]
-  std.tmp <- scale(c(dat_po$TMP_MIN, dat_pa$TMP_MIN))
-  dat_po$mnt <- std.tmp[1:nrow(dat_po)]
-  dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
-  dat_po$rd <- scale(dat_po$D_MAIN_RDS)
+  dat_po <- flora$po$sp1
+  dat_pa <- flora$pa
+  dat_po <- rbind.data.frame(dat_po, flora$quad)
   bfs <- simple_basis(nodes.on.long.edge = 5, data = dat_po)
-  mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
+  mod <- popa(pres ~ MNT + D.Main, sp1 ~ MNT, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
   pp <- simulate(mod, return.type = "ppp")
   testthat::expect_equal(class(pp), "ppp")
 })
 
 test_that("lgcp popa model can return data frame from sampled intensity", {
-  dat_po <- eucalypt[["po"]]
-  dat_pa <- eucalypt[["pa"]]
-  std.tmp <- scale(c(dat_po$TMP_MIN, dat_pa$TMP_MIN))
-  dat_po$mnt <- std.tmp[1:nrow(dat_po)]
-  dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
-  dat_po$rd <- scale(dat_po$D_MAIN_RDS)
+  dat_po <- flora$po$sp1
+  dat_pa <- flora$pa
+  dat_po <- rbind.data.frame(dat_po, flora$quad)
   bfs <- simple_basis(nodes.on.long.edge = 5, data = dat_po)
-  mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
+  mod <- popa(pres ~ MNT + D.Main, sp1 ~ MNT, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
   pp <- simulate(mod, which.intensity = "sample", return.type = "data.frame")
   testthat::expect_equal(class(pp), "data.frame")
 })
 
 test_that("lgcp popa model works with multiple simulations", {
-  dat_po <- eucalypt[["po"]]
-  dat_pa <- eucalypt[["pa"]]
-  std.tmp <- scale(c(dat_po$TMP_MIN, dat_pa$TMP_MIN))
-  dat_po$mnt <- std.tmp[1:nrow(dat_po)]
-  dat_pa$mnt <- std.tmp[(nrow(dat_po) + 1):length(std.tmp)]
-  dat_po$rd <- scale(dat_po$D_MAIN_RDS)
+  dat_po <- flora$po$sp1
+  dat_pa <- flora$pa
+  dat_po <- rbind.data.frame(dat_po, flora$quad)
   bfs <- simple_basis(nodes.on.long.edge = 5, data = dat_po)
-  mod <- popa(pres ~ mnt + rd, Y ~ mnt, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
+  mod <- popa(pres ~ MNT + D.Main, sp1 ~ MNT, dat_po, dat_pa, model.type = "laplace", simple.basis = bfs)
   pp <- simulate(mod, nsim = 3, return.type = "ppp")
   testthat::expect_equal(class(pp[[1L]]), "ppp")
 })

@@ -9,37 +9,41 @@
 #' @export
 #'
 #' @examples
-#' dat_po <- eucalypt[["po"]]
-#' dat_pa <- eucalypt[["pa"]]
+#' # Get the flora data for one of the species
+#' dat_po <- flora$po$sp1
+#' dat_pa <- flora$pa
+#'
+#' # Attach the quadrature to the PO data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- ipp(pres ~ TMP_MIN, data = dat_po)
+#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
 #'
 #' # Fit a combined data model
-#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
-#' po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+#' dat_pa, model.type = "ipp")
 #'
 #' # Fit presence/absence model
-#' m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#' m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 #'
 #' \dontrun{
 #' # Fit a LGCP model to the point pattern
-#' m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = dat_po,
+#' m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po,
 #' model.type = "variational", simple.basis = bfs)
 #' # Or
-#' m.lgcp_va2 <- lgcp(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po,
-#' approx.with = "variational", simple.basis = bfs)
+#' m.lgcp_lp <- scampr(pres ~ MNT + D.Main, dat_po,
+#' approx.with = "laplace", simple.basis = bfs)
 #' }
 #' residuals(m.ipp)
-#' residuals(m.popa)
-#' residuals(m.popa, data.type = "pa")
+#' residuals(m.comb)
+#' residuals(m.comb, data.type = "pa")
 #' residuals(m.pa, data.type = "pa")
 #' \dontrun{
-#' residuals(m.lgcp_va1)
-#' residuals(m.lgcp_va2, type = "pearson")
+#' residuals(m.lgcp_va)
+#' residuals(m.lgcp_lp, type = "pearson")
 #' }
 residuals.scampr <- function(object, ..., type = c("raw", "inverse", "pearson"), data.type = c("po", "pa")) {
   type <- match.arg(type)

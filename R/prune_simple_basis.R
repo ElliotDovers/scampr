@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' #' # Base the basis function nodes on the locations of presence records and quadrature
-#' dat <- eucalypt[["po"]]
+#' dat <- dat <- gorillas
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 #' pruned.bfs <- prune_simple_basis(dat[dat$pres == 1, c("x", "y")], bfs)
 prune_simple_basis <- function(pres.locs, simple.bfs, min.points = 1) {

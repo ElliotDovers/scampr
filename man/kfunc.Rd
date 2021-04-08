@@ -10,7 +10,8 @@ kfunc(
   point.pattern,
   intensity.at.pp,
   spatstat.win,
-  intensity.at = c("im", "pts")
+  intensity.at = c("im", "pts"),
+  dists = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ kfunc(
 \item{spatstat.win}{Optionally, a spatstat window object.}
 
 \item{intensity.at}{Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat::Kinhom()} is an image object or just provided at the presence points.}
+
+\item{dists}{a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.}
 }
 \value{
 a data.frame of two columns - distance (dist) and corresponding K function values (Kfn).
@@ -36,6 +39,6 @@ Inhomogeneous K function for scampr models (is a wrapper of \code{spatstat}'s ve
 # Get the data
 dat <- scampr::gorillas
 dat$elev <- scale(dat$elevation)
-mod <- po(pres ~ elev, dat, model.type = "ipp")
+mod <- scampr(pres ~ elev, dat, model.type = "ipp")
 K_func <- kfunc(mod)
 }

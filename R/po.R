@@ -15,7 +15,7 @@
 #' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return a scampr model object
-#' @export
+#' @noRd
 #'
 #' @importFrom methods as
 #' @importFrom stats optim

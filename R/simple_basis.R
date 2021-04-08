@@ -12,10 +12,7 @@
 #'
 #' @examples
 #' # Base the basis function nodes on the locations of presence records and quadrature
-#' bfs1 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["po"]])
-#'
-#' # Base the basis function nodes on the locations of survey sites from presence/absence data
-#' bfs2 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["pa"]])
+#' bfs <- simple_basis(nodes.on.long.edge = 9, data = gorillas)
 simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limiting"), coord.names = c("x", "y")) {
   if (!all(coord.names %in% colnames(data))) {
     stop("at least one of 'coord.names' not found in the data provided")

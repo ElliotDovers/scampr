@@ -14,7 +14,7 @@
 #' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return a scampr model object
-#' @export
+#' @noRd
 #'
 #' @importFrom methods as
 #' @importFrom stats optim
@@ -24,10 +24,10 @@
 #'
 #' @examples
 #' # Fit without a shared latent field
-#' m1 <- pa(Y ~ TMP_MIN, pa.data = eucalypt[["pa"]], model.type = "ipp")
+#' m1 <- pa(sp4 ~ MNT, pa.data = flora$pa, model.type = "ipp")
 #'
 #' # Fit with a shared latent field using FRK package default basis functions
-#' m2 <- pa(Y ~ TMP_MIN, eucalypt[["pa"]], model.type = "laplace")
+#' m2 <- pa(sp4 ~ MNT, flora$pa, model.type = "laplace")
 pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS

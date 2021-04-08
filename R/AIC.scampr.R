@@ -1,8 +1,8 @@
 #'  Akaike's Information Criteria for objects of class 'scampr'
 #'
 #' @param object a scampr model
+#' @param ... Optionally, additional scampr model objects
 #' @param k a numeric describing the penalty per parameter - defaults to k = 2 i.e. classical AIC.
-#' @param ... NA
 #'
 #' @return a numeric value with the corresponding AIC (or BIC, or ..., depending on k).
 #' @export
@@ -19,19 +19,22 @@
 #'
 #' AIC(m)
 AIC.scampr <- function(object, ..., k = 2) {
-  # get an identifier for the model type
-  mod.id <- NULL
-  if (is.na(object$approx.type)) {
-    mod.id <- "ipp"
+  extra.args <- list(...)
+  extra.arg.names <- as.list(substitute(list(...)))[-1L]
+  if (length(extra.args) == 0) {
+    return.obj <- get.single.model.aic(object, k = k)
   } else {
-    mod.id <- object$approx.type
+    aics <- NULL
+    mod.names <- NULL
+    for (i in 1:length(extra.args)) {
+      mod.names[i] <- as.character(extra.arg.names[i])
+      if (class(extra.args[[i]]) == "scampr") {
+        aics[i] <- get.single.model.aic(extra.args[[i]], k = k)
+      } else {
+        aics[i] <- NA
+      }
+      return.obj <- cbind.data.frame(model = c(deparse(substitute(object)), mod.names), AIC = c(get.single.model.aic(object, k = k), aics))
+    }
   }
-  # Need to get the random effect coefficients from Laplace models
-  add.coef <- switch(mod.id,
-         ipp = 0,
-         variational = 0,
-         laplace = sum(object$basis.per.res)
-         )
-  aic <- -2*logLik.scampr(object) + k*length(object$coefficients) + k*add.coef
-  return(aic)
+  return(return.obj)
 }

@@ -16,7 +16,7 @@
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #'
 #' @return a scampr model object
-#' @export
+#' @noRd
 #'
 #' @importFrom methods as
 #' @importFrom stats as.formula optim
@@ -25,12 +25,15 @@
 #' @importFrom TMB MakeADFun sdreport
 #'
 #' @examples
-#' # Get the Eucalypt data
-#' dat_po <- eucalypt[["po"]]
-#' dat_pa <- eucalypt[["pa"]]
+#' # Get the flora data for one of the species
+#' dat_po <- flora$po$sp1
+#' dat_pa <- flora$pa
+#'
+#' # Attach the quadrature to the PO data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Fit without a shared latent field
-#' m1 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+#' m1 <- popa(pres ~ MNT + D.Main, sp1 ~ MNT,
 #' po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
@@ -38,7 +41,7 @@
 #'
 #' \dontrun{
 #' # Fit with a shared latent field
-#' m2 <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
+#' m2 <- popa(pres ~ MNT + D.Main, Y ~ MNT,
 #' po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
 #' }
 popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars) {

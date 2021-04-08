@@ -2,6 +2,7 @@
 #'
 #' @param object either a fitted model or data.frame of class 'bf.df' created by 'simple_basis'
 #' @param point.locations either a matrix or data.frame describing the point locations in the same order as in 'object'
+#' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to create sparse or dense matrix.
 #'
 #' @return
 #' @noRd
@@ -21,14 +22,17 @@
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 #'
 #' # Fit a LGCP model using variational approximation
-#' m.lgcp_va <- po(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+#' m.lgcp_va <- scampr(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
 #'
 #' # Get some new locations
 #' new.sites <- dat[sample(1:nrow(dat), 10), c("x", "y")]
 #'
 #' # Calculate the basis function matrix at the new sites
 #' scampr:::get.bf.matrix(m.lgcp_va, new.sites)
-get.bf.matrix <- function(object, point.locations) {
+get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", "dense")) {
+
+  bf.matrix.type <- match.arg(bf.matrix.type)
+
   # Check the object is of one of the two correct types
   if(!"bf.df" %in% class(object)) {
     if (class(object)[1] != "scampr") {
@@ -60,7 +64,9 @@ get.bf.matrix <- function(object, point.locations) {
       Z[dist.mat <= radius] <- (1 - (dist.mat[dist.mat <= radius] / radius)^2)^2
       bf.mat <- cbind(bf.mat, Z)
     }
-    bf.mat <- methods::as(bf.mat, "sparseMatrix")
+    if (bf.matrix.type == "sparse") {
+      bf.mat <- methods::as(bf.mat, "sparseMatrix")
+    }
     attr(bf.mat, "bf.df") <- object
   }
   return(bf.mat)

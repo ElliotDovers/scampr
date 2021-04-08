@@ -33,9 +33,12 @@ a numeric vector of length newdata (or length of fitted data) containing the pre
 Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models (popa) the user can specify whether to return the rate at which presence records occur (process = intensity) or the abundance rate (process = abundance).
 }
 \examples{
-#' # Get the Eucalypt data
-dat_po <- eucalypt[["po"]]
-dat_pa <- eucalypt[["pa"]]
+# Get the flora data for one of the species
+dat_po <- flora$po$sp1
+dat_pa <- flora$pa
+
+# Attach the quadrature to the PO data
+dat_po <- rbind.data.frame(dat_po, flora$quad)
 
 # Set a train and test set
 train_po <- dat_po[dat_po$x <= mean(c(dat_po$x, dat_pa$x)), ]
@@ -47,26 +50,24 @@ test_pa <- dat_pa[dat_pa$x > mean(c(dat_po$x, dat_pa$x)), ]
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 
 # Fit an IPP model to the point pattern
-m.ipp <- ipp(pres ~ TMP_MIN, data = train_po)
+m.ipp <- scampr(pres ~ MNT + D.Main, train_po, model.type = "ipp")
 
 # Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
-po.data = train_po, pa.data = train_pa, model.type = "ipp")
+m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+dat_pa, model.type = "ipp")
 
 # Fit presence/absence model
-m.pa <- pa(Y ~ TMP_MIN, pa.data = train_pa, model.type = "ipp")
+m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 
+\dontrun{
 # Fit a LGCP model to the point pattern
-m.lgcp_va1 <- po(pres ~ TMP_MIN + D_MAIN_RDS, po.data = train_po,
-model.type = "variational", simple.basis = bfs)
-# Or
-m.lgcp_va2 <- lgcp(pres ~ TMP_MIN + D_MAIN_RDS, data = train_po,
-approx.with = "variational", simple.basis = bfs)
+m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 
 predict(m.ipp, test_po)
-predict(m.popa, test_po, process = "intensity")
-predict(m.popa, test_pa, process = "abundance")
+predict(m.comb, test_po, process = "intensity")
+predict(m.comb, test_pa, process = "abundance")
 predict(m.pa, test_pa)
-predict(m.lgcp_va1, test_po)
-predict(m.lgcp_va2, test_po, dens = "prior")
+predict(m.lgcp_va, test_po)
+predict(m.lgcp_va, test_po, dens = "prior")
+}
 }

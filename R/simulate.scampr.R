@@ -24,7 +24,7 @@
 #' @examples
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
-#' mod <- po(pres ~ elev, dat, model.type = "ipp")
+#' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
 #' \dontrun{pp <- simulate(mod)}
 simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rcoef.density = c("posterior", "prior"), which.intensity = c("expected", "sample"), return.type = c("data.frame", "ppp"), nsurv, log.expected = T) {
 
@@ -109,7 +109,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
         }
       }
       # Calculate the basis function matrix
-      Z <- get.bf.matrix(object, domain.data[ , object$coord.names])
+      Z <- get.bf.matrix(object, domain.data[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
       # Cannot use rpoispp() nsim argument as we need to re-sample the latent field each time
       if (nsim == 1) {
         # generate the coefficients

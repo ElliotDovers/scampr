@@ -22,12 +22,15 @@
 #' @importFrom FRK auto_basis eval_basis
 #'
 #' @examples
-#' # Get the Eucalypt data
-#' dat_po <- eucalypt[["po"]]
-#' dat_pa <- eucalypt[["pa"]]
+#' # Get the flora data for one of the species
+#' dat_po <- flora$po$sp1
+#' dat_pa <- flora$pa
+#'
+#' # Attach the quadrature to the PO data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Get the TMB data lists for a combined data model without latent field
-#' tmb.input <- scampr:::get.TMB.data.input(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 #' str(tmp.input)
 get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), data.type = c("po", "pa", "popa"), starting.pars) {
 
@@ -125,8 +128,8 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        po.bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names])
-        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
+        po.bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names], bf.matrix.type = bf.matrix.type)
+        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names], bf.matrix.type = bf.matrix.type)
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }
@@ -263,7 +266,7 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        po.bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names])
+        po.bf.matrix <- get.bf.matrix(simple.basis, data[ , coord.names], bf.matrix.type = bf.matrix.type)
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }
@@ -398,7 +401,7 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         colnames(bf.info)[grepl("loc", colnames(bf.info), fixed = T)] <- coord.names
         class(bf.info) <- c(class(bf.info), "bf.df")
       } else { # Otherwise use the provided simple basis
-        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names])
+        pa.bf.matrix <- get.bf.matrix(simple.basis, pa.data[ , coord.names], bf.matrix.type = bf.matrix.type)
         bf.info <- simple.basis
         FRK.basis.functions <- NULL
       }

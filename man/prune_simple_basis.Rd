@@ -21,7 +21,7 @@ Pruning for regular grids of bi-square basis functions in flat 2D space
 }
 \examples{
 #' # Base the basis function nodes on the locations of presence records and quadrature
-dat <- eucalypt[["po"]]
+dat <- dat <- gorillas
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 pruned.bfs <- prune_simple_basis(dat[dat$pres == 1, c("x", "y")], bfs)
 }

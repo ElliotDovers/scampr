@@ -18,3 +18,24 @@ scampr2startpars <- function(scampr.model, for.type = c("laplace", "variational"
   }
   return(starting.pars)
 }
+
+get.single.model.aic <- function(object, k = 2) {
+  if (class(object) != "scampr") {
+    stop(paste0(deparse(substitute(object)), " is not a scampr model"))
+  }
+  # get an identifier for the model type
+  mod.id <- NULL
+  if (is.na(object$approx.type)) {
+    mod.id <- "ipp"
+  } else {
+    mod.id <- object$approx.type
+  }
+  # Need to get the random effect coefficients from Laplace models
+  add.coef <- switch(mod.id,
+                     ipp = 0,
+                     variational = 0,
+                     laplace = sum(object$basis.per.res)
+  )
+  aic <- -2*logLik.scampr(object) + k*length(object$coefficients) + k*add.coef
+  return(aic)
+}

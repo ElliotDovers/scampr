@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{a scampr model}
 
-\item{...}{NA}
+\item{...}{Optionally, additional scampr model objects}
 
 \item{k}{a numeric describing the penalty per parameter - defaults to k = 2 i.e. classical AIC.}
 }

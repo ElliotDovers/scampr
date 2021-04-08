@@ -6,6 +6,7 @@
 #' @param intensity.at.pp Optionally, a vector of length \code{nrow(point.pattern)} that describes the intensity at each point.
 #' @param spatstat.win Optionally, a spatstat window object.
 #' @param intensity.at Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat::Kinhom()} is an image object or just provided at the presence points.
+#' @param dists a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.
 #'
 #' @return a data.frame of two columns - distance (dist) and corresponding K function values (Kfn).
 #' @export
@@ -16,9 +17,9 @@
 #' # Get the data
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
-#' mod <- po(pres ~ elev, dat, model.type = "ipp")
+#' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
 #' K_func <- kfunc(mod)
-kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "translate"), point.pattern, intensity.at.pp, spatstat.win, intensity.at = c("im", "pts")) {
+kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "translate"), point.pattern, intensity.at.pp, spatstat.win, intensity.at = c("im", "pts"), dists = NULL) {
 
   correction = match.arg(correction)
   intensity.at = match.arg(intensity.at)
@@ -80,7 +81,11 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
     # Adjust the intensity if needed
     inten.im <- vec2im(lambda[pres.id == 0], quad[,1], quad[,2])
     if (intensity.at == "pts") {
-      lambda.at.pts <- spatstat::interp.im(inten.im, pres[,1], pres[,2])
+      if (missing(intensity.at.pp)) {
+        lambda.at.pts <- spatstat::interp.im(inten.im, pres[,1], pres[,2])
+      } else {
+        lambda.at.pts <- intensity.at.pp
+      }
     }
   }
 
@@ -91,9 +96,14 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
     pres.pp <- spatstat::ppp(pres[,1], pres[,2], window = spatstat.win)
   }
 
+  # Check if the distances ('dists') are missing to use defaults
+  # if (missing(dists)) {
+  #   dists <- NULL
+  # }
+
   res <- switch(intensity.at,
-                im = spatstat::Kinhom(pres.pp, lambda = inten.im, correction = correction),
-                pts = spatstat::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction)
+                im = spatstat::Kinhom(pres.pp, lambda = inten.im, correction = correction, r = dists),
+                pts = spatstat::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction, r = dists)
                 )
 
   fn <- switch(correction,

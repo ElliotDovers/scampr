@@ -28,8 +28,5 @@ Uses data provided to place points across the range of the provided coordinates.
 }
 \examples{
 # Base the basis function nodes on the locations of presence records and quadrature
-bfs1 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["po"]])
-
-# Base the basis function nodes on the locations of survey sites from presence/absence data
-bfs2 <- simple_basis(nodes.on.long.edge = 9, data = eucalypt[["pa"]])
+bfs <- simple_basis(nodes.on.long.edge = 9, data = gorillas)
 }

@@ -9,7 +9,9 @@ cluster_test(
   conf.level = 0.95,
   nsims = 100,
   Kfun.correction = c("border", "bord.modif", "isotropic", "translate"),
-  return.data = F
+  return.data = F,
+  spatstat.win,
+  dists = NULL
 )
 }
 \arguments{
@@ -22,6 +24,10 @@ cluster_test(
 \item{Kfun.correction}{a character string describing the correction type to be used. See \code{spatstat::Kinhom()} for details.}
 
 \item{return.data}{a logical indicating whether to return the observed and simulated data}
+
+\item{spatstat.win}{Optionally, a spatstat window object.}
+
+\item{dists}{a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.}
 }
 \value{
 Optionally, a list of the observed and simulated K functions - see \code{GET::create_curve_set()}. Results are plotted.
@@ -33,6 +39,6 @@ Perform simulations from a scampr model to calculate global envelopes for the in
 # Get the data
 dat <- scampr::gorillas
 dat$elev <- scale(dat$elevation)
-mod <- po(pres ~ elev, dat, model.type = "ipp")
+mod <- scampr(pres ~ elev, dat, model.type = "ipp")
 cluster_test(mod)
 }

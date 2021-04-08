@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{a scampr model}
 
-\item{...}{NA}
+\item{...}{Optionally, additional scampr model objects}
 }
 \value{
 numeric describing the approximate marginal log-likelihood of the scampr model object
@@ -25,7 +25,7 @@ dat <- gorillas
 dat$elev.std <- scale(dat$elevation)
 
 # Fit a scampr model to the point pattern
-m <- ipp(pres ~ elev.std, data = dat)
+m <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
 
 logLik(m)
 }

@@ -11,7 +11,7 @@
 #' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return scampr model object
-#' @export
+#' @noRd
 #'
 #' @examples
 #' # Get the gorilla nesting data

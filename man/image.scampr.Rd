@@ -22,14 +22,20 @@ See fields::image.plot()
 An image plotting function that uses fields::image.plot() to display the specified variable as a field over the quadrature.
 }
 \examples{
-# Fit a combined data model
-m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
-po.data = eucalypt[["po"]], pa.data = eucalypt[["pa"]],
-model.type = "ipp")
+# Get the flora data for one of the species
+dat_po <- flora$po$sp1
+dat_pa <- flora$pa
 
-image(m.popa, "fitted")
+# Attach the quadrature to the PO data
+dat_po <- rbind.data.frame(dat_po, flora$quad)
+
+# Fit a combined data model
+m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+dat_pa, model.type = "ipp")
+
+image(m.comb, "fitted")
 \dontrun{
-image(m.popa, "TMP_MIN")
-image(m.popa, "residuals")
+image(m.comb, "MNT")
+image(m.comb, "residuals")
 }
 }

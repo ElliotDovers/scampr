@@ -32,17 +32,20 @@
 #' @importFrom TMB MakeADFun sdreport
 #'
 #' @examples
-#' # Get the Eucalypt data
-#' dat_po <- eucalypt[["po"]]
-#' dat_pa <- eucalypt[["pa"]]
+#' # Get the flora data for one of the species
+#' dat_po <- flora$po$sp1
+#' dat_pa <- flora$pa
+#'
+#' # Attach the quadrature to the PO data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Fit models without a latent effects (IPP) #
 #' # Point Process Model
-#' m.ipp <- scampr(pres ~ TMP_MIN + D_MAIN_RDS, dat_po, model.type = "ipp")
+#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
 #' # Binary Regression
-#' m.bin <- scampr(pa.formula = Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#' m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 #' # Combined Data Model
-#' m.comb <- scampr(pres ~ TMP_MIN + D_MAIN_RDS, dat_po, Y ~ TMP_MIN,
+#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
 #' dat_pa, model.type = "ipp")
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
@@ -51,11 +54,11 @@
 #' \dontrun{
 #' # Fit with a shared latent field (LGCP) #
 #' # Point Process Model
-#' m.lgcp <- scampr(pres ~ TMP_MIN + D_MAIN_RDS, dat_po)
+#' m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po)
 #' # Binary Regression with spatial random effects
-#' m.bin_w_sre <- scampr(pa.formula = Y ~ TMP_MIN, pa.data = dat_pa)
+#' m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa)
 #' # Combined Data Model with spatial random effects
-#' m.comb_w_sre <- scampr(pres ~ TMP_MIN + D_MAIN_RDS, dat_po, Y ~ TMP_MIN,
+#' m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
 #' dat_pa)
 #' }
 scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("variational", "laplace", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset) {

@@ -13,22 +13,25 @@
 #' @importFrom graphics plot.default points
 #'
 #' @examples
-#' # Get the Eucalypt data
-#' dat_po <- eucalypt[["po"]]
-#' dat_pa <- eucalypt[["pa"]]
+#' # Get the flora data for one of the species
+#' dat_po <- flora$po$sp1
+#' dat_pa <- flora$pa
+#'
+#' # Attach the quadrature to the PO data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- ipp(pres ~ TMP_MIN + D_MAIN_RDS, data = dat_po)
+#' m.ipp <- scampr(pres ~ MNT + D.Main, data = dat_po, model.type = "ipp")
 #'
 #' # Fit a combined data model
-#' m.popa <- popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
-#' po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+#' dat_pa, model.type = "ipp")
 #'
 #' # Fit presence/absence model
-#' m.pa <- pa(Y ~ TMP_MIN, pa.data = dat_pa, model.type = "ipp")
+#' m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 #'
 #' plot(m.ipp)
-#' plot(m.popa)
+#' plot(m.comb)
 #' plot(m.pa)
 plot.scampr <- function(x, ..., which = c("residuals", "fitted"), add.points = F) {
   which <- match.arg(which, several.ok = T)
