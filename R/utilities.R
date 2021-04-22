@@ -33,8 +33,8 @@ get.single.model.aic <- function(object, k = 2) {
   # Need to get the random effect coefficients from Laplace models
   add.coef <- switch(mod.id,
                      ipp = 0,
-                     variational = 0,
-                     laplace = sum(object$basis.per.res)
+                     variational = length(object$basis.per.res) -2 * sum(object$basis.per.res), # adjusts for posterior pars included in $coefficients
+                     laplace = length(object$basis.per.res)
   )
   aic <- -2*logLik.scampr(object) + k*length(object$coefficients) + k*add.coef
   return(aic)

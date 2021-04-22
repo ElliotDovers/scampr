@@ -33,7 +33,7 @@ scampr(
 
 \item{quad.weights.name}{a charater string of the column name of quadrature weights in \code{data}.}
 
-\item{FRK.basis.functions}{an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with a single spatial resolutions - if the model type is not set to an IPP.}
+\item{FRK.basis.functions}{an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with \code{max_basis} set to be 1/4 the total number of observations - only relevant when the model type is not set to an IPP.}
 
 \item{simple.basis}{an alternative to \code{FRK.basis.functions}: a data frame of basis functions information created by '\code{scampr::simple_basis()}.}
 

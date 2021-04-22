@@ -52,11 +52,11 @@ print.scampr <- function(x, ...) {
   } else if (x$data.model.type == "po") {
     Model.Desc <- switch(mod.id,
                          ipp = "Inhomogeneous Poisson process",
-                         variational = "LGCP with Variational Approx.",
-                         laplace = "LGCP with Laplace Approx.")
+                         variational = "Log-Gaussian Cox process - Variational Approx.",
+                         laplace = "Log-Gaussian Cox process - Laplace Approx.")
   } else if (x$data.model.type == "pa") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Binary Regression model w. complimentary log-log link function",
+                         ipp = "Binary regression model w. complimentary log-log link function",
                          variational = "Spatially correlated, binary regression model w. complimentary log-log link function - Variational approx.",
                          laplace = "Spatially correlated, binary regression model w. complimentary log-log link function - Laplace approx.")
   } else (

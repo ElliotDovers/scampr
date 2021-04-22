@@ -48,7 +48,7 @@ cluster_test <- function(model, conf.level = 0.95, nsims = 100, Kfun.correction 
   for (sim in 1:nsims) {
     tmp.dat <- simulate.scampr(model)
     in.bnd <- mgcv::in.out(as.matrix(bnd), as.matrix(tmp.dat[ , coord.names]))
-    tmp.Kfn <- kfunc(model, point.pattern = tmp.dat[in.bnd, coord.names], correction = Kfun.correction, spatstat.win = spatstat.win, dists = dists)
+    tmp.Kfn <- kfunc(model, point.pattern = tmp.dat[in.bnd, coord.names], correction = Kfun.correction, spatstat.win = spatstat.win, dists = K_obs$r)
     K_sim <- cbind(K_sim, tmp.Kfn$Kfn)
   }
 

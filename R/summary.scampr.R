@@ -44,10 +44,7 @@ summary.scampr <- function(object, ...) {
   } else {
     mod.id <- object$approx.type
   }
-  Mod_Type <- switch(mod.id,
-                     ipp = "IPP",
-                     variational = "LGCP with Variational Approx.",
-                     laplace = "LGCP with Laplace Approx.")
+
   # Set the model description
   if (object$data.model.type == "popa") {
     Model.Desc <- switch(mod.id,
@@ -57,13 +54,13 @@ summary.scampr <- function(object, ...) {
   } else if (object$data.model.type == "po") {
     Model.Desc <- switch(mod.id,
                          ipp = "Inhomogeneous Poisson process",
-                         variational = "LGCP with Variational Approx.",
-                         laplace = "LGCP with Laplace Approx.")
+                         variational = "Log-Gaussian Cox process - Variational Approx.",
+                         laplace = "Log-Gaussian Cox process - Laplace Approx.")
   } else if (object$data.model.type == "pa") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Logistic Regression model\nw. complimentary log-log link function",
-                         variational = "Spatially correlated logistic Regression model\nw. complimentary log-log link function - Variational approx.",
-                         laplace = "Spatially correlated logistic Regression model\nw. complimentary log-log link function - Laplace approx.")
+                         ipp = "Binary regression model\nw. complimentary log-log link function",
+                         variational = "Spatially correlated binary regression model\nw. complimentary log-log link function - Variational approx.",
+                         laplace = "Spatially correlated binary regression model\nw. complimentary log-log link function - Laplace approx.")
   } else (
     stop("unknown 'data.model.type' in scampr model")
   )

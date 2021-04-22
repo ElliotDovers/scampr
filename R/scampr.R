@@ -14,7 +14,7 @@
 #' @param pa.data Optionally, a data frame containing predictors and response described in \code{pa.formula}.
 #' @param coord.names a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis.
 #' @param quad.weights.name a charater string of the column name of quadrature weights in \code{data}.
-#' @param FRK.basis.functions an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with a single spatial resolutions - if the model type is not set to an IPP.
+#' @param FRK.basis.functions an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with \code{max_basis} set to be 1/4 the total number of observations - only relevant when the model type is not set to an IPP.
 #' @param simple.basis an alternative to \code{FRK.basis.functions}: a data frame of basis functions information created by '\code{scampr::simple_basis()}.
 #' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
