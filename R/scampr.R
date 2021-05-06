@@ -14,10 +14,9 @@
 #' @param pa.data Optionally, a data frame containing predictors and response described in \code{pa.formula}.
 #' @param coord.names a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis.
 #' @param quad.weights.name a charater string of the column name of quadrature weights in \code{data}.
-#' @param FRK.basis.functions an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with \code{max_basis} set to be 1/4 the total number of observations - only relevant when the model type is not set to an IPP.
-#' @param simple.basis an alternative to \code{FRK.basis.functions}: a data frame of basis functions information created by '\code{scampr::simple_basis()}.
+#' @param basis.functions an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.
 #' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
-#' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
+#' @param sparse a logical indicating whether sparse matrix calculations should be used. Should only be turned off when using dense basis functions, e.g. Gaussian Kernel with long range parameter.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional vector describing a subset of the data to be used.
@@ -54,14 +53,14 @@
 #' \dontrun{
 #' # Fit with a shared latent field (LGCP) #
 #' # Point Process Model
-#' m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po)
+#' m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po, basis.functions = bfs)
 #' # Binary Regression with spatial random effects
-#' m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa)
+#' m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, basis.functions = bfs)
 #' # Combined Data Model with spatial random effects
 #' m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-#' dat_pa)
+#' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("variational", "laplace", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, subset) {
+scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", basis.functions, model.type = c("variational", "laplace", "ipp"), sparse = TRUE, se = TRUE, starting.pars, subset) {
 
   # Determine the data model type to be used based off provided arguments
   data.type <- NULL
@@ -80,6 +79,29 @@ scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y")
   argpass[[1]] <- NULL
   names(argpass)[names(argpass) %in% "formula"] <- "po.formula"
   names(argpass)[names(argpass) %in% "data"] <- "po.data"
+  # Sort out the basis functions being used
+  if (!missing(basis.functions)) {
+    if (length(class(basis.functions)) == 1) { # check for correct FRK basis
+      if (class(basis.functions) == "Basis") {
+        names(argpass)[names(argpass) %in% "basis.functions"] <- "FRK.basis.functions"
+      } else {
+        stop("Incompatible Basis Functions Provided")
+      }
+    } else if (length(class(basis.functions)) == 2) { # check for correct simple basis
+        if (class(basis.functions)[2] == "bf.df") {
+          names(argpass)[names(argpass) %in% "basis.functions"] <- "simple.basis"
+        } else {
+          stop("Incompatible Basis Functions Provided")
+        }
+    }
+  }
+  # Sort out the bf.matrix.type
+  names(argpass)[names(argpass) %in% "sparse"] <- "bf.matrix.type"
+  if (sparse) {
+    argpass[names(argpass) %in% "bf.matrix.type"] <- "sparse"
+  } else {
+    argpass[names(argpass) %in% "bf.matrix.type"] <- "dense"
+  }
 
   # Try using eval(parse( to correct the scoping issues involved with do.call()
   # tmp <- paste(paste(names(argpass), unname(argpass), sep = " = "), collapse = ", ")

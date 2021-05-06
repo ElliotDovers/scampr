@@ -21,8 +21,8 @@
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
 #' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
-#' cluster_test(mod)
-cluster_test <- function(model, conf.level = 0.95, nsims = 100, Kfun.correction = c("border", "bord.modif", "isotropic", "translate"), return.data = F, spatstat.win, dists = NULL) {
+#' kfunc_envelopes(mod)
+kfunc_envelopes <- function(model, conf.level = 0.95, nsims = 100, Kfun.correction = c("border", "bord.modif", "isotropic", "translate"), return.data = F, spatstat.win, dists = NULL) {
 
   # checks and data from model
   Kfun.correction = match.arg(Kfun.correction)

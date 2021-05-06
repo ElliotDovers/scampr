@@ -11,10 +11,9 @@ scampr(
   pa.data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  FRK.basis.functions,
-  simple.basis,
+  basis.functions,
   model.type = c("variational", "laplace", "ipp"),
-  bf.matrix.type = c("sparse", "dense"),
+  sparse = TRUE,
   se = TRUE,
   starting.pars,
   subset
@@ -33,13 +32,11 @@ scampr(
 
 \item{quad.weights.name}{a charater string of the column name of quadrature weights in \code{data}.}
 
-\item{FRK.basis.functions}{an optional object of class "Basis" from FRK package. If neither \code{FRK.basis.functions} nor \code{simple.basis} are specified will use default \code{FRK::auto_basis()} with \code{max_basis} set to be 1/4 the total number of observations - only relevant when the model type is not set to an IPP.}
-
-\item{simple.basis}{an alternative to \code{FRK.basis.functions}: a data frame of basis functions information created by '\code{scampr::simple_basis()}.}
+\item{basis.functions}{an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.}
 
 \item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.}
 
-\item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
+\item{sparse}{a logical indicating whether sparse matrix calculations should be used. Should only be turned off when using dense basis functions, e.g. Gaussian Kernel with long range parameter.}
 
 \item{se}{a logical indicating whether standard errors should be calculated.}
 
@@ -82,11 +79,11 @@ bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 \dontrun{
 # Fit with a shared latent field (LGCP) #
 # Point Process Model
-m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po)
+m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po, basis.functions = bfs)
 # Binary Regression with spatial random effects
-m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa)
+m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, basis.functions = bfs)
 # Combined Data Model with spatial random effects
 m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-dat_pa)
+dat_pa, basis.functions = bfs)
 }
 }
