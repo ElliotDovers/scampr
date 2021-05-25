@@ -12,7 +12,7 @@
 #'
 #' @importFrom graphics plot.default
 #' @importFrom grDevices topo.colors
-#' @importFrom fields image.plot
+#' @importFrom fields image.plot rdist image.smooth as.image
 #'
 #' @examples
 #' # Get the flora data for one of the species
@@ -33,6 +33,8 @@
 #' }
 image.scampr <- function(x, z, residual.type, ...) {
   xtrargs <- list(...)
+  # set a residual plot identifier
+  is.resid <- F
   # check if model is from pa data - no image available so just plot the data
   if (x$data.model.type == "pa") {
     quad <- x$data
@@ -87,13 +89,48 @@ image.scampr <- function(x, z, residual.type, ...) {
             if (missing(residual.type)) {
               z.name <- "Residuals (raw)"
               tmp.z <- residuals.scampr(x, type = "raw")
-              z <- tmp.z[x$pt.quad.id ==0]
+              # z <- tmp.z[x$pt.quad.id ==0]
+              # need to count the presence points in each quadrat for plotting
+              pres <- x$data[x$pt.quad.id == 1, x$coord.names]
+              quad <- x$data[x$pt.quad.id == 0, x$coord.names]
+              dists <- fields::rdist(pres, quad)
+              is.min <- matrix(data = F, nrow = nrow(dists), ncol = ncol(dists))
+              for (i in 1:nrow(dists)) {
+                is.min[i, which.min(dists[i, ])] <- T
+              }
+              pp.resid.in.quad <- apply(is.min, 2, sum)
+              # add these into the residuals at the quadrature points
+              z <- tmp.z[x$pt.quad.id ==0] + pp.resid.in.quad
+              is.resid <- T
             } else {
-              res.name <- residual.type
-              substr(res.name, 1, 1) <- toupper(substr(res.name, 1, 1))
-              z.name <- paste0("Residuals (", res.name, ")")
-              tmp.z <- residuals.scampr(x, residual.type)
-              z <- tmp.z[x$pt.quad.id ==0]
+              if (!residual.type %in% c("raw", "inverse", "pearson")) {
+                stop("residual.type must be one of 'raw', 'inverse' or 'pearson'")
+              } else {
+                res.name <- residual.type
+                substr(res.name, 1, 1) <- toupper(substr(res.name, 1, 1))
+                z.name <- paste0("Residuals (", res.name, ")")
+                tmp.z <- residuals.scampr(x, residual.type)
+                # z <- tmp.z[x$pt.quad.id ==0]
+                # need to count the presence points in each quadrat for plotting
+                pres <- x$data[x$pt.quad.id == 1, x$coord.names]
+                quad <- x$data[x$pt.quad.id == 0, x$coord.names]
+                dists <- fields::rdist(pres, quad)
+                is.min <- matrix(data = F, nrow = nrow(dists), ncol = ncol(dists))
+                for (i in 1:nrow(dists)) {
+                  is.min[i, which.min(dists[i, ])] <- T
+                }
+                # adjust for non-raw residuals
+                pp.resids <- matrix(0, nrow = nrow(dists), ncol = ncol(dists))
+                pp.resids[is.min] <- switch(residual.type,
+                       raw = 1,
+                       inverse = 1 / exp(x$fitted.values[x$pt.quad.id == 1]),
+                       pearson = 1 / sqrt(exp(x$fitted.values[x$pt.quad.id == 1]))
+                )
+                add.pp.resid.in.quad <- apply(pp.resids, 2, sum)
+                # add these into the residuals at the quadrature points
+                z <- tmp.z[x$pt.quad.id ==0] + add.pp.resid.in.quad
+                is.resid <- T
+              }
             }
           }
         }
@@ -104,10 +141,27 @@ image.scampr <- function(x, z, residual.type, ...) {
     if (length(z) != sum(x$pt.quad.id == 0)) {
       stop("z vector of field values must match the number (and order) of quadrature points in the model provided")
     }
+
     quad <- x$data[x$pt.quad.id == 0, ]
-    xs <- sort(unique(quad[ , x$coord.names[1]]))
-    ys <- sort(unique(quad[ , x$coord.names[2]]))
-    zs <- vec2mat(z, quad[ , x$coord.names[1]], quad[ , x$coord.names[2]])
+    # adjust for smoothing if plotting a residuals image
+    if (is.resid) {
+      im_field <- fields::as.image(z, x = as.matrix(cbind(quad$x, quad$y)))
+      smooth.z <- fields::image.smooth(im_field)
+      smooth.z$z[is.na(im_field$z)] <- NA
+      xtrargs$x <- smooth.z$x
+      xtrargs$z <- smooth.z$z
+      xtrargs$y <- smooth.z$y
+      # xtrargs$residual.type <- NULL
+    } else  {
+      xs <- sort(unique(quad[ , x$coord.names[1]]))
+      ys <- sort(unique(quad[ , x$coord.names[2]]))
+      zs <- vec2mat(z, quad[ , x$coord.names[1]], quad[ , x$coord.names[2]])
+      # Enforce certain plotting elements
+      xtrargs$x <- xs
+      xtrargs$y <- ys
+      xtrargs$z <- zs
+    }
+
     # Set the default names if not supplied
     if (!"xlab" %in% names(xtrargs)) {
       xtrargs$xlab <- x$coord.names[1]
@@ -124,10 +178,6 @@ image.scampr <- function(x, z, residual.type, ...) {
     if (!"asp" %in% names(xtrargs)) {
       xtrargs$asp <- 1
     }
-    # Enforce certain plotting elements
-    xtrargs$x <- xs
-    xtrargs$y <- ys
-    xtrargs$z <- zs
     xtrargs$bty <- 'n'
     # fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = x$coord.names[1], ylab = x$coord.names[2], main = z.name, bty = 'n')
     do.call(fields::image.plot, xtrargs)

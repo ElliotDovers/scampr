@@ -34,6 +34,7 @@
 #' plot(m.comb)
 #' plot(m.pa)
 plot.scampr <- function(x, ..., which = c("residuals", "fitted"), add.points = F) {
+  xtrargs <- list(...)
   which <- match.arg(which, several.ok = T)
   if (x$data.model.type == "pa") {
     if ("residuals" %in% which) {
@@ -46,7 +47,13 @@ plot.scampr <- function(x, ..., which = c("residuals", "fitted"), add.points = F
     }
   } else {
     if ("residuals" %in% which) {
-      image.scampr(x, "residuals", residual.type = "pearson", ...)
+      if (!"residual.type" %in% names(xtrargs)) {
+        xtrargs$residual.type <- "pearson"
+      }
+      xtrargs$x <- x
+      xtrargs$z <- "residuals"
+      do.call(image.scampr, xtrargs)
+      # image.scampr(x, "residuals", residual.type = "pearson", ...)
       if (add.points) {
         graphics::points(x$data[x$pt.quad.id == 1, x$coord.names])
       }
