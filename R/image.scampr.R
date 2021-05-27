@@ -5,6 +5,7 @@
 #' @param x A scampr model object
 #' @param z Either a single characater string of the variable name (in the model data) or one of 'fitted', 'residuals'. Alternatively, a vector of numeric values to be plotted
 #' @param residual.type an optional character string for residual type if z == 'residual'
+#' @param residual.smoothing an optional numeric for the scale of residual smoothing (theta in fields::image.smooth())
 #' @param ... additional plotting arguments
 #'
 #' @return See fields::image.plot()
@@ -31,7 +32,7 @@
 #' image(m.comb, "MNT")
 #' image(m.comb, "residuals")
 #' }
-image.scampr <- function(x, z, residual.type, ...) {
+image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
   xtrargs <- list(...)
   # set a residual plot identifier
   is.resid <- F
@@ -119,16 +120,23 @@ image.scampr <- function(x, z, residual.type, ...) {
                 for (i in 1:nrow(dists)) {
                   is.min[i, which.min(dists[i, ])] <- T
                 }
-                # adjust for non-raw residuals
-                pp.resids <- matrix(0, nrow = nrow(dists), ncol = ncol(dists))
-                pp.resids[is.min] <- switch(residual.type,
-                       raw = 1,
-                       inverse = 1 / exp(x$fitted.values[x$pt.quad.id == 1]),
-                       pearson = 1 / sqrt(exp(x$fitted.values[x$pt.quad.id == 1]))
-                )
-                add.pp.resid.in.quad <- apply(pp.resids, 2, sum)
+                # FOR NOW SEE IF THESE ARE NOT NEEDED #
+                # # adjust for non-raw residuals
+                # pp.resids <- matrix(0, nrow = nrow(dists), ncol = ncol(dists))
+                # pp.resids[is.min] <- switch(residual.type,
+                #        raw = 1,
+                #        inverse = 1 / exp(x$fitted.values[x$pt.quad.id == 1]),
+                #        pearson = 1 / sqrt(exp(x$fitted.values[x$pt.quad.id == 1]))
+                # )
+                # add.pp.resid.in.quad <- apply(pp.resids, 2, sum)
+                add.pp.resid.in.quad <- apply(is.min, 2, sum)
+                quad.resid.lambda <- switch(residual.type,
+                                             raw = rep(1, sum(x$pt.quad.id == 0)),
+                                             inverse = exp(x$fitted.values[x$pt.quad.id == 0]),
+                                             pearson = sqrt(exp(x$fitted.values[x$pt.quad.id == 0]))
+                                      )
                 # add these into the residuals at the quadrature points
-                z <- tmp.z[x$pt.quad.id ==0] + add.pp.resid.in.quad
+                z <- tmp.z[x$pt.quad.id ==0] + (add.pp.resid.in.quad / quad.resid.lambda)
                 is.resid <- T
               }
             }
@@ -146,7 +154,7 @@ image.scampr <- function(x, z, residual.type, ...) {
     # adjust for smoothing if plotting a residuals image
     if (is.resid) {
       im_field <- fields::as.image(z, x = as.matrix(cbind(quad$x, quad$y)))
-      smooth.z <- fields::image.smooth(im_field)
+      smooth.z <- fields::image.smooth(im_field, theta = residual.smoothing)
       smooth.z$z[is.na(im_field$z)] <- NA
       xtrargs$x <- smooth.z$x
       xtrargs$z <- smooth.z$z
@@ -172,9 +180,9 @@ image.scampr <- function(x, z, residual.type, ...) {
     if (!"main" %in% names(xtrargs)) {
       xtrargs$main <- z.name
     }
-    if (!"col" %in% names(xtrargs)) {
-      xtrargs$col <- grDevices::topo.colors(100)
-    }
+    # if (!"col" %in% names(xtrargs)) {
+    #   xtrargs$col <- grDevices::topo.colors(100)
+    # }
     if (!"asp" %in% names(xtrargs)) {
       xtrargs$asp <- 1
     }

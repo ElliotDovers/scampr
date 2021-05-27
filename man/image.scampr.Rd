@@ -4,7 +4,7 @@
 \alias{image.scampr}
 \title{Plot the image of a field over a model quadrature}
 \usage{
-\method{image}{scampr}(x, z, residual.type, ...)
+\method{image}{scampr}(x, z, residual.type, residual.smoothing = 0.5, ...)
 }
 \arguments{
 \item{x}{A scampr model object}
@@ -12,6 +12,8 @@
 \item{z}{Either a single characater string of the variable name (in the model data) or one of 'fitted', 'residuals'. Alternatively, a vector of numeric values to be plotted}
 
 \item{residual.type}{an optional character string for residual type if z == 'residual'}
+
+\item{residual.smoothing}{an optional numeric for the scale of residual smoothing (theta in fields::image.smooth())}
 
 \item{...}{additional plotting arguments}
 }
