@@ -7,7 +7,7 @@
 #' @return
 #' @noRd
 #'
-#' @importFrom spatstat im
+#' @importFrom spatstat.geom im
 #'
 #' @examples
 #' #' # Get the quadrature from the gorillas data
@@ -16,6 +16,6 @@
 #' elevation <- scampr:::vec2im(vec = quad$elevation, x.loc = quad$x, y.loc = quad$y)
 vec2im <- function(vec, x.loc, y.loc) {
   var.mat <- vec2mat(vec, x.loc, y.loc)
-  var.im <- spatstat::im(t(var.mat), xcol = sort(unique(x.loc)), yrow = sort(unique(y.loc)))
+  var.im <- spatstat.geom::im(t(var.mat), xcol = sort(unique(x.loc)), yrow = sort(unique(y.loc)))
   return(var.im)
 }

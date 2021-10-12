@@ -11,7 +11,8 @@
 #' @return the simulated data frame with attributes containing sim information/specifications.
 #' @noRd
 #'
-#' @importFrom spatstat spatstat.options im owin rLGCP
+#' @importFrom spatstat.geom spatstat.options im owin
+#' @importFrom spatstat.core rLGCP
 #' @importFrom RandomFields RFoptions
 #'
 #' @examples
@@ -43,7 +44,7 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
   # }
 
   # Need to set the number of pixels
-  spatstat::spatstat.options(npixel=c(101, 101))
+  spatstat.geom::spatstat.options(npixel=c(101, 101))
 
   ############################################################################################################################
   # Convert a vector to a spatstat image object via vector locations #####(mainly for plotting) ##############################
@@ -58,7 +59,7 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
     vec.ref <- (col.ref - 1)*max(row.ref) + row.ref
     Vec[vec.ref] <- vec
     grid.mask <- matrix(Vec, max(row.ref), max(col.ref),dimnames = list(uy, ux))
-    vec.im <- spatstat::im(grid.mask, xcol = ux, yrow = uy)
+    vec.im <- spatstat.geom::im(grid.mask, xcol = ux, yrow = uy)
 
     return(vec.im)
   }
@@ -125,13 +126,13 @@ simulate_lgcp_pp <- function(Intercept = -3, Slope = 1.25, latent.variance = 1, 
   }
 
   # Set the observation window
-  wnd <- spatstat::owin(xrange = c(0, 100), yrange = c(0, 100))
+  wnd <- spatstat.geom::owin(xrange = c(0, 100), yrange = c(0, 100))
 
   # Simulate the LGCP
-  pp <- spatstat::rLGCP(model = "stable",
+  pp <- spatstat.core::rLGCP(model = "stable",
               mu =
                 Intercept +
-                (Slope * spatstat::im(X.grid, xcol = grid$x, yrow = grid$y)),
+                (Slope * spatstat.geom::im(X.grid, xcol = grid$x, yrow = grid$y)),
               var = latent.variance, scale = latent.range, alpha = 2,
               win = wnd,
               saveLambda = TRUE)

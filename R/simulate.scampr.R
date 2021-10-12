@@ -9,14 +9,15 @@
 #' @param domain.data optionally, a data frame of point locations that adequately cover the domain of interest, as well as, predictors involved in the model. If missing model quadrature is used. NOTE: if model quadrature is used and is an inadequate cover of the domain, simulation may be effected as interpolated variables will contain  many NA values.
 #' @param rcoef.density a character string indicating the probability density of the random effects to draw from.
 #' @param which.intensity a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.
-#' @param return.type a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat::envelope} e.g.
+#' @param return.type a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat.core::envelope} e.g.
 #' @param nsurv an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.
 #' @param log.expected a logical indicating whether to take the expectation of the log-intensity (ignores the variance correction). Only relevant to LGCP models for which \code{which.intensity} is 'expected'.
 #'
 #' @return Depends on return.type. Default is a point pattern object of class 'ppp' from spatstat. Otherwise can be set to return a data.frame describing the point pattern (with corresponding quadrature as an attribute). If nsim > 1 then returned as a list of either 'return.type'.
 #' @exportS3Method stats::simulate scampr
 #'
-#' @importFrom spatstat rpoispp interp.im
+#' @importFrom spatstat.core rpoispp
+#' @importFrom spatstat.geom interp.im
 #' @importFrom methods as
 #' @importFrom MASS mvrnorm
 #' @importFrom fields rdist
@@ -67,7 +68,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     intens <- predict.scampr(object = object, newdata = domain.data, type = "response")
     # Convert to spatstat image
     intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-    pp <- spatstat::rpoispp(lambda = intens_im, nsim = nsim)
+    pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = nsim)
   } else { # For LGCP models
     if (which.intensity == "expected") { # predict() handles the various posterior, prior, resposne and link cases
       # can use predict here. 'type' == "link" allows us to ignore the expectation correction
@@ -78,7 +79,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       }
       # Convert to spatstat image
       intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-      pp <- spatstat::rpoispp(lambda = intens_im, nsim = nsim)
+      pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = nsim)
     } else { # FOR SAMPLING # Need to construct the log-intensity from scratch using random coefficients
 
       # can cheat to get the fixed effects component by exploiting predict function
@@ -118,7 +119,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
         intens <- exp(Xb + Zu)
         # Convert to spatstat image
         intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-        pp <- spatstat::rpoispp(lambda = intens_im, nsim = 1L)
+        pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = 1L)
       } else { # For more than one simulation
         pp <- list()
         u <- list()
@@ -131,7 +132,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
           intens[[sim]] <- exp(Xb + Zu[[sim]])
           # Convert to spatstat image
           intens_im <- vec2im(intens[[sim]], domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-          pp[[sim]] <- spatstat::rpoispp(lambda = intens_im, nsim = 1)
+          pp[[sim]] <- spatstat.core::rpoispp(lambda = intens_im, nsim = 1)
         }
         names(pp) <- paste("Simulation", 1:nsim)
         class(pp) <- c("ppplist", "solist", "anylist", "listof", "list")
@@ -160,7 +161,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
           Xb.pp <- predict.scampr(object = object, newdata = domain.data, type = "link", dens = "prior")
           Zu_im <- vec2im(log(intens) -  Xb.pp, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
         }
-        survey.data$latent.field <- spatstat::interp.im(Zu_im, survey.data[ , object$coord.names[1]], survey.data[ , object$coord.names[2]])
+        survey.data$latent.field <- spatstat.geom::interp.im(Zu_im, survey.data[ , object$coord.names[1]], survey.data[ , object$coord.names[2]])
         survey.data$abund <- exp(Xb.surv + survey.data$latent.field)
         survey.data$pprob <- 1 -exp(-survey.data$abund)
         survey.data$`sim Y` <- stats::rbinom(length(survey.data$pprob), 1, survey.data$pprob)
@@ -173,7 +174,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
             Xb.pp <- predict.scampr(object = object, newdata = domain.data, type = "link", dens = "prior")
             Zu_im <- vec2im(log(intens) -  Xb.pp, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
           }
-          latent.field <- spatstat::interp.im(Zu_im, survey.data[ , object$coord.names[1]], survey.data[ , object$coord.names[2]])
+          latent.field <- spatstat.geom::interp.im(Zu_im, survey.data[ , object$coord.names[1]], survey.data[ , object$coord.names[2]])
           abund <- exp(Xb.surv + latent.field)
           pprob <- 1 -exp(-abund)
           pa <- stats::rbinom(length(pprob), 1, pprob)
@@ -194,7 +195,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       #     nearest.quad <- apply(pres.dists, 2, which.min) # finds the closest
       #     survey.data <- cbind(survey.data, preds.frame[nearest.quad, p])
       #   } else { # otherwise interpolate
-      #     survey.data <- cbind(survey.data, spatstat::interp.im(vec2im(preds.frame[ , p], domain.data[ , coord.names[1]], domain.data[ , coord.names[2]]), x = survey.data[ , 1], y = survey.data[ , 2]))
+      #     survey.data <- cbind(survey.data, spatstat.geom::interp.im(vec2im(preds.frame[ , p], domain.data[ , coord.names[1]], domain.data[ , coord.names[2]]), x = survey.data[ , 1], y = survey.data[ , 2]))
       #   }
       # }
       # colnames(survey.data) <- c(coord.names, survey.preds) # names consistent with model
@@ -236,12 +237,12 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
           nearest.quad <- apply(pres.dists, 2, which.min) # finds the closest
           pres <- cbind(pres, preds.frame[nearest.quad, p])
         } else { # otherwise interpolate
-          pres <- cbind(pres, spatstat::interp.im(vec2im(preds.frame[ , p], quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2]))
+          pres <- cbind(pres, spatstat.geom::interp.im(vec2im(preds.frame[ , p], quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2]))
         }
       }
       colnames(pres) <- c(coord.names, quad.wts.name, resp.name, pred.names) # names consistent with model
-      pres$process.intensity <- spatstat::interp.im(vec2im(quad$process.intensity, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
-      pres$latent.field <- spatstat::interp.im(vec2im(quad$latent.field, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+      pres$process.intensity <- spatstat.geom::interp.im(vec2im(quad$process.intensity, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+      pres$latent.field <- spatstat.geom::interp.im(vec2im(quad$latent.field, quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
       attr(pres, "quad") <- quad
       pp <- pres
     } else { # adjust for multiple simulations
@@ -265,12 +266,12 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
             nearest.quad <- apply(pres.dists, 2, which.min) # finds the closest
             pres <- cbind(pres, preds.frame[nearest.quad, p])
           } else { # otherwise interpolate
-            pres <- cbind(pres, spatstat::interp.im(vec2im(preds.frame[ , p], quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2]))
+            pres <- cbind(pres, spatstat.geom::interp.im(vec2im(preds.frame[ , p], quad[ , coord.names[1]], quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2]))
           }
         }
         colnames(pres) <- c(coord.names, quad.wts.name, resp.name, pred.names) # names consistent with model
-        pres$process.intensity <- spatstat::interp.im(vec2im(tmp.quad$process.intensity, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
-        pres$latent.field <- spatstat::interp.im(vec2im(tmp.quad$latent.field, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+        pres$process.intensity <- spatstat.geom::interp.im(vec2im(tmp.quad$process.intensity, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
+        pres$latent.field <- spatstat.geom::interp.im(vec2im(tmp.quad$latent.field, tmp.quad[ , coord.names[1]], tmp.quad[ , coord.names[2]]), x = pres[ , 1], y = pres[ , 2])
         attr(pres, "quad") <- tmp.quad
         tmp[[i]] <- pres
         rm(pres)

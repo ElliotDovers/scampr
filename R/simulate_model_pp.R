@@ -10,7 +10,7 @@
 #' @return point pattern object of class 'ppp' from spatstat
 #' @noRd
 #'
-#' @importFrom spatstat rpoispp
+#' @importFrom spatstat.core rpoispp
 #' @importFrom methods as
 #' @importFrom MASS mvrnorm
 #' @examples
@@ -50,7 +50,7 @@ simulate_model_pp <- function(model, domain.data, type = c("link", "response"), 
     intens <- predict.scampr(object = model, newdata = domain.data, type = "response")
     # Convert to spatstat image
     intens_im <- vec2im(intens, domain.data[ , model$coord.names[1]], domain.data[ , model$coord.names[2]])
-    pp <- spatstat::rpoispp(lambda = intens_im)
+    pp <- spatstat.core::rpoispp(lambda = intens_im)
   } else {
     if (expected.or.sampled.intensity == "expected") { # predict() handles the various posterior, prior, resposne and link cases
       # can use predict here. 'type' == "link" allows us to ignore the expectation correction
@@ -61,7 +61,7 @@ simulate_model_pp <- function(model, domain.data, type = c("link", "response"), 
       }
       # Convert to spatstat image
       intens_im <- vec2im(intens, domain.data[ , model$coord.names[1]], domain.data[ , model$coord.names[2]])
-      pp <- spatstat::rpoispp(lambda = intens_im)
+      pp <- spatstat.core::rpoispp(lambda = intens_im)
     } else { # FOR SAMPLING # Need to construct the log-intensity from scratch using random coefficients
 
       # can cheat to get the fixed effects component by exploiting predict function
@@ -100,7 +100,7 @@ simulate_model_pp <- function(model, domain.data, type = c("link", "response"), 
       intens <- exp(Xb + Zu)
       # Convert to spatstat image
       intens_im <- vec2im(intens, domain.data[ , model$coord.names[1]], domain.data[ , model$coord.names[2]])
-      pp <- spatstat::rpoispp(lambda = intens_im)
+      pp <- spatstat.core::rpoispp(lambda = intens_im)
     }
   }
   if (!is.na(rseed)) {

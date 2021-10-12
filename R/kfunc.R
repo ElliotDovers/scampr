@@ -1,17 +1,18 @@
 #' Inhomogeneous K function for scampr models (is a wrapper of \code{spatstat}'s version). Or calculate the K function from point pattern (and intensity) provided.
 #'
 #' @param model a scampr model object
-#' @param correction a character string describing the correction type to be used. See \code{spatstat::Kinhom()} for details.
+#' @param correction a character string describing the correction type to be used. See \code{spatstat.core::Kinhom()} for details.
 #' @param point.pattern Optionally, a data frame, the first two columns of which describe the horizontal and vertical coordinates of point locations respectively.
 #' @param intensity.at.pp Optionally, a vector of length \code{nrow(point.pattern)} that describes the intensity at each point.
 #' @param spatstat.win Optionally, a spatstat window object.
-#' @param intensity.at Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat::Kinhom()} is an image object or just provided at the presence points.
+#' @param intensity.at Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat.core::Kinhom()} is an image object or just provided at the presence points.
 #' @param dists a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.
 #'
 #' @return a data.frame of two columns - distance (dist) and corresponding K function values (Kfn).
 #' @export
 #'
-#' @importFrom spatstat owin ppp Kinhom interp.im
+#' @importFrom spatstat.core Kinhom
+#' @importFrom spatstat.geom ppp owin interp.im
 #'
 #' @examples
 #' # Get the data
@@ -33,7 +34,7 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
     # If the window is missing try and automatically determine one
     if (missing(spatstat.win)) {
       bnd <- bound(model)
-      spatstat.win <- spatstat::owin(poly = bnd)
+      spatstat.win <- spatstat.geom::owin(poly = bnd)
     }
   } else if (missing(spatstat.win)) {
     spatstat.win <- NULL
@@ -82,7 +83,7 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
     inten.im <- vec2im(lambda[pres.id == 0], quad[,1], quad[,2])
     if (intensity.at == "pts") {
       if (missing(intensity.at.pp)) {
-        lambda.at.pts <- spatstat::interp.im(inten.im, pres[,1], pres[,2])
+        lambda.at.pts <- spatstat.geom::interp.im(inten.im, pres[,1], pres[,2])
       } else {
         lambda.at.pts <- intensity.at.pp
       }
@@ -91,9 +92,9 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
 
   # Create the spatstat required point pattern object
   if (is.null(spatstat.win)) {
-    pres.pp <- spatstat::ppp(pres[,1], pres[,2])
+    pres.pp <- spatstat.geom::ppp(pres[,1], pres[,2])
   } else {
-    pres.pp <- spatstat::ppp(pres[,1], pres[,2], window = spatstat.win)
+    pres.pp <- spatstat.geom::ppp(pres[,1], pres[,2], window = spatstat.win)
   }
 
   # Check if the distances ('dists') are missing to use defaults
@@ -102,8 +103,8 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
   # }
 
   res <- switch(intensity.at,
-                im = spatstat::Kinhom(pres.pp, lambda = inten.im, correction = correction, r = dists),
-                pts = spatstat::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction, r = dists)
+                im = spatstat.core::Kinhom(pres.pp, lambda = inten.im, correction = correction, r = dists),
+                pts = spatstat.core::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction, r = dists)
                 )
 
   fn <- switch(correction,

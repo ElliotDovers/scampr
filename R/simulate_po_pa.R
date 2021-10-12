@@ -15,7 +15,8 @@
 #' @noRd
 #'
 #' @importFrom RandomFields RFoptions RMgauss RFsimulate
-#' @importFrom spatstat spatstat.options im owin rLGCP
+#' @importFrom spatstat.geom spatstat.options im owin
+#' @importFrom spatstat.core rLGCP
 #' @importFrom sp SpatialPixelsDataFrame SpatialPoints over
 #' @importFrom stats runif rbinom
 #'
@@ -58,7 +59,7 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   # }
 
   # Need to set the number of pixels
-  spatstat::spatstat.options(npixel=c(100, 100))
+  spatstat.geom::spatstat.options(npixel=c(100, 100))
 
   ############################################################################################################################
   # Convert a vector to a spatstat image object via vector locations #####(mainly for plotting) ##############################
@@ -73,7 +74,7 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
     vec.ref <- (col.ref - 1)*max(row.ref) + row.ref
     Vec[vec.ref] <- vec
     grid.mask <- matrix(Vec, max(row.ref), max(col.ref),dimnames = list(uy, ux))
-    vec.im <- spatstat::im(grid.mask, xcol = ux, yrow = uy)
+    vec.im <- spatstat.geom::im(grid.mask, xcol = ux, yrow = uy)
 
     return(vec.im)
   }
@@ -124,10 +125,10 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   RandomFields::RFoptions(seed=NA, printlevel = 0)
 
   # par(mfrow = c(2, 2))
-  # plot(spatstat::im(ec1, xcol = grid$x, yrow = grid$y), main = "Env. Cov. 1")
-  # plot(spatstat::im(ec2, xcol = grid$x, yrow = grid$y), main = "Env. Cov. 2")
-  # plot(spatstat::im(bc1, xcol = grid$x, yrow = grid$y), main = "Bias Cov. 1")
-  # plot(spatstat::im(bc2, xcol = grid$x, yrow = grid$y), main = "Bias Cov. 2")
+  # plot(spatstat.geom::im(ec1, xcol = grid$x, yrow = grid$y), main = "Env. Cov. 1")
+  # plot(spatstat.geom::im(ec2, xcol = grid$x, yrow = grid$y), main = "Env. Cov. 2")
+  # plot(spatstat.geom::im(bc1, xcol = grid$x, yrow = grid$y), main = "Bias Cov. 1")
+  # plot(spatstat.geom::im(bc2, xcol = grid$x, yrow = grid$y), main = "Bias Cov. 2")
   # par(mfrow = c(1, 1))
 
   # # Place in long form in a data frame
@@ -180,21 +181,21 @@ simulate_po_pa <- function(Intercept.env = -1.75, Intercept.bias = -2, Beta = c(
   eta.fixed <- Intercept.env + (Beta[1] * quad$ec1) + (Beta[2] * quad$ec2) + Intercept.bias + (Tau[1] * quad$bc1) + (Tau[2] * quad$bc2)
 
   # Set the observation window
-  wnd <- spatstat::owin(xrange = c(1, 100), yrange = c(1, 100))
+  wnd <- spatstat.geom::owin(xrange = c(1, 100), yrange = c(1, 100))
   #
   # # Simulate the LGCP - FOR SOME REASON THIS WAY FLIPS THE COVARIATES AND FUCKS SHIT UP!
   # pp <- rLGCP(model = "stable",
   #             mu =
   #               Intercept.env +
-  #               (Beta[1] * spatstat::im(ec1, xcol = grid$x, yrow = grid$y)) +
-  #               (Beta[2] * spatstat::im(ec2, xcol = grid$x, yrow = grid$y)) +
+  #               (Beta[1] * spatstat.geom::im(ec1, xcol = grid$x, yrow = grid$y)) +
+  #               (Beta[2] * spatstat.geom::im(ec2, xcol = grid$x, yrow = grid$y)) +
   #               Intercept.bias +
-  #               (Tau[1] * spatstat::im(bc1, xcol = grid$x, yrow = grid$y)) +
-  #               (Tau[2] * spatstat::im(bc2, xcol = grid$x, yrow = grid$y)),
+  #               (Tau[1] * spatstat.geom::im(bc1, xcol = grid$x, yrow = grid$y)) +
+  #               (Tau[2] * spatstat.geom::im(bc2, xcol = grid$x, yrow = grid$y)),
   #             var = latent.variance, scale = latent.range, alpha = 2, win = wnd,
   #             saveLambda = TRUE)
   # Simulate the LGCP
-  pp <- spatstat::rLGCP(model = "stable",
+  pp <- spatstat.core::rLGCP(model = "stable",
               mu =
                 Intercept.env +
                 (Beta[1] * vec2im(ec1, quad$x, quad$y)) +

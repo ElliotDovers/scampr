@@ -11,7 +11,7 @@
 #' @return Optionally, a list of the observed and simulated K functions - see \code{GET::create_curve_set()}. Results are plotted.
 #' @export
 #'
-#' @importFrom spatstat owin
+#' @importFrom spatstat.geom owin
 #' @importFrom mgcv in.out
 #' @importFrom GET create_curve_set global_envelope_test
 #' @importFrom graphics par polygon lines legend
@@ -32,7 +32,7 @@ kfunc_envelopes <- function(model, conf.level = 0.95, nsims = 100, Kfun.correcti
   # If the window is missing try and automatically determine one
   if (missing(spatstat.win)) {
     bnd <- bound(model)
-    spatstat.win <- spatstat::owin(poly = bnd)
+    spatstat.win <- spatstat.geom::owin(poly = bnd)
   }
   coord.names <- model$coord.names
 

@@ -32,7 +32,7 @@
 
 \item{which.intensity}{a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.}
 
-\item{return.type}{a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat::envelope} e.g.}
+\item{return.type}{a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat.core::envelope} e.g.}
 
 \item{nsurv}{an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.}
 
