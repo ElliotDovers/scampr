@@ -1,7 +1,7 @@
 # scampr
 Spatially Correlated, Approximate Modelling of Point patterns in R
 
-scampr is an R package that offers a regression-style framework for modelling spatial point patterns (referred to as presence-only data in the ecology)
+scampr is an R package that offers a regression-style framework for modelling spatial point patterns (referred to as presence-only data in ecology)
 using a log-Gaussian Cox Process (LGCP).
 
 Unlike the inhomogeneous Poisson process, LGCPs offer a way to incorporate additional spatial clustering into models by including a Gaussian random field (GRF)
