@@ -17,7 +17,7 @@ gradient information for efficient optimization and inference.
 
 scampr's simple interface/syntax follows the common regression modelling formats used in R, e.g. lm(), glm(). All of the common functions familiar to
 users (such as summary, plot, simulate, predict,...) are also available to scampr models. The package is built upon the advances of TMB (Kristensen et al., 2016) which
-enables coding the likelihoods C++, as well as providing automatic differentiation for easy access to gradient information — permitting fast optimisation,
+enables coding the likelihoods in C++, as well as providing automatic differentiation for easy access to gradient information — permitting fast optimisation,
 automated Laplace approximation, and automated estimation of the variance-covariance matrix of parameter estimates in scampr models.
 
 The package name stands for Spatially Correlated, Approximate Modelling of Point patterns in R however, the verb "scamper" - to run with quick, light steps - perfectly
