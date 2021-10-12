@@ -1,5 +1,5 @@
 # scampr
-Spatially Correlated, Approximate Modelling of Presences in R
+Spatially Correlated, Approximate Modelling of Point patterns in R
 
 scampr is an R package that offers a regression-style framework for modelling spatial point patterns (referred to as presence-only data in the ecology)
 using a log-Gaussian Cox Process (LGCP).
@@ -20,5 +20,5 @@ users (such as summary, plot, simulate, predict,...) are also available to scamp
 enables coding the likelihoods C++, as well as providing automatic differentiation for easy access to gradient information — permitting fast optimisation,
 automated Laplace approximation, and automated estimation of the variance-covariance matrix of parameter estimates in scampr models.
 
-The package name stands for Spatially Correlated, Approximate Modelling of Presences in R however, the verb "scamper" - to run with quick, light steps - perfectly
+The package name stands for Spatially Correlated, Approximate Modelling of Point patterns in R however, the verb "scamper" - to run with quick, light steps - perfectly
 captures the motivation of this package: to give researchers access to complex spatial models that fit quickly and require only a light touch.
