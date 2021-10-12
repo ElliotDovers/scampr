@@ -15,10 +15,11 @@ approximation (VA) permits a closed form approximation to the marginalized log-l
 large spatial variance-covariance matrices that arise and are otherwise very computationally demanding. Finally, automatic differentiation is used to quickly obtain
 gradient information for efficient optimization and inference.
 
-scampr's simple interface/syntax follows the common regression modelling formats used in R, e.g. lm(), glm(). All of the common functions familiar to
-users (such as summary, plot, simulate, predict,...) are also available to scampr models. The package is built upon the advances of TMB (Kristensen et al., 2016) which
-enables coding the likelihoods in C++, as well as providing automatic differentiation for easy access to gradient information — permitting fast optimisation,
-automated Laplace approximation, and automated estimation of the variance-covariance matrix of parameter estimates in scampr models.
+Models are fit using scampr() that adopts a simple interface/syntax following the common regression modelling formats used in R, e.g. lm(), glm(). Many of the common S3
+functions familiar to users (such as summary, plot, simulate, predict, logLik, AIC, confint and vcov) are also available to scampr models. The package is built upon the
+advances of TMB (Kristensen et al., 2016) which enables coding the likelihoods in C++, as well as providing automatic differentiation for easy access to gradient
+information — permitting fast optimisation, automated Laplace approximation, and automated estimation of the variance-covariance matrix of parameter estimates in scampr
+models.
 
 The package name stands for Spatially Correlated, Approximate Modelling of Point patterns in R however, the verb "scamper" - to run with quick, light steps - perfectly
 captures the motivation of this package: to give researchers access to complex spatial models that fit quickly and require only a light touch.
