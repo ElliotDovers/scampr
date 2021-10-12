@@ -21,5 +21,5 @@ advances of TMB (Kristensen et al., 2016) which enables coding the likelihoods i
 information — permitting fast optimisation, automated Laplace approximation, and automated estimation of the variance-covariance matrix of parameter estimates in scampr
 models.
 
-The package name stands for Spatially Correlated, Approximate Modelling of Point patterns in R however, the verb "scamper" - to run with quick, light steps - perfectly
+The package name stands for Spatially Correlated, Approximate Modelling of Point patterns in R however, the verb "scamper" — to run with quick, light steps — perfectly
 captures the motivation of this package: to give researchers access to complex spatial models that fit quickly and require only a light touch.
