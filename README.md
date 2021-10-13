@@ -11,7 +11,7 @@ interactions between point events.
 
 Fitting LGCP models can be difficult and time consuming and, as a result, limits the ability of researchers to flexibly analyse spatial point pattern data.
 scampr is a fast, approximate maximum-likelihood approach to fitting LGCP to 2D spatial point patterns, involving a combination of three innovations. First, variational
-approximation (VA) permits a closed form approximation to the marginalized log-likelihood. Second, fixed rank kriging provides a rank reduced approximation to the
+approximation (VA) permits a closed form approximation to the marginalised log-likelihood. Second, fixed rank kriging provides a rank reduced approximation to the
 large spatial variance-covariance matrices that arise and are otherwise very computationally demanding. Finally, automatic differentiation is used to quickly obtain
 gradient information for efficient optimization and inference.
 
