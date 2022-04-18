@@ -10,7 +10,7 @@
 #' @return point pattern object of class 'ppp' from spatstat
 #' @noRd
 #'
-#' @importFrom spatstat.core rpoispp
+#' @importFrom spatstat.random rpoispp
 #' @importFrom methods as
 #' @importFrom MASS mvrnorm
 #' @examples
