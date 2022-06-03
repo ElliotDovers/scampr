@@ -16,7 +16,7 @@
 #' @return Depends on return.type. Default is a point pattern object of class 'ppp' from spatstat. Otherwise can be set to return a data.frame describing the point pattern (with corresponding quadrature as an attribute). If nsim > 1 then returned as a list of either 'return.type'.
 #' @exportS3Method stats::simulate scampr
 #'
-#' @importFrom spatstat.core rpoispp
+#' @importFrom spatstat.random rpoispp
 #' @importFrom spatstat.geom interp.im
 #' @importFrom methods as
 #' @importFrom MASS mvrnorm

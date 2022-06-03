@@ -16,7 +16,7 @@
 #'
 #' @importFrom RandomFields RFoptions RMgauss RFsimulate
 #' @importFrom spatstat.geom spatstat.options im owin
-#' @importFrom spatstat.core rLGCP
+#' @importFrom spatstat.random rLGCP
 #' @importFrom sp SpatialPixelsDataFrame SpatialPoints over
 #' @importFrom stats runif rbinom
 #'

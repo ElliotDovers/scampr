@@ -12,7 +12,7 @@
 #' @noRd
 #'
 #' @importFrom spatstat.geom spatstat.options im owin
-#' @importFrom spatstat.core rLGCP
+#' @importFrom spatstat.random rLGCP
 #' @importFrom RandomFields RFoptions
 #'
 #' @examples
