@@ -68,7 +68,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     intens <- predict.scampr(object = object, newdata = domain.data, type = "response")
     # Convert to spatstat image
     intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-    pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = nsim)
+    pp <- spatstat.random::rpoispp(lambda = intens_im, nsim = nsim)
   } else { # For LGCP models
     if (which.intensity == "expected") { # predict() handles the various posterior, prior, resposne and link cases
       # can use predict here. 'type' == "link" allows us to ignore the expectation correction
@@ -79,7 +79,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       }
       # Convert to spatstat image
       intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-      pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = nsim)
+      pp <- spatstat.random::rpoispp(lambda = intens_im, nsim = nsim)
     } else { # FOR SAMPLING # Need to construct the log-intensity from scratch using random coefficients
 
       # can cheat to get the fixed effects component by exploiting predict function
@@ -119,7 +119,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
         intens <- exp(Xb + Zu)
         # Convert to spatstat image
         intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-        pp <- spatstat.core::rpoispp(lambda = intens_im, nsim = 1L)
+        pp <- spatstat.random::rpoispp(lambda = intens_im, nsim = 1L)
       } else { # For more than one simulation
         pp <- list()
         u <- list()
@@ -132,7 +132,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
           intens[[sim]] <- exp(Xb + Zu[[sim]])
           # Convert to spatstat image
           intens_im <- vec2im(intens[[sim]], domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
-          pp[[sim]] <- spatstat.core::rpoispp(lambda = intens_im, nsim = 1)
+          pp[[sim]] <- spatstat.random::rpoispp(lambda = intens_im, nsim = 1)
         }
         names(pp) <- paste("Simulation", 1:nsim)
         class(pp) <- c("ppplist", "solist", "anylist", "listof", "list")

@@ -14,10 +14,10 @@ Description: Fit log-Gaussian Cox Process regression models to point patterns wi
     Laplace approximation. Gradients are calculated using automatic differentiation.
 Suggests: testthat
 Depends: R (>= 3.2.0)
-Imports: methods, stats, MASS, fields, FRK, RandomFields, TMB (>= 1.7.14), sp, spatstat.geom, spatstat.core, grDevices, graphics, pROC, GET, mgcv
+Imports: methods, stats, MASS, fields, FRK, TMB (>= 1.7.14), sp, spatstat.geom, spatstat.core, spatstat.random, grDevices, graphics, pROC, GET, mgcv
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.0
 LinkingTo: TMB, RcppEigen

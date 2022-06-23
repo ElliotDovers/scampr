@@ -4,7 +4,8 @@
 \name{gorillas}
 \alias{gorillas}
 \title{Gorilla Nesting Sites}
-\format{A data frame with 26020 rows and 11 variables:
+\format{
+A data frame with 26020 rows and 11 variables:
 \describe{
 \item{x}{Horizontal coordinate in units Easting.}
 \item{y}{Vertical coordinate in units Northing.}
@@ -17,7 +18,8 @@
 \item{vegetation}{Vegetation type: a categorical variable with 6 levels coded as integers 1 to 6 (in order of increasing expected habitat suitability).}
 \item{waterdist}{Euclidean distance from nearest water body, in metres.}
 \item{pres}{Binary indicating whether the row is a presence record (1) or a quadrat (0).}
-}}
+}
+}
 \source{
 \url{Library `inlabru`}
 }

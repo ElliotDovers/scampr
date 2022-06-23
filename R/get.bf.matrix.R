@@ -4,7 +4,7 @@
 #' @param point.locations either a matrix or data.frame describing the point locations in the same order as in 'object'
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to create sparse or dense matrix.
 #'
-#' @return
+#' @return a data.frame (sparse or dense depending on parameter bf.matrix.type)
 #' @noRd
 #'
 #' @importFrom FRK eval_basis

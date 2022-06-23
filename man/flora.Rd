@@ -4,7 +4,8 @@
 \name{flora}
 \alias{flora}
 \title{Blue Mountains flora, environmental and site accessibility data}
-\format{A list of three elements. First element ('po') is a list of four data frames of presence locations of four species of flora ('sp1', 'sp2', 'sp3', 'sp4') with 242, 38, 11 and 194 rows resp. and each with 9 columns. Second element ('pa') is a data frame of presence/absence (survey) data with 8,223 rows and 11 columns. Third element ('quad') a data frame of quadrature points that describe the GBMWHA at a 1km resolution, 86,227 rows and 9 columns (the region's boundary is attached as an attribute).
+\format{
+A list of three elements. First element ('po') is a list of four data frames of presence locations of four species of flora ('sp1', 'sp2', 'sp3', 'sp4') with 242, 38, 11 and 194 rows resp. and each with 9 columns. Second element ('pa') is a data frame of presence/absence (survey) data with 8,223 rows and 11 columns. Third element ('quad') a data frame of quadrature points that describe the GBMWHA at a 1km resolution, 86,227 rows and 9 columns (the region's boundary is attached as an attribute).
 \describe{
 \item{x}{UTM Easting coordinates (scaled km)}
 \item{y}{UTM Northing coordinates (scaled km)}
@@ -19,7 +20,8 @@
 \item{sp2}{Binary indicating whether species 2 was present (1) or absent (0) at a survey site. ('pa')}
 \item{sp3}{Binary indicating whether species 3 was present (1) or absent (0) at a survey site. ('pa')}
 \item{sp4}{Binary indicating whether species 4 was present (1) or absent (0) at a survey site. ('pa')}
-}}
+}
+}
 \source{
 \url{Library `ppmlasso`}
 }

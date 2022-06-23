@@ -4,7 +4,7 @@
 #' @param x.loc A vector of horizontal locations in 2D
 #' @param y.loc A vector of vertical locations in 2D
 #'
-#' @return
+#' @return a matrix representing the locations of a regular spatial domain
 #' @noRd
 #'
 #' @examples
