@@ -72,7 +72,7 @@ print.scampr <- function(x, ...) {
 
   cat(
     "Model Type: ", Model.Desc, "\n\nFormula: ", if (length(tmp.formula) > 1) { tmp.formula[c(2, 1, 3)] } else { tmp.formula }, "\n\napprox.", if (mod.id != "ipp") {"marginal"} else {""}, "logLik: ", logLik.scampr(x),
-    "\n\nFixed Effects Ceofficients:\n\n"
+    "\n\nFixed Effect Coefficients:\n\n"
   )
   print(stats::coef(x)[1:nrow(x$fixed.effects)])
 }

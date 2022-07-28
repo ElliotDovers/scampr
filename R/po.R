@@ -246,7 +246,13 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
                        laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
   )
   names(res$coefficients) <- coef.names
-  res$fixed.effects <- tmp.estimates[1:length(fixed.names), ]
+  # check for a single fixed effect to adjust the resulting data frame
+  if (length(fixed.names) == 1) {
+    res$fixed.effects <- data.frame(t(tmp.estimates[1:length(fixed.names), ]))
+    colnames(res$fixed.effects)[2] <- "Std. Error" # need to correct the white space in name
+  } else {
+    res$fixed.effects <- tmp.estimates[1:length(fixed.names), ]
+  }
   rownames(res$fixed.effects) <- fixed.names
   if (model.type != "ipp") {
     res$random.effects <- tmp.estimates[(length(fixed.names) + 1):nrow(tmp.estimates), ]

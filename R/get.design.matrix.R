@@ -14,15 +14,14 @@
 #' des.mat <- scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
 #' head(des.mat)
 get.design.matrix <- function(formula, data, subset, na.action) {
-  # Want this to work if formula response is missing (for predictions at new data)
-  formula <- stats::update.formula(formula, NULL ~ .)
-  cl <- match.call()
   mf <- match.call(expand.dots = FALSE)
   m <- match(x = c("formula", "data", "subset", "na.action"),
              table = names(mf), nomatch = 0L)
   mf <- mf[c(1L, m)]
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
+  # Update formula so that this will work if formula response is missing (for predictions at new data)
+  mf$formula <- stats::update.formula(formula, NULL ~ .)
   mf <- eval(expr = mf, envir = parent.frame())
 
   mt <- attr(x = mf, which = "terms")
