@@ -37,7 +37,7 @@ bound <- function (object, coord.names = c("x", "y"), precision = 1, plotting = 
   # Obtain functional dataframe
   A <- data.frame(cbind(X = dat[ , coord.names[1]], Y = dat[ , coord.names[2]]))
 
-  # Find data center
+  # Find data "center"
   mid <- sapply(A, mean)
 
   # Initialise plot if necessary
