@@ -54,6 +54,8 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
     loglik_lp <- NULL
     aic_va <- NULL
     aic_lp <- NULL
+    timing_va <- NULL
+    timing_lp <- NULL
     pred_loglik_po_va <- NULL # these will remain NULL in this case
     pred_loglik_po_lp <- NULL # these will remain NULL in this case
     counter.counter <- NULL
@@ -62,7 +64,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    m_ipp <- po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)
+    cpu.time <- system.time(assign("m_ipp", po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)))
 
     # Store Results
     nbf[counter] <- 0
@@ -70,6 +72,8 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
     aic_va[counter] <- AIC.scampr(m_ipp)
     loglik_lp[counter] <- logLik.scampr(m_ipp)
     aic_lp[counter] <- AIC.scampr(m_ipp)
+    timing_va[counter] <- cpu.time
+    timing_lp[counter] <- cpu.time
     print(paste0("Completed fit with 0 basis functions (IPP)"))
     counter <- 2
     counter.counter <- c(counter.counter, counter)
@@ -82,31 +86,35 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
       # try to fit the full model
       m_va <- NULL
       m_lp <- NULL
-      try(assign("m_va", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "variational", bf.matrix.type = bf.matrix.type)))
+      try(assign("cpu.time_va", system.time(assign("m_va", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "variational", bf.matrix.type = bf.matrix.type)))))
       if (!is.null(m_va)) {
-        try(assign("m_lp", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_va, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "laplace", bf.matrix.type = bf.matrix.type)))
+        try(assign("cpu.time_lp", system.time(assign("m_lp", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_va, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "laplace", bf.matrix.type = bf.matrix.type)))))
       } else {
-        try(assign("m_lp", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "laplace", bf.matrix.type = bf.matrix.type)))
+        try(assign("cpu.time_lp", system.time(assign("m_lp", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = "laplace", bf.matrix.type = bf.matrix.type)))))
       }
 
       if (is.null(m_va)) {
         # Store missing results in this case
         loglik_va[counter] <- NA
         aic_va[counter] <- NA
+        timing_va[counter] <- NA
       } else {
         # Store results
         loglik_va[counter] <-  logLik.scampr(m_va)
         aic_va[counter] <- AIC.scampr(m_va)
+        timing_va[counter] <- cpu.time_va
         m_va <- NULL
       }
       if (is.null(m_lp)) {
         # Store missing results in this case
         loglik_lp[counter] <- NA
         aic_lp[counter] <- NA
+        timing_lp[counter] <- NA
       } else {
         # Store results
         loglik_lp[counter] <-  logLik.scampr(m_lp)
         aic_lp[counter] <- AIC.scampr(m_lp)
+        timing_lp[counter] <- cpu.time_lp
         m_lp <- NULL
       }
       # Store common results
@@ -281,7 +289,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
   }
 
   # Adjust names of return object accoding to approx. type
-  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik_va = loglik_va, loglik_lp = loglik_lp, aic_va = aic_va, aic_lp = aic_lp, predicted_cll_po_va = pred_loglik_po_va, predicted_cll_po_lp = pred_loglik_po_lp))
+  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik_va = loglik_va, loglik_lp = loglik_lp, aic_va = aic_va, aic_lp = aic_lp, timing_va = timing_va, timing_lp = timing_lp, predicted_cll_po_va = pred_loglik_po_va, predicted_cll_po_lp = pred_loglik_po_lp))
   attr(ret.frame, "approx") <- "both"
   return(ret.frame)
 }
