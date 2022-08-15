@@ -72,8 +72,8 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
     aic_va[counter] <- AIC.scampr(m_ipp)
     loglik_lp[counter] <- logLik.scampr(m_ipp)
     aic_lp[counter] <- AIC.scampr(m_ipp)
-    timing_va[counter] <- cpu.time
-    timing_lp[counter] <- cpu.time
+    timing_va[counter] <- cpu.time[3]
+    timing_lp[counter] <- cpu.time[3]
     print(paste0("Completed fit with 0 basis functions (IPP)"))
     counter <- 2
     counter.counter <- c(counter.counter, counter)
@@ -102,7 +102,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
         # Store results
         loglik_va[counter] <-  logLik.scampr(m_va)
         aic_va[counter] <- AIC.scampr(m_va)
-        timing_va[counter] <- cpu.time_va
+        timing_va[counter] <- cpu.time_va[3]
         m_va <- NULL
       }
       if (is.null(m_lp)) {
@@ -114,7 +114,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
         # Store results
         loglik_lp[counter] <-  logLik.scampr(m_lp)
         aic_lp[counter] <- AIC.scampr(m_lp)
-        timing_lp[counter] <- cpu.time_lp
+        timing_lp[counter] <- cpu.time_lp[3]
         m_lp <- NULL
       }
       # Store common results
@@ -134,6 +134,8 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
     loglik_lp <- NULL
     aic_va <- NULL
     aic_lp <- NULL
+    timing_va <- NULL # these will remain NULL in this case
+    timing_lp <- NULL # these will remain NULL in this case
     pred_loglik_po_va <- NULL
     pred_loglik_po_lp <- NULL
     counter.counter <- NULL
@@ -142,7 +144,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    cpu.time <- system.time(assign("m_ipp", po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)))
+    m_ipp <- po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)
 
     # Initialise Objects #
     train_mods_ipp <- list() # training models

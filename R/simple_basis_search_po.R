@@ -68,7 +68,7 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
     nbf[counter] <- 0
     loglik[counter] <- logLik.scampr(m_ipp)
     aic[counter] <- AIC.scampr(m_ipp)
-    timing[counter] <- cpu.time
+    timing[counter] <- cpu.time[3]
     print(paste0("Completed fit with 0 basis functions (IPP)"))
     counter <- 2
     counter.counter <- c(counter.counter, counter)
@@ -92,7 +92,7 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
         # Store results
         loglik[counter] <-  logLik.scampr(m)
         aic[counter] <- AIC.scampr(m)
-        timing[counter] <- cpu.time
+        timing[counter] <- cpu.time[3]
         m <- NULL
         rm(cpu.time)
       }
@@ -111,6 +111,7 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
     nbf <- NULL
     loglik <- NULL
     aic <- NULL
+    timing <- NULL # these will remain NULL in this case
     pred_loglik_po <- NULL
     counter.counter <- NULL
     counter <- 1
@@ -201,7 +202,7 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
   }
 
   # Adjust names of return object accoding to approx. type
-  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik = loglik, aic = aic, predicted_cll_po = pred_loglik_po))
+  ret.frame <- as.data.frame(cbind(nodes.on.long.edge = counter.counter[1:(length(counter.counter) - 1)], bf = nbf, loglik = loglik, cpu_time = timing, aic = aic, predicted_cll_po = pred_loglik_po))
   if (approx.with == "variational") {
     attr(ret.frame, "approx") <- "variational"
   } else {
