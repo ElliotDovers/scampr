@@ -54,6 +54,7 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
     nbf <- NULL
     loglik <- NULL
     aic <- NULL
+    timing <- NULL
     pred_loglik_po <- NULL # these will remain NULL in this case
     counter.counter <- NULL
     counter <- 1
@@ -61,16 +62,18 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    m_ipp <- po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)
+    cpu.time <- system.time(assign("m_ipp", po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)))
 
     # Store Results
     nbf[counter] <- 0
     loglik[counter] <- logLik.scampr(m_ipp)
     aic[counter] <- AIC.scampr(m_ipp)
+    timing[counter] <- cpu.time
     print(paste0("Completed fit with 0 basis functions (IPP)"))
     counter <- 2
     counter.counter <- c(counter.counter, counter)
     bfs <- cbind(NA, NA)
+    rm(cpu.time)
 
     # Start looping until we hit the max number of basis functions
     while (nrow(bfs) <= max.basis.functions) {
@@ -78,17 +81,20 @@ simple_basis_search_po <- function(po.formula, po.data, po.fold.id, max.basis.fu
       bfs <- simple_basis(counter, data = domain.data, radius.type = radius.type)
       # try to fit the full model
       m <- NULL
-      try(assign("m", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = approx.with, bf.matrix.type = bf.matrix.type)))
+      try(assign("cpu.time", system.time(assign("m", po(po.formula, po.data, simple.basis = bfs, starting.pars = m_ipp, coord.names = coord.names, quad.weights.name = quad.weights.name, model.type = approx.with, bf.matrix.type = bf.matrix.type)))))
 
       if (is.null(m)) {
         # Store missing results in this case
         loglik[counter] <- NA
         aic[counter] <- NA
+        timing[counter] <- NA
       } else {
         # Store results
         loglik[counter] <-  logLik.scampr(m)
         aic[counter] <- AIC.scampr(m)
+        timing[counter] <- cpu.time
         m <- NULL
+        rm(cpu.time)
       }
       # Store common results
       nbf[counter] <- nrow(bfs)

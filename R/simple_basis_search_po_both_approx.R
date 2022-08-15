@@ -142,7 +142,7 @@ simple_basis_search_po_both_approx <- function(po.formula, po.data, po.fold.id, 
 
     # First iteration hard coded for IPP model, i.e. zero basis functions #
 
-    m_ipp <- po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)
+    cpu.time <- system.time(assign("m_ipp", po(po.formula, po.data, model.type = "ipp", coord.names = coord.names, quad.weights.name = quad.weights.name, bf.matrix.type = bf.matrix.type)))
 
     # Initialise Objects #
     train_mods_ipp <- list() # training models
