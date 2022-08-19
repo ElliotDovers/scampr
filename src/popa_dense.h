@@ -18,27 +18,30 @@
   PARAMETER_VECTOR(fixed);                  // Fixed effects coefficients
   PARAMETER_VECTOR(bias);                   // Biasing effect coefficients
   // COULD WE COMBINE THESE? PROBLEM AS DIMENSION REQ. FOR X * fixed WOULD CHANGE FOR PO & POPA
+  // COULD WE COMBINE THESE? PROBLEM AS DIMENSION REQ. FOR X * fixed WOULD CHANGE FOR PO & POPA
   PARAMETER_VECTOR(random);                 // Random effect coefficients (for LAPLACE) OR coefficient means (for VARIATIONAL)
+  PARAMETER_VECTOR(random_bias);            // FOR COMBINED DATA MODELS ONLY, SECONDARY LATENT FIELD: Random effect coefficients (for LAPLACE) OR coefficient means (for VARIATIONAL)
   PARAMETER_VECTOR(log_variance_component); // log(Standard Dev.) of Random coefficient within spatial res. (for LAPLACE - length l) OR log(Variances) of VA Random effects (for VARIATIONAL  - length k)
+  PARAMETER_VECTOR(log_variance_component_bias); // FOR COMBINED DATA MODELS ONLY, SECONDARY LATENT FIELD:log(Standard Dev.) of Random coefficient within spatial res. (for LAPLACE - length l) OR log(Variances) of VA Random effects (for VARIATIONAL  - length k)
 
   // Create enumeration of the data_type for switch function
   enum data_type { PO, PA, POPA };
-  
+
   // Create enumeration of the mod_type for switch function
   enum mod_type { ipp, variational, laplace };
-  
+
   // Initialise the various log-likelihood components
   Type LL_PO_pres = 0.0;
   Type LL_PO_quad = 0.0;
   Type LL_PA = 0.0;
   Type LL_random = 0.0;
-  
-  // Initialise the negative log-likelihood to be minimised 
+
+  // Initialise the negative log-likelihood to be minimised
   Type nll = 0.0;
-  
+
   // loop control variable for multi-resolution models
   int L = 0;
-  
+
   // Switch for different data types being used
   switch(data_type){
   case PO:
@@ -50,7 +53,7 @@
     vector<Type> Bbias_PO_quad = B_PO_quad * bias;
     vector<Type> PRES = Xfixed_PO_pres + Bbias_PO_pres;
     vector<Type> QUAD = Xfixed_PO_quad + Bbias_PO_quad;
-    
+
     switch (mod_type){
     case ipp:
     {
@@ -68,7 +71,7 @@
       vector<Type> ZsigZ = Z2 * PosteriorVar;
       LL_PO_pres += PRES.sum() + Zrandom_mean_pres.sum();
       LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_mean_quad + (0.5 * ZsigZ))).sum();
-      
+
       // Random coefficient likelihood component //
       L = 0;
       vector<Type> PriorVar(bf_per_res.size());
@@ -92,14 +95,14 @@
     case laplace:
     {
       // log-likelihood components at the presence pts and quadrature //
-      
+
       vector<Type> Zrandom_pres = Z_PO_pres * random;
       vector<Type> Zrandom_quad = Z_PO_quad * random;
       LL_PO_pres += PRES.sum() + Zrandom_pres.sum();
       LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_quad)).sum();
-      
+
       // Random coefficient likelihood component //
-      
+
       Type mu = 0.0; // initialise the random coefficient mean
       vector<Type> PriorSD = exp(log_variance_component);
       L = 0;
@@ -123,7 +126,7 @@
     // Matrix operations shared by all model types
     vector<Type> Xfixed_PA = X_PA * fixed;
     vector<Type> prob_abs(Xfixed_PA.size());
-      
+
     switch (mod_type){
     case ipp:
     {
@@ -136,9 +139,9 @@
       // probability of absence at the sites  //
       vector<Type> Zrandom_PA = Z_PA * random;
       prob_abs = exp(-exp(Xfixed_PA + Zrandom_PA));
-      
+
       // Random coefficient likelihood component //
-      
+
       Type mu = 0.0; // initialise the random coefficient mean
       vector<Type> PriorSD = exp(log_variance_component);
       L = 0;
@@ -148,7 +151,7 @@
         }
         L = L + bf_per_res(l);
       }
-      
+
       vector<Type> PriorVar = PriorSD * PriorSD;
       ADREPORT(PriorVar);
       break;
@@ -158,9 +161,9 @@
       // probability of absence at the sites  //
       vector<Type> Zrandom_PA = Z_PA * random;
       prob_abs = exp(-exp(Xfixed_PA + Zrandom_PA));
-      
+
       // Random coefficient likelihood component //
-      
+
       Type mu = 0.0; // initialise the random coefficient mean
       vector<Type> PriorSD = exp(log_variance_component);
       L = 0;
@@ -170,7 +173,7 @@
         }
         L = L + bf_per_res(l);
       }
-      
+
       vector<Type> PriorVar = PriorSD * PriorSD;
       ADREPORT(PriorVar);
       break;
@@ -178,9 +181,9 @@
     default:
       error("Model Type not recognised");
     } // end model type switch
-    
+
     // log-likelihood component at the presence/absence sites //
-    
+
     Type Size = 1;
     for (int i = 0; i < X_PA.rows(); i++) {
       LL_PA += dbinom(Y(i), Size, 1 - prob_abs(i), true);
@@ -198,7 +201,7 @@
     vector<Type> QUAD = Xfixed_PO_quad + Bbias_PO_quad;
     vector<Type> Xfixed_PA = X_PA * fixed;
     vector<Type> prob_abs(Xfixed_PA.size());
-    
+
     switch (mod_type){
     case ipp:
     {
@@ -213,67 +216,79 @@
     case variational:  // NO CLOSED FORM SOLUTION! SAME AS LAPLACE FOR NOW
     {
       // log-likelihood components at the presence pts and quadrature //
-      
+
       vector<Type> Zrandom_pres = Z_PO_pres * random;
       vector<Type> Zrandom_quad = Z_PO_quad * random;
-      LL_PO_pres += PRES.sum() + Zrandom_pres.sum();
-      LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_quad)).sum();
-      
+      vector<Type> Zrandom_bias_pres = Z_PO_pres * random_bias;
+      vector<Type> Zrandom_bias_quad = Z_PO_quad * random_bias;
+      LL_PO_pres += PRES.sum() + Zrandom_pres.sum() + Zrandom_bias_pres.sum();
+      LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_quad + Zrandom_bias_quad)).sum();
+
       // probability of absence at the sites  //
-      
+
       vector<Type> Zrandom_PA = Z_PA * random;
       prob_abs = exp(-exp(Xfixed_PA + Zrandom_PA));
-      
+
       // Random coefficient likelihood component //
-      
-      Type mu = 0.0; // initialise the random coefficient mean
+
+      Type mu = 0.0; // initialise the random coefficient means
       vector<Type> PriorSD = exp(log_variance_component);
+      vector<Type> PriorSD_bias = exp(log_variance_component_bias);
       L = 0;
       for (int l = 0; l < bf_per_res.size(); ++l) {
         for (int k = 0; k < bf_per_res(l); ++k) {
           LL_random += dnorm(random(k + L), mu, PriorSD(l), true);
+          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true);
         }
         L = L + bf_per_res(l);
       }
       vector<Type> PriorVar = PriorSD * PriorSD;
+      vector<Type> PriorVar_bias = PriorSD_bias * PriorSD_bias;
       ADREPORT(PriorVar);
+      ADREPORT(PriorVar_bias);
       break;
     }
     case laplace:
     {
       // log-likelihood components at the presence pts and quadrature //
-      
+
       vector<Type> Zrandom_pres = Z_PO_pres * random;
       vector<Type> Zrandom_quad = Z_PO_quad * random;
-      LL_PO_pres += PRES.sum() + Zrandom_pres.sum();
-      LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_quad)).sum();
-      
+      vector<Type> Zrandom_bias_pres = Z_PO_pres * random_bias;
+      vector<Type> Zrandom_bias_quad = Z_PO_quad * random_bias;
+      LL_PO_pres += PRES.sum() + Zrandom_pres.sum() + Zrandom_bias_pres.sum();
+      LL_PO_quad -= (quad_size * exp(QUAD + Zrandom_quad + Zrandom_bias_quad)).sum();
+
       // probability of absence at the sites  //
-      
+
       vector<Type> Zrandom_PA = Z_PA * random;
       prob_abs = exp(-exp(Xfixed_PA + Zrandom_PA));
-      
+
       // Random coefficient likelihood component //
-      
+
       Type mu = 0.0; // initialise the random coefficient mean
       vector<Type> PriorSD = exp(log_variance_component);
+      vector<Type> PriorSD_bias = exp(log_variance_component_bias);
       L = 0;
       for (int l = 0; l < bf_per_res.size(); ++l) {
         for (int k = 0; k < bf_per_res(l); ++k) {
           LL_random += dnorm(random(k + L), mu, PriorSD(l), true);
+          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true);
         }
         L = L + bf_per_res(l);
       }
       vector<Type> PriorVar = PriorSD * PriorSD;
+      vector<Type> PriorVar_bias = PriorSD_bias * PriorSD_bias;
       ADREPORT(PriorVar);
+      ADREPORT(PriorVar_bias);;
       break;
     }
     default:
       error("Model Type not recognised");
     } // end model type switch
-    
+
     // log-likelihood component at the presence/absence sites //
-    
+
     Type Size = 1;
     for (int i = 0; i < X_PA.rows(); i++) {
       LL_PA += dbinom(Y(i), Size, 1 - prob_abs(i), true);
@@ -283,7 +298,7 @@
   default:
     error("Data Type not recognised");
   } // end data type switch
-  
+
   // Combine for the loglikelihood
   nll = -(LL_PO_pres + LL_PO_quad + LL_PA + LL_random);
   REPORT(LL_PO_pres);

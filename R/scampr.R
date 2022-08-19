@@ -20,6 +20,7 @@
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional vector describing a subset of the data to be used.
+#' @param additional.latent.field a logical indicating whether an additional latent field should be included in the Presence-only data model to capture additional detection bias. Only used in the integrated data model.
 #'
 #' @return a scampr model object
 #' @export
@@ -60,7 +61,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
 #' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", basis.functions, model.type = c("variational", "laplace", "ipp"), sparse = TRUE, se = TRUE, starting.pars, subset) {
+scampr <- function(formula, data, pa.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", basis.functions, model.type = c("variational", "laplace", "ipp"), sparse = TRUE, se = TRUE, starting.pars, subset, additional.latent.field = FALSE) {
 
   # Determine the data model type to be used based off provided arguments
   data.type <- NULL

@@ -177,7 +177,9 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   start.pars <- list(fixed = rep(0, ncol(dat.list$X_PA)),
                      bias = 0,
                      random = rep(0, ncol(dat.list$Z_PA)),
-                     log_variance_component = var.starts
+                     random_bias = rep(0, ncol(dat.list$Z_PA)),
+                     log_variance_component = var.starts,
+                     log_variance_component_bias = var.starts
   )
   # obtain warm starts for parameters if provided
   if (!missing(starting.pars)) {
@@ -194,9 +196,9 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
   # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
   # set up the objective function w.r.t. model.type
   obj <- switch(model.type,
-                ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres))), random = factor(rep(NA, ncol(dat.list$Z_PA))), log_variance_component = factor(rep(NA, length(var.starts)))), silent = T),
-                variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T),
-                laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T)
+                ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
   )
   # optimise the parameters
   res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))

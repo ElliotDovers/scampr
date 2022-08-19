@@ -14,6 +14,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
+#' @param additional.latent.field a logical indicating whether an additional latent field should be included in the Presence-only data model to capture additional detection bias. Only used in the integrated data model.
 #'
 #' @return a scampr model object
 #' @noRd
@@ -44,7 +45,7 @@
 #' m2 <- popa(pres ~ MNT + D.Main, Y ~ MNT,
 #' po.data = dat_po, pa.data = dat_pa, simple.basis = bfs)
 #' }
-popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars) {
+popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), se = TRUE, starting.pars, additional.latent.field = FALSE) {
 
   # CAN'T JUST GIVE A BASIS FUNCTION MATRIX BECAUSE THEN YOU CAN'T PREDICT ETC. AS WE DON'T KNOW ENOUGH ABOUT THE FUNCTIONS
 
@@ -215,8 +216,8 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     bf_matrix_type = bf.matrix.type
   )
 
-  # # AT THIS STAGE CAN ALONE PERFORM LAPLAC APPROX.
-  # # create the appropraite start parameters for the variance component
+  # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
+  # # create the appropriate start parameters for the variance component
   # #   w.r.t. approx. type and data type
   # var.starts <- switch(model.type,
   #                      variational = rep(0, ncol(dat.list$Z_PO_pres)),
@@ -226,7 +227,9 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   start.pars <- list(fixed = rep(0, ncol(dat.list$X_PA)),
                      bias = rep(0, ncol(dat.list$B_PO_pres)),
                      random = rep(0, ncol(dat.list$Z_PA)),
-                     log_variance_component = var.starts
+                     random_bias = rep(0, ncol(dat.list$Z_PO_pres)),
+                     log_variance_component = var.starts,
+                     log_variance_component_bias = var.starts
   )
   # obtain warm starts for parameters if provided
   if (!missing(starting.pars)) {
@@ -240,13 +243,28 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     }
   }
 
-  # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
+  # AT THIS STAGE CAN ONLY PERFORM LAPLACE APPROX.
   # set up the objective function w.r.t. model.type
-  obj <- switch(model.type,
-                ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, ncol(dat.list$Z_PA))), log_variance_component = factor(rep(NA, length(var.starts)))), silent = T),
-                variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T),
-                laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
-  )
+  if (additional.latent.field) {
+    obj <- switch(model.type,
+                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T),
+                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T)
+    )
+  } else {
+    obj <- switch(model.type,
+                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
+    )
+  }
+  # AT THIS STAGE CAN ONLY PERFORM LAPLACE APPROX.
+  # set up the objective function w.r.t. model.type
+  # obj <- switch(model.type,
+  #               ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #               variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T),
+  #               laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
+  # )
   # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
   # optimise the parameters
   res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
@@ -268,11 +286,20 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
 
   # add required information to the results list
   res$coefficients <- res$par
-  coef.names <- switch(model.type,
-                       ipp = fixed.names,
-                       variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log sd (bf ", random.nos, ")")),
-                       laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
-  )
+  if (additional.latent.field) {
+    coef.names <- switch(model.type,
+                         ipp = fixed.names,
+                         variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log sd (bf ", random.nos, ")")),
+                         laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"), paste0("Bias Fld. Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
+    )
+  } else {
+    coef.names <- switch(model.type,
+                         ipp = fixed.names,
+                         variational = c(fixed.names, paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior log sd (bf ", random.nos, ")")),
+                         laplace = c(fixed.names, paste0("Prior log sd (res. ", 1:length(dat.list$bf_per_res), ")"))
+    )
+  }
+
   names(res$coefficients) <- coef.names
   # check for a single fixed effect to adjust the resulting data frame
   if (length(fixed.names) == 1) {
@@ -285,17 +312,32 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   if (model.type != "ipp") {
     res$random.effects <- tmp.estimates[(length(fixed.names) + 1):nrow(tmp.estimates), ]
     res$random.effects <- res$random.effects[!grepl("log_", rownames(res$random.effects), fixed = T), ]
+    res$random.effects <- res$random.effects[!grepl("_bias", rownames(res$random.effects), fixed = T), ] # additionally remove the bias field coefficients and variance
     rand.names <- switch(model.type,
                          variational = c(paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior Var (bf ", random.nos, ")"), paste0("Prior Var (res. ", 1:length(dat.list$bf_per_res), ")")),
                          laplace = c(paste0("LP Posterior Mean (bf ", random.nos, ")"), paste0("Prior Var (res. ", 1:length(dat.list$bf_per_res), ")"))
     )
+    if (additional.latent.field) {
+      res$bias.field <- tmp.estimates[grepl("_bias", rownames(tmp.estimates), fixed = T), ]
+      res$bias.field <- res$bias.field[!grepl("log_", rownames(res$bias.field), fixed = T), ]
+      bias.rand.names <- switch(model.type,
+                           variational = c(paste0("VA Posterior Mean (bf ", random.nos, ")"), paste0("VA Posterior Var (bf ", random.nos, ")"), paste0("Prior Var (res. ", 1:length(dat.list$bf_per_res), ")")),
+                           laplace = c(paste0("Bias Fld. LP Posterior Mean (bf ", random.nos, ")"), paste0("Bias Fld. Prior Var (res. ", 1:length(dat.list$bf_per_res), ")"))
+      )
+      rownames(res$bias.field) <- bias.rand.names
+    }
     rownames(res$random.effects) <- rand.names
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
     res$approx.type <- "laplace" #model.type until POPA models can handle VA
-    res$fitted.values <- as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
-    attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+    if (additional.latent.field) {
+      res$fitted.values <- as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+    } else {
+      res$fitted.values <- as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+    }
   } else {
     res$random.effects <- NA
     res$basis.per.res <- NA
