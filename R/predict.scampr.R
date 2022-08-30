@@ -94,14 +94,15 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   ###
 
   # Obtain the fixed effect matrix and basis function matrix (at new data or fitted)
-  X <- get.design.matrix(object$formula, newdata)
+  X <- get.design.matrix(object$formula, newdata) # this gives a single column for intercept (whether POPA model has multiple or not)
   if (!is.na(object$approx.type)) {
     Z <- get.bf.matrix(object, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
   }
 
-  # Calculate components of the linear predictor based on density required
+  # Calculate fixed effect components of the linear predictor
   betas <- as.numeric(object$fixed.effects[ , 1L])
   intercept.term.id <- grepl("Intercept)", rownames(object$fixed.effects), fixed = T)
+  # If there are two intercepts (due to combined data model) then we need to combine the intercepts now
   if (sum(intercept.term.id) > 1) {
     combined.intercepts <- sum(object$fixed.effects[intercept.term.id , 1L])
     betas[which(intercept.term.id)] <- NA
@@ -109,9 +110,16 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
     betas <- as.vector(stats::na.omit(betas))
   }
   Xb <- X %*% betas
+  # Calculate random components of the linear predictor based on density required (and if the model is not an IPP)
   if (!is.na(object$approx.type) & dens == "posterior") {
     mu <- as.numeric(object$random.effects[grepl(" Mean ", row.names(object$random.effects), fixed = T), 1L])
     Zmu <- Z %*% mu
+    # add in the second (PO biasing) latent field if present and the process required is "intensity"
+    if (!is.null(object$bias.field) & process == "intensity") {
+      mu2 <- as.numeric(object$bias.field[grepl(" Mean ", row.names(object$bias.field), fixed = T), 1L])
+      Zmu2 <- Z %*% mu2
+      Zmu <- Zmu + Zmu2
+    }
   } else {
     Zmu <- 0
   }
