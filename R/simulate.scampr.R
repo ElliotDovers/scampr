@@ -152,7 +152,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       # get model's survey data
       survey.data <- attr(object$data, "pa")[ , c(coord.names, survey.resp, survey.preds)]
       # can cheat to get the fixed effects component over the survey sites by exploiting predict function
-      Xb.surv <- predict.scampr(object = object, newdata = survey.data, type = "link", dens = "prior", process = "abund")
+      Xb.surv <- predict.scampr(object = object, newdata = survey.data, type = "link", dens = "prior", data.component = "presence-absence")
       if (nsim == 1) {
         # Set the latent field depending on if it was explicitly calculated previously
         if (which.intensity == "sample" & !is.na(object$approx.type)) {

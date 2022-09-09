@@ -1,12 +1,13 @@
 #' Predict function for objects of class 'scampr'
 #'
-#' @description Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models (popa) the user can specify whether to return the rate at which presence records occur (process = intensity) or the abundance rate (process = abundance).
+#' @description Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (data.component = "presence-only") or the underlying abundance rate (data.component = "presence-absence").
 #'
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
-#' @param type a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Eitehr log-intensity or intensity respectively.
+#' @param type a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Either log-intensity or intensity respectively.
 #' @param dens a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.
-#' @param process a character string, one of 'intensity' or 'abundance', indictating the process to be estimated. Only available for combined data models.
+#' @param data.component a character string, one of 'presence-only' or 'presence-absence', indicating the data.component to be estimated. Only available for combined data models.
+#' @param exclude.terms Optionally, a character string (or vector of character strings) specifying model terms to be excluded from the predictions. This is useful for removing predictors that were used only to account for bias in the presence-only data.
 #' @param ... NA
 #'
 #' @return a numeric vector of length newdata (or length of fitted data) containing the predictions.
@@ -47,19 +48,19 @@
 #' m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 #'
 #' predict(m.ipp, test_po)
-#' predict(m.comb, test_po, process = "intensity")
-#' predict(m.comb, test_pa, process = "abundance")
+#' predict(m.comb, test_po, data.component = "presence-only")
+#' predict(m.comb, test_pa, data.component = "presence-absence")
 #' predict(m.pa, test_pa)
 #' predict(m.lgcp_va, test_po)
 #' predict(m.lgcp_va, test_po, dens = "prior")
 #' }
-predict.scampr <- function(object, ..., newdata, type = c("link", "response"), dens = c("posterior", "prior"), process = c("intensity", "abundance")) {
+predict.scampr <- function(object, ..., newdata, type = c("link", "response"), dens = c("posterior", "prior"), data.component = c("presence-only", "presence-absence"), exclude.terms) {
 
   ## checks ##
   type <- match.arg(type)
   dens <- match.arg(dens)
-  process <- match.arg(process)
-  # Adjust the calculation based on required prediction (abundance or intensity)
+  data.component <- match.arg(data.component)
+  # Adjust the calculation based on required prediction (presence-absence or presence-only)
   if (object$data.model.type == "popa") {
     # obtain the pa data
     data.pa <- attr(object$data, "pa")
@@ -71,7 +72,7 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
     po.pred <- all.vars(form.po[[3]])
     bias.preds <- po.pred[!po.pred %in% pa.pred]
     # adjust the model object to reflect abundance if required
-    if (process == "abundance") {
+    if (data.component == "presence-absence") {
       object$formula <- form.pa
       object$data <- data.pa
       # set the bias coefficients to zero for predicting mean abundance
@@ -98,6 +99,11 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   if (!is.na(object$approx.type)) {
     Z <- get.bf.matrix(object, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
   }
+  # if the user has specified terms to exclude, remove them from the design matrix and corresponding coefficients
+  if (!missing(exclude.terms)) {
+    X <- X[ , !colnames(X) %in% exclude.terms]
+    object$fixed.effects <- object$fixed.effects[!rownames(object$fixed.effects) %in% exclude.terms, ]
+  }
 
   # Calculate fixed effect components of the linear predictor
   betas <- as.numeric(object$fixed.effects[ , 1L])
@@ -114,8 +120,8 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   if (!is.na(object$approx.type) & dens == "posterior") {
     mu <- as.numeric(object$random.effects[grepl(" Mean ", row.names(object$random.effects), fixed = T), 1L])
     Zmu <- Z %*% mu
-    # add in the second (PO biasing) latent field if present and the process required is "intensity"
-    if (!is.null(object$bias.field) & process == "intensity") {
+    # add in the second (PO biasing) latent field if present and the data.component required is "presence-only"
+    if (!is.null(object$bias.field) & data.component == "presence-only") {
       mu2 <- as.numeric(object$bias.field[grepl(" Mean ", row.names(object$bias.field), fixed = T), 1L])
       Zmu2 <- Z %*% mu2
       Zmu <- Zmu + Zmu2
