@@ -16,7 +16,8 @@ scampr(
   sparse = TRUE,
   se = TRUE,
   starting.pars,
-  subset
+  subset,
+  additional.latent.field = FALSE
 )
 }
 \arguments{
@@ -30,11 +31,11 @@ scampr(
 
 \item{coord.names}{a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis.}
 
-\item{quad.weights.name}{a charater string of the column name of quadrature weights in \code{data}.}
+\item{quad.weights.name}{a character string of the column name of quadrature weights in \code{data}.}
 
 \item{basis.functions}{an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.}
 
-\item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.}
+\item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomogeneous Poisson process.}
 
 \item{sparse}{a logical indicating whether sparse matrix calculations should be used. Should only be turned off when using dense basis functions, e.g. Gaussian Kernel with long range parameter.}
 
@@ -43,6 +44,8 @@ scampr(
 \item{starting.pars}{an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.}
 
 \item{subset}{an optional vector describing a subset of the data to be used.}
+
+\item{additional.latent.field}{a logical indicating whether an additional latent field should be included in the Presence-only data model to capture additional detection bias. Only used in the integrated data model.}
 }
 \value{
 a scampr model object

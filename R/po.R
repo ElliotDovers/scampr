@@ -5,10 +5,10 @@
 #' @param po.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.
 #' @param po.data a data frame containing predictors at both presence-records and quadrature as well as the po.formula 'response'.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames
-#' @param quad.weights.name a charater string of the column name of quadrature weights in the po.data
+#' @param quad.weights.name a character string of the column name of quadrature weights in the po.data
 #' @param FRK.basis.functions an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.
 #' @param simple.basis an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.
-#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
+#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomogeneous Poisson process.
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
@@ -215,6 +215,10 @@ po <- function(po.formula, po.data, coord.names = c("x", "y"), quad.weights.name
       }
     }
   }
+  # ensure the mapped parameters are set to zero:
+  start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+  start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
+  start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
 
   # set up the objective function w.r.t. model.type
   obj <- switch(model.type,

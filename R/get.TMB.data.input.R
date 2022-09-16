@@ -32,7 +32,7 @@
 #' # Get the TMB data lists for a combined data model without latent field
 #' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
 #' str(tmp.input)
-get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), data.type = c("po", "pa", "popa"), starting.pars) {
+get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", FRK.basis.functions, simple.basis, model.type = c("laplace", "variational", "ipp"), bf.matrix.type = c("sparse", "dense"), data.type = c("po", "pa", "popa"), starting.pars, additional.latent.field = FALSE) {
 
   # parameters of restricted strings
   data.type <- match.arg(data.type)
@@ -77,41 +77,81 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
     # Create a vector of row names to track changes data manipulations (for po data)
     row.id <- 1:nrow(data)
 
-    # Get the PA design matrix
-    pa.des.mat <- get.design.matrix(pa.formula, pa.data)
+    # Need to adjust the breakdown of formulas depending on whether bias correcting predictors have been included for the PO data
+    # create a switch object for this:
+    if (all(po.pred %in% pa.pred)) {
+      biasing.predictors <- "absent"
+    } else {
+      biasing.predictors <- "present"
+    }
+
     # Get the full PO design matrix
-    full.po.des.mat <- get.design.matrix(formula, data)
-    # Get the seperate predictors (and remove intercepts if present - to be dealt with later)
+    full.po.des.mat <- scampr:::get.design.matrix(formula, po.data)
+    # Get the separate predictors (and remove intercepts if present - to be dealt with later)
     po.preds <- colnames(full.po.des.mat)[colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
     po.preds <- po.preds[!grepl("Intercept", po.preds, fixed = T)]
     bias.preds <- colnames(full.po.des.mat)[!colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
     bias.preds <- bias.preds[!grepl("Intercept", bias.preds, fixed = T)]
-    # Add/remove intercept term as required
+
+    # set a switch for when the model uses biasing terms including an intercept (needed for TMB objective function)
+    biasing.terms <- "present"
+
+    # Add/remove intercept term as required - unless formula and pa.formula DO NOT contain an intercept, the PO data will be modelled with a separate intercept
     if (any(grepl("Intercept", colnames(full.po.des.mat), fixed = T))) {
       if (!any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
-        stop("Intercept term found in formula and not in pa.formula")
+        po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(po.preds, collapse = " + ")))
+        po.bias.formula <- switch(biasing.predictors,
+                                  present = stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + "))),
+                                  absent = stats::as.formula(paste0(po.resp, " ~ 1"))
+        )
+      } else {
+        po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.preds, collapse = " + ")))
+        po.bias.formula <- switch(biasing.predictors,
+                                  present = stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + "))),
+                                  absent = stats::as.formula(paste0(po.resp, " ~ 1"))
+        )
       }
-      po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.preds, collapse = " + ")))
-      po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + ")))
+      # Get the PO design matrices in this scenario
+      po.des.mat <- scampr:::get.design.matrix(po.pred.formula, po.data)
+      po.bias.des.mat <- scampr:::get.design.matrix(po.bias.formula, po.data)
+      # Set an identifier for the biasing predictors in this scenario
+      fixed.names.bias.id <- switch(biasing.predictors,
+                                    present = c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat))),
+                                    absent = c(rep(F, ncol(po.des.mat)), T)
+      )
     } else {
       if (any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
         stop("Intercept term found in pa.formula and not in formula")
       }
       po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(po.preds, collapse = " + ")))
-      po.bias.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(bias.preds, collapse = " + ")))
+      po.bias.formula <- switch(biasing.predictors,
+                                present = stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(bias.preds, collapse = " + "))),
+                                absent = NA
+      )
+      # Get the PO design matrices in this scenario
+      po.des.mat <- scampr:::get.design.matrix(po.pred.formula, po.data)
+      po.bias.des.mat <- switch(biasing.predictors,
+                                present = scampr:::get.design.matrix(po.bias.formula, po.data),
+                                absent = matrix(rep(0, nrow(po.des.mat)), ncol = 1)
+      )
+      # Set an identifier for the biasing predictors in this scenario
+      fixed.names.bias.id <- switch(biasing.predictors,
+                                    present = c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat))),
+                                    absent = rep(F, ncol(po.des.mat))
+      )
+      # this scenarios flicks the switch for mapping biasing terms
+      biasing.terms <- "absent"
+
     }
-    # Get the PO design matrices
-    po.des.mat <- get.design.matrix(po.pred.formula, data)
-    po.bias.des.mat <- get.design.matrix(po.bias.formula, data)
+
     # Adjust the Intercept name if required
     if (any(grepl("Intercept", colnames(po.bias.des.mat), fixed = T))) {
       colnames(po.bias.des.mat)[grepl("Intercept", colnames(po.bias.des.mat), fixed = T)] <- "(Bias Intercept)"
     }
     # Get the presence point/ quadrature point identifier
-    pt.quad.id <- data[ , po.resp]
+    pt.quad.id <- po.data[ , po.resp]
     # Set the fixed effect names
     fixed.names <- c(colnames(po.des.mat), colnames(po.bias.des.mat))
-    fixed.names.bias.id <- c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat)))
 
     # Determine the basis functions to be used
     if (model.type != "ipp") {
@@ -197,13 +237,16 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         rm(tmp.m)
       }
     }
-    # create the appropraite start parameters for the variance component w.r.t. approx. type
+
+    # create the appropriate start parameters for the variance component w.r.t. approx. type
     var.starts <- rep(0, length(dat.list$bf_per_res))
     # initilise starting parameters at 0
     start.pars <- list(fixed = rep(0, ncol(dat.list$X_PA)),
                        bias = rep(0, ncol(dat.list$B_PO_pres)),
                        random = rep(0, ncol(dat.list$Z_PA)),
-                       log_variance_component = var.starts
+                       random_bias = rep(0, ncol(dat.list$Z_PO_pres)),
+                       log_variance_component = var.starts,
+                       log_variance_component_bias = var.starts
     )
     # obtain warm starts for parameters if provided
     if (!missing(starting.pars)) {
@@ -217,8 +260,17 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
       }
     }
 
+    # ensure mapped parameters are set to zero
+    if (biasing.terms == "absent") {
+      start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+    }
+    if (!additional.latent.field) {
+      start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
+      start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
+    }
+
     # Collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = cbind(pt.quad.id, row.id = order(c(pres.rows, quad.rows))), fixed.names = fixed.names, fixed.names.bias.id = fixed.names.bias.id, bf.info = bf.info, FRK.basis.functions = FRK.basis.functions)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = cbind(pt.quad.id, row.id = order(c(pres.rows, quad.rows))), fixed.names = fixed.names, fixed.names.bias.id = fixed.names.bias.id, bf.info = bf.info, FRK.basis.functions = FRK.basis.functions, additional.latent.field = additional.latent.field)
 
     ###################################################################
   } else if (data.type == "po") {
@@ -341,7 +393,9 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
     start.pars <- list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
                        bias = rep(0, ncol(dat.list$B_PO_pres)),
                        random = rep(0, ncol(dat.list$Z_PO_pres)),
-                       log_variance_component = var.starts
+                       random_bias = rep(0, ncol(dat.list$Z_PO_pres)),
+                       log_variance_component = var.starts,
+                       log_variance_component_bias = var.starts
     )
 
     # obtain warm starts for parameters if provided
@@ -355,6 +409,10 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         }
       }
     }
+    # ensure the mapped parameters are set to zero:
+    start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+    start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
+    start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
 
     # Collate info to be returned
     return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = cbind(pt.quad.id, row.id = order(c(pres.rows, quad.rows))), fixed.names = fixed.names, fixed.names.bias.id = NULL, bf.info = bf.info, FRK.basis.functions = FRK.basis.functions)
@@ -464,13 +522,16 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         rm(tmp.m)
       }
     }
+
     # create the appropraite start parameters for the variance component w.r.t. approx. type
     var.starts <- rep(0, length(dat.list$bf_per_res))
     # initilise starting parameters at 0
     start.pars <- list(fixed = rep(0, ncol(dat.list$X_PA)),
                        bias = 0,
                        random = rep(0, ncol(dat.list$Z_PA)),
-                       log_variance_component = var.starts
+                       random_bias = rep(0, ncol(dat.list$Z_PA)),
+                       log_variance_component = var.starts,
+                       log_variance_component_bias = var.starts
     )
     # obtain warm starts for parameters if provided
     if (!missing(starting.pars)) {
@@ -483,6 +544,10 @@ get.TMB.data.input <- function(formula, pa.formula, data, pa.data, coord.names =
         }
       }
     }
+    # ensure the mapped parameters are set to zero:
+    start.pars$bias <- 0
+    start.pars$random_bias <- rep(0, ncol(dat.list$Z_PA))
+    start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
 
     # Collate info to be returned
     return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = NULL, fixed.names = fixed.names, fixed.names.bias.id = NULL, bf.info = bf.info, FRK.basis.functions = FRK.basis.functions)

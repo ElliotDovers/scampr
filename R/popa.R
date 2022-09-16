@@ -7,7 +7,7 @@
 #' @param po.data a data frame containing predictors at both presence-records and quadrature as well as the po.formula 'response'.
 #' @param pa.data a data frame containing predictors and response for the pa.formula.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
-#' @param quad.weights.name a charater string of the column name of quadrature weights in the po.data.
+#' @param quad.weights.name a character string of the column name of quadrature weights in the po.data.
 #' @param FRK.basis.functions an optional object of class 'Basis' from FRK package. If neither 'FRK.basis.functions' nor 'simple.basis' is specified will use default FRK::auto_basis with 2 spatial resolutions.
 #' @param simple.basis an alternative to 'FRK.basis.functions': a data.frame of basis functions information created by 'simple_basis()'.
 #' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
@@ -71,9 +71,9 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   if (!quad.weights.name %in% colnames(po.data)) {
     stop(paste0("quad.weights.name, ", quad.weights.name, ", not found in the PO data provided"))
   }
-  if (!all(pa.pred %in% po.pred)) {
-    stop("Not all predictors in the PA formula are found in the PO formula")
-  }
+  # if (!all(pa.pred %in% po.pred)) {
+  #   stop("Not all predictors in the PA formula are found in the PO formula")
+  # }
   if (!is.logical(se)) {
     stop(paste0("'se' must be a logcial indicating whether or not to calculate standard errors"))
   }
@@ -111,37 +111,63 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
 
   # Get the full PO design matrix
   full.po.des.mat <- get.design.matrix(po.formula, po.data)
-  # Get the seperate predictors (and remove intercepts if present - to be dealt with later)
+  # Get the separate predictors (and remove intercepts if present - to be dealt with later)
   po.preds <- colnames(full.po.des.mat)[colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
   po.preds <- po.preds[!grepl("Intercept", po.preds, fixed = T)]
   bias.preds <- colnames(full.po.des.mat)[!colnames(full.po.des.mat) %in% colnames(pa.des.mat)]
   bias.preds <- bias.preds[!grepl("Intercept", bias.preds, fixed = T)]
-  # Add/remove intercept term as required
+
+  # set a switch for when the model uses biasing terms including an intercept (needed for TMB objective function)
+  biasing.terms <- "present" # will assume present until switched off in the event that there are no intercepts, nor bias predictors
+
+  # Add/remove intercept term as required - unless po.formula and pa.formula DO NOT contain an intercept, the PO data will be modelled with a separate intercept
   if (any(grepl("Intercept", colnames(full.po.des.mat), fixed = T))) {
     if (!any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
-      stop("Intercept term found in po.formula and not in pa.formula")
+      po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(po.preds, collapse = " + ")))
+      po.bias.formula <- switch(biasing.predictors,
+                                present = stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + "))),
+                                absent = stats::as.formula(paste0(po.resp, " ~ 1"))
+      )
+    } else {
+      po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.preds, collapse = " + ")))
+      po.bias.formula <- switch(biasing.predictors,
+                                present = stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + "))),
+                                absent = stats::as.formula(paste0(po.resp, " ~ 1"))
+      )
     }
-    po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ ", paste(po.preds, collapse = " + ")))
-    po.bias.formula <- switch(biasing.predictors,
-                              present = stats::as.formula(paste0(po.resp, " ~ ", paste(bias.preds, collapse = " + "))),
-                              absent = NA
-    )
+    # Get the PO design matrices in this scenario
+    po.des.mat <- get.design.matrix(po.pred.formula, po.data)
+    po.bias.des.mat <- get.design.matrix(po.bias.formula, po.data)
+    # Set an identifier for the biasing predictors in this scenario
+    # fixed.names.bias.id <- switch(biasing.predictors,
+    #                              present = c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat))),
+    #                              absent = c(rep(F, ncol(po.des.mat)), T)
+    # )
   } else {
-    if (any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
-      stop("Intercept term found in pa.formula and not in po.formula")
-    }
+    # if (any(grepl("Intercept", colnames(pa.des.mat), fixed = T))) {
+    #   stop("Intercept term found in pa.formula and not in po.formula")
+    # }
     po.pred.formula <- stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(po.preds, collapse = " + ")))
     po.bias.formula <- switch(biasing.predictors,
                               present = stats::as.formula(paste0(po.resp, " ~ - 1 + ", paste(bias.preds, collapse = " + "))),
                               absent = NA
     )
+    # Get the PO design matrices in this scenario
+    po.des.mat <- get.design.matrix(po.pred.formula, po.data)
+    po.bias.des.mat <- switch(biasing.predictors,
+                              present = get.design.matrix(po.bias.formula, po.data),
+                              absent = matrix(rep(0, nrow(po.des.mat)), ncol = 1)
+    )
+    # Set an identifier for the biasing predictors in this scenario
+    # fixed.names.bias.id <- switch(biasing.predictors,
+    #                               present = c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat))),
+    #                               absent = rep(F, ncol(po.des.mat))
+    # )
+    # this scenarios flicks the switch for mapping biasing terms (within this scope there are none if there are no biasing predictors)
+    biasing.terms <- biasing.predictors
+
   }
-  # Get the PO design matrices
-  po.des.mat <- get.design.matrix(po.pred.formula, po.data)
-  po.bias.des.mat <- switch(biasing.predictors,
-                            present = get.design.matrix(po.bias.formula, po.data),
-                            absent = matrix(rep(0, nrow(po.des.mat)), ncol = 1)
-  )
+
   # Adjust the Intercept name if required
   if (any(grepl("Intercept", colnames(po.bias.des.mat), fixed = T))) {
     colnames(po.bias.des.mat)[grepl("Intercept", colnames(po.bias.des.mat), fixed = T)] <- "(Bias Intercept)"
@@ -149,11 +175,11 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   # Get the presence point/ quadrature point identifier
   pt.quad.id <- po.data[ , po.resp]
   # Set the fixed effect names
-  fixed.names <- c(colnames(po.des.mat), colnames(po.bias.des.mat))
-  fixed.names.bias.id <- switch(biasing.predictors,
-                                present = c(rep(F, ncol(po.des.mat)), rep(T, ncol(po.bias.des.mat))),
-                                absent = rep(F, ncol(po.des.mat))
-  )
+  fixed.names <- c(colnames(po.des.mat), colnames(pa.des.mat), colnames(po.bias.des.mat))
+  fixed.names.bias.id <- c(rep(F, ncol(po.des.mat)), rep(F, ncol(pa.des.mat)), rep(T, ncol(po.bias.des.mat)))
+  remove.terms.id <- !duplicated(fixed.names)
+  fixed.names <- fixed.names[remove.terms.id]
+  fixed.names.bias.id <- fixed.names.bias.id[remove.terms.id]
 
   # Determine the basis functions to be used
   if (model.type != "ipp") {
@@ -264,7 +290,7 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   # AT THIS STAGE CAN ONLY PERFORM LAPLACE APPROX.
   # set up the objective function w.r.t. model.type
   if (additional.latent.field) {
-    if (biasing.predictors == "present") {
+    if (biasing.terms == "present") {
       obj <- switch(model.type,
                     ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
                     variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T),
@@ -282,7 +308,8 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
   } else {
     # ensure random_bias parameters are at zero for map
     start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
-    if (biasing.predictors == "present") {
+    # start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
+    if (biasing.terms == "present") {
       obj <- switch(model.type,
                     ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
                     variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
@@ -298,14 +325,45 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
       )
     }
   }
-  # AT THIS STAGE CAN ONLY PERFORM LAPLACE APPROX.
-  # set up the objective function w.r.t. model.type
-  # obj <- switch(model.type,
-  #               ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
-  #               variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T),
-  #               laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
-  # )
-  # obj <- TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
+
+  # # AT THIS STAGE CAN ONLY PERFORM LAPLACE APPROX.
+  # # set up the objective function w.r.t. model.type
+  # if (additional.latent.field) {
+  #   if (biasing.predictors == "present") {
+  #     obj <- switch(model.type,
+  #                   ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #                   variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T),
+  #                   laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T)
+  #     )
+  #   } else {
+  #     # ensure bias parameters are at zero for map
+  #     start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+  #     obj <- switch(model.type,
+  #                   ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component)))), silent = T),
+  #                   variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias)))), silent = T),
+  #                   laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias)))), silent = T)
+  #     )
+  #   }
+  # } else {
+  #   # ensure random_bias parameters are at zero for map
+  #   start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
+  #   if (biasing.predictors == "present") {
+  #     obj <- switch(model.type,
+  #                   ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #                   variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #                   laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
+  #     )
+  #   } else {
+  #     # ensure bias parameters are at zero for map
+  #     start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+  #     obj <- switch(model.type,
+  #                   ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #                   variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+  #                   laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
+  #     )
+  #   }
+  # }
+
   # optimise the parameters
   res <- stats::optim(par = obj$par, fn = obj$fn, gr = obj$gr, method = "BFGS", control = list(maxit = 1000))
   # get standard errors if required
@@ -366,23 +424,23 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
       )
       rownames(res$bias.field) <- bias.rand.names
     }
-    rownames(res$random.effects) <- rand.names
+    rownames(res$random.effects) <- rand.names # THIS APPEARS A BUG
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
     res$approx.type <- "laplace" #model.type until POPA models can handle VA
     if (additional.latent.field) {
-      res$fitted.values <- switch(biasing.predictors,
-                                  present = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
-                                  absent = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      res$fitted.values <- switch(biasing.terms,
+                                  present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
+                                  absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
       )
-      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     } else {
-      res$fitted.values <- switch(biasing.predictors,
-                                  present = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
-                                  absent = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      res$fitted.values <- switch(biasing.terms,
+                                  present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
+                                  absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
       )
-      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     }
   } else {
     res$random.effects <- NA
@@ -390,11 +448,11 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     res$FRK.basis.functions <- NULL
     res$basis.fn.info <- NULL
     res$approx.type <- NA
-    res$fitted.values <- switch(biasing.predictors,
-                                present = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names.bias.id, 1]),
-                                absent = as.vector(po.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1])
+    res$fitted.values <- switch(biasing.terms,
+                                present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1]),
+                                absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1])
     )
-    attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[!fixed.names.bias.id, 1])
+    attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1])
   }
   res$starting.pars <- start.pars
   res$data <- po.data

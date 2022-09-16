@@ -88,6 +88,22 @@ summary.scampr <- function(object, ...) {
     tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 1)}))
     post.means.summary <- as.data.frame(cbind(tmp.min[ , -1], tmp.25[ , -1], tmp.50[ , -1], tmp.mean[ , -1], tmp.75[ , -1], tmp.max[ , -1]))
     colnames(post.means.summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+    # if the model contains a secondary latent field capturing bias in the presence-only data
+    if (!is.null(object$bias.field)) {
+      tmp.bias_field <- object$bias.field
+      post.means <- tmp.bias_field[grepl(" Mean ", row.names(tmp.bias_field), fixed = T), 1]
+      prior.variance_bias.field <- as.data.frame(t(formatC(tmp.bias_field[grepl("Prior Var", row.names(tmp.bias_field), fixed = T), 1], digits = 2)))
+      colnames(prior.variance_bias.field) <- paste0("res. ", 1:length(prior.variance_bias.field))
+      rownames(prior.variance_bias.field) <- ""
+      tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0)}))
+      tmp.25 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.25)}))
+      tmp.50 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.5)}))
+      tmp.mean <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){mean(x)}))
+      tmp.75 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.75)}))
+      tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 1)}))
+      post.means.summary_bias.field <- as.data.frame(cbind(tmp.min[ , -1], tmp.25[ , -1], tmp.50[ , -1], tmp.mean[ , -1], tmp.75[ , -1], tmp.max[ , -1]))
+      colnames(post.means.summary_bias.field) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
+    }
   }
 
   # Print the report #
@@ -107,5 +123,15 @@ summary.scampr <- function(object, ...) {
       "\nPrior Variance(s):\n"
     )
     print(prior.variance)
+    if (!is.null(object$bias.field)) {
+      cat(
+        "---\n\nSpatial Random Effects on the second latent field:\n\nPosterior Means per Spatial Resolution(s):\n"
+      )
+      print(format(post.means.summary_bias.field, digit = 2))
+      cat(
+        "\nPrior Variance(s):\n"
+      )
+      print(prior.variance_bias.field)
+    }
   }
 }

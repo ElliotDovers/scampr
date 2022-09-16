@@ -2,7 +2,7 @@
 % Please edit documentation in R/simple_basis_search.R
 \name{simple_basis_search}
 \alias{simple_basis_search}
-\title{Search algorithim for simple 2D basis functions configurations on scampr models}
+\title{Search algorithm for simple 2D basis functions configurations on scampr models}
 \usage{
 simple_basis_search(
   scampr.model,
@@ -16,7 +16,7 @@ simple_basis_search(
 )
 }
 \arguments{
-\item{scampr.model}{a scampr model: object of class 'scampr' that provides the framework for the search alogrithm. Recommended that an IPP model of the appropriate type is used.}
+\item{scampr.model}{a scampr model: object of class 'scampr' that provides the framework for the search algorithm. Recommended that an IPP model of the appropriate type is used.}
 
 \item{po.fold.id}{Optional for cross-validation. An integer or factor vector the same length as the po.data that describes the CV fold that each location falls into.}
 
@@ -28,9 +28,9 @@ simple_basis_search(
 
 \item{domain.data}{Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.}
 
-\item{loglik.type}{a charater string indicating the type of approximation to use for the intractible marginalisation. One of 'variational', 'laplace' or 'both'. Currently variational (and hence both) is only available to PO models.}
+\item{loglik.type}{a character string indicating the type of approximation to use for the intractable marginalisation. One of 'variational', 'laplace' or 'both'. Currently variational (and hence both) is only available to PO models.}
 
-\item{trunc.pa.prob}{Optional. A small positve number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoiding within the cross-validation.}
+\item{trunc.pa.prob}{Optional. A small positive number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoiding within the cross-validation.}
 }
 \value{
 a data.frame with columns including- 'nodes.on.long.edge': number used in scampr::simple_basis to create basis configuration. 'bf': the number of basis functions. 'loglik': the fitting marginal log-likelihood. 'aic': the corresponding AIC. Optionally, 'predicted_cll_po': the conditional (on the latent field) Presence-only likelihood. 'predicted_cll_pa': the conditional (on the latent field) Presence/Absence likelihood. 'roc_auc': Area under the ROC curve on the Presence/Absence data. Optional columns are the results from a cross-validation described by 'po.fold.id' and/or 'pa.fold.id'. (_va or _lp subscript for approx. type if both are calculated).

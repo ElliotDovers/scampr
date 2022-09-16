@@ -65,11 +65,11 @@ vcov.scampr <- function(object, ...) {
     dat.list <- inputs$tmb.data
     # initilise starting parameters at existing ML estimates to speed things up
     start.pars <- inputs$tmb.pars
-    # set up the objective function w.r.t. mod.id
-    obj <- switch(mod.id,
-                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres))), random = factor(rep(NA, ncol(dat.list$Z_PA))), log_variance_component = factor(rep(NA, length(dat.list$bf_per_res)))), silent = T),
-                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T),
-                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T)
+    # set up the objective function w.r.t. model.type
+    obj <- switch(model.type,
+                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
     )
     # get the sdreport that produces the full precision matrix
     tmp <- TMB::sdreport(obj, getJointPrecision = T) # This will change pre to post optim but ok with ML starting pars
@@ -123,10 +123,10 @@ vcov.scampr <- function(object, ...) {
     start.pars <- inputs$tmb.pars
     # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
     # set up the objective function w.r.t. mod.id
-    obj <- switch(mod.id,
-                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres))), random = factor(rep(NA, ncol(dat.list$Z_PA))), log_variance_component = factor(rep(NA, length(dat.list$bf_per_res)))), silent = T),
-                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T),
-                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, ncol(dat.list$B_PO_pres)))), silent = T)
+    obj <- switch(model.type,
+                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = as.factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
     )
     # get the sdreport that produces the full precision matrix
     tmp <- TMB::sdreport(obj, getJointPrecision = T) # This will change pre to post optim but ok with ML starting pars
@@ -189,11 +189,43 @@ vcov.scampr <- function(object, ...) {
     start.pars <- inputs$tmb.pars
     # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
     # set up the objective function w.r.t. mod.id
-    obj <- switch(mod.id,
-                  ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, ncol(dat.list$Z_PA))), log_variance_component = factor(rep(NA, length(dat.list$bf_per_res)))), silent = T),
-                  variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T),
-                  laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", silent = T)
-    )
+    if (inputs$additional.latent.field) {
+      if (any(inputs$fixed.names.bias.id)) {
+        obj <- switch(model.type,
+                      ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                      variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T),
+                      laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", silent = T)
+        )
+      } else {
+        # ensure bias parameters are at zero for map
+        start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+        obj <- switch(model.type,
+                      ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component)))), silent = T),
+                      variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias)))), silent = T),
+                      laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = c("random", "random_bias"), DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias)))), silent = T)
+        )
+      }
+    } else {
+      # ensure random_bias parameters are at zero for map
+      start.pars$random_bias <- rep(0, ncol(dat.list$Z_PO_pres))
+      start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
+      if (any(inputs$fixed.names.bias.id)) {
+        obj <- switch(model.type,
+                      ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                      variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                      laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
+        )
+      } else {
+        # ensure bias parameters are at zero for map
+        start.pars$bias <- rep(0, ncol(dat.list$B_PO_pres))
+        obj <- switch(model.type,
+                      ipp = TMB::MakeADFun(data = dat.list, parameters = start.pars, DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random = factor(rep(NA, length(start.pars$random))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component = factor(rep(NA, length(start.pars$log_variance_component_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                      variational = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T),
+                      laplace = TMB::MakeADFun(data = dat.list, parameters = start.pars, random = "random", DLL = "scampr", map = list(bias = factor(rep(NA, length(start.pars$bias))), random_bias = factor(rep(NA, length(start.pars$random_bias))), log_variance_component_bias = factor(rep(NA, length(start.pars$log_variance_component_bias)))), silent = T)
+        )
+      }
+    }
+
     # get the sdreport that produces the full precision matrix
     tmp <- TMB::sdreport(obj, getJointPrecision = T) # This will change pre to post optim but ok with ML starting pars
     if (is.null(tmp$jointPrecision)) {

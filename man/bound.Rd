@@ -18,9 +18,9 @@ bound(
 
 \item{coord.names}{a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis. Will be over-ridden when \code{object} is a \code{scampr} model.}
 
-\item{precision}{an integer value that determines the number of decimal places to search through. Controls the precision of the approximate boundary, 1 or 2 should be adequate. The higher (larger) the presicion the slower the result is obtained.}
+\item{precision}{an integer value that determines the number of decimal places to search through. Controls the precision of the approximate boundary, 1 or 2 should be adequate. The higher (larger) the precision the slower the result is obtained.}
 
-\item{plotting}{a logical indicating whether the results should be plotted. Helpful for trialling presicion and/or encasing.}
+\item{plotting}{a logical indicating whether the results should be plotted. Helpful for trialing presicion and/or encasing.}
 
 \item{encase}{a numeric value indicating the amount of encasing of the data should occur. This will essentially add a buffer to the boundary.}
 

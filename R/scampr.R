@@ -13,9 +13,9 @@
 #' @param pa.formula Optionally, an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. All predictor terms must also be included in the \code{formula} argument. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
 #' @param pa.data Optionally, a data frame containing predictors and response described in \code{pa.formula}.
 #' @param coord.names a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis.
-#' @param quad.weights.name a charater string of the column name of quadrature weights in \code{data}.
+#' @param quad.weights.name a character string of the column name of quadrature weights in \code{data}.
 #' @param basis.functions an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.
-#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
+#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomogeneous Poisson process.
 #' @param sparse a logical indicating whether sparse matrix calculations should be used. Should only be turned off when using dense basis functions, e.g. Gaussian Kernel with long range parameter.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.

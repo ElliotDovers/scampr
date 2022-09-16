@@ -6,12 +6,12 @@
 #' @param na.action a function which indicates what should happen when the data contain NAs. The default is set by the na.action setting of options, and is na.fail if that is unset. The ‘factory-fresh’ default is na.omit. Another possible value is NULL, no action. Value na.exclude can be useful.
 #'
 #' @return a data.frame
-#' @noRd
+#' @export
 #'
 #' @importFrom stats model.frame model.matrix update.formula
 #'
 #' @examples
-#' des.mat <- scampr:::get.desgin.matrix(Petal.Length ~ Petal.Width + Species, iris)
+#' des.mat <- scampr:::get.design.matrix(Petal.Length ~ Petal.Width + Species, iris)
 #' head(des.mat)
 get.design.matrix <- function(formula, data, subset, na.action) {
   mf <- match.call(expand.dots = FALSE)

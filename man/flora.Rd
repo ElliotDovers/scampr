@@ -29,6 +29,6 @@ A list of three elements. First element ('po') is a list of four data frames of 
 flora
 }
 \description{
-This is an extended version of the \code{BlueMountains} dataset from the package \code{ppmlasso}, formatted for use with \code{scampr} models. The list contains both a presence-only and presence/absence data sets for four species of flora in the Greater Blue Mountains World Heritage Area (GBMWHA). Data includes the values of three environmental variables and two variables related to site accessibility throughout the region at a spatial resolution of 1km. All predictor variables are centred and scaled for ease of use in modelling (center and scale can be recovered from attributes attached to each relevant column of the data frames).
+This is an extended version of the \code{BlueMountains} dataset from the package \code{ppmlasso}, formatted for use with \code{scampr} models. The list contains both a presence-only and presence/absence data sets for four species of flora in the Greater Blue Mountains World Heritage Area (GBMWHA). Data includes the values of three environmental variables and two variables related to site accessibility throughout the region at a spatial resolution of 1km. All predictor variables are centered and scaled for ease of use in modelling (center and scale can be recovered from attributes attached to each relevant column of the data frames).
 }
 \keyword{datasets}

@@ -1,6 +1,6 @@
 #' Model for Presence/Absence Data
 #'
-#' @description Fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approx. latent field as spatial random effects.
+#' @description Fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accommodate an approx. latent field as spatial random effects.
 #'
 #' @param pa.formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.
 #' @param pa.data a data frame containing predictors and response for the pa.formula.
@@ -192,6 +192,10 @@ pa <- function(pa.formula, pa.data, coord.names = c("x", "y"), FRK.basis.functio
       }
     }
   }
+  # ensure the mapped parameters are set to zero:
+  start.pars$bias <- 0
+  start.pars$random_bias <- rep(0, ncol(dat.list$Z_PA))
+  start.pars$log_variance_component_bias <- -1e6 # set near enough to zero on the exponential-scale
 
   # # AT THIS STAGE CAN ONLY PERFORM LAPLAC APPROX.
   # set up the objective function w.r.t. model.type

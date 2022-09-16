@@ -238,7 +238,7 @@
       for (int l = 0; l < bf_per_res.size(); ++l) {
         for (int k = 0; k < bf_per_res(l); ++k) {
           LL_random += dnorm(random(k + L), mu, PriorSD(l), true);
-          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true);
+          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true); // THIS ADDS LIKELIHOOD EVEN WHEN MAPPED SINCE WE CANNOT MAP TO log(0)
         }
         L = L + bf_per_res(l);
       }
@@ -273,7 +273,7 @@
       for (int l = 0; l < bf_per_res.size(); ++l) {
         for (int k = 0; k < bf_per_res(l); ++k) {
           LL_random += dnorm(random(k + L), mu, PriorSD(l), true);
-          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true);
+          LL_random += dnorm(random_bias(k + L), mu, PriorSD_bias(l), true); // THIS ADDS LIKELIHOOD EVEN WHEN MAPPED SINCE WE CANNOT MAP TO log(0)
         }
         L = L + bf_per_res(l);
       }

@@ -10,7 +10,8 @@
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
-  process = c("intensity", "abundance")
+  data.component = c("presence-only", "presence-absence"),
+  exclude.terms
 )
 }
 \arguments{
@@ -20,17 +21,19 @@
 
 \item{newdata}{a data frame of point locations to predict over as well as predictors involved in the model}
 
-\item{type}{a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Eitehr log-intensity or intensity respectively.}
+\item{type}{a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Either log-intensity or intensity respectively.}
 
 \item{dens}{a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.}
 
-\item{process}{a character string, one of 'intensity' or 'abundance', indictating the process to be estimated. Only available for combined data models.}
+\item{data.component}{a character string, one of 'presence-only' or 'presence-absence', indicating the data.component to be estimated. Only available for combined data models.}
+
+\item{exclude.terms}{Optionally, a character string (or vector of character strings) specifying model terms to be excluded from the predictions. This is useful for removing predictors that were used only to account for bias in the presence-only data.}
 }
 \value{
 a numeric vector of length newdata (or length of fitted data) containing the predictions.
 }
 \description{
-Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models (popa) the user can specify whether to return the rate at which presence records occur (process = intensity) or the abundance rate (process = abundance).
+Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (data.component = "presence-only") or the underlying abundance rate (data.component = "presence-absence").
 }
 \examples{
 # Get the flora data for one of the species
@@ -64,8 +67,8 @@ m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 
 predict(m.ipp, test_po)
-predict(m.comb, test_po, process = "intensity")
-predict(m.comb, test_pa, process = "abundance")
+predict(m.comb, test_po, data.component = "presence-only")
+predict(m.comb, test_pa, data.component = "presence-absence")
 predict(m.pa, test_pa)
 predict(m.lgcp_va, test_po)
 predict(m.lgcp_va, test_po, dens = "prior")

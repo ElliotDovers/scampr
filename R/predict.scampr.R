@@ -1,12 +1,12 @@
 #' Predict function for objects of class 'scampr'
 #'
-#' @description Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (data.component = "presence-only") or the underlying abundance rate (data.component = "presence-absence").
+#' @description Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (use.formula = "presence-only") or the underlying abundance rate (use.formula = "presence-absence").
 #'
 #' @param object a scampr model object
 #' @param newdata a data frame of point locations to predict over as well as predictors involved in the model
 #' @param type a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Either log-intensity or intensity respectively.
 #' @param dens a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.
-#' @param data.component a character string, one of 'presence-only' or 'presence-absence', indicating the data.component to be estimated. Only available for combined data models.
+#' @param use.formula a character string, one of 'presence-only' or 'presence-absence', indicating the formula to be used for prediction estimated. Only available for combined data models.
 #' @param exclude.terms Optionally, a character string (or vector of character strings) specifying model terms to be excluded from the predictions. This is useful for removing predictors that were used only to account for bias in the presence-only data.
 #' @param ... NA
 #'
@@ -48,41 +48,31 @@
 #' m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 #'
 #' predict(m.ipp, test_po)
-#' predict(m.comb, test_po, data.component = "presence-only")
-#' predict(m.comb, test_pa, data.component = "presence-absence")
+#' predict(m.comb, test_po, use.formula = "presence-only")
+#' predict(m.comb, test_pa, use.formula = "presence-absence")
 #' predict(m.pa, test_pa)
 #' predict(m.lgcp_va, test_po)
 #' predict(m.lgcp_va, test_po, dens = "prior")
 #' }
-predict.scampr <- function(object, ..., newdata, type = c("link", "response"), dens = c("posterior", "prior"), data.component = c("presence-only", "presence-absence"), exclude.terms) {
+predict.scampr <- function(object, ..., newdata, type = c("link", "response"), dens = c("posterior", "prior"), use.formula = c("presence-only", "presence-absence"), exclude.terms) {
 
   ## checks ##
   type <- match.arg(type)
   dens <- match.arg(dens)
-  data.component <- match.arg(data.component)
+  use.formula <- match.arg(use.formula)
   # Adjust the calculation based on required prediction (presence-absence or presence-only)
   if (object$data.model.type == "popa") {
     # obtain the pa data
     data.pa <- attr(object$data, "pa")
-    # obtain the formulas
-    form.po <- object$formula
+    # obtain the pa formula
     form.pa <- attr(object$formula, "pa")
-    # obtain bias covariates
-    pa.pred <- all.vars(form.pa[[3]])
-    po.pred <- all.vars(form.po[[3]])
-    bias.preds <- po.pred[!po.pred %in% pa.pred]
-    # adjust the model object to reflect abundance if required
-    if (data.component == "presence-absence") {
+    # adjust the model object to reflect specified formula to use
+    if (use.formula == "presence-absence") {
       object$formula <- form.pa
       object$data <- data.pa
-      # set the bias coefficients to zero for predicting mean abundance
-      object$fixed.effects[is.na(object$fixed.effects)] <- 0 # in case of NA, NaN standard errors
-      object$fixed.effects[rownames(object$fixed.effects) %in% c("(Bias Intercept)", bias.preds), ] <- NA
-      object$fixed.effects <- stats::na.omit(object$fixed.effects)
-    } else {
-      object$formula <- form.po
     }
   }
+  # if newdata is missing, use the model data
   if (missing(newdata)) {
     newdata <- object$data
   }
@@ -94,7 +84,7 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   }
   ###
 
-  # Obtain the fixed effect matrix and basis function matrix (at new data or fitted)
+  # Obtain the fixed effect matrix and basis function matrix
   X <- get.design.matrix(object$formula, newdata) # this gives a single column for intercept (whether POPA model has multiple or not)
   if (!is.na(object$approx.type)) {
     Z <- get.bf.matrix(object, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
@@ -105,23 +95,34 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
     object$fixed.effects <- object$fixed.effects[!rownames(object$fixed.effects) %in% exclude.terms, ]
   }
 
-  # Calculate fixed effect components of the linear predictor
-  betas <- as.numeric(object$fixed.effects[ , 1L])
+
+  betas <- object$fixed.effects[ , 1L]
   intercept.term.id <- grepl("Intercept)", rownames(object$fixed.effects), fixed = T)
   # If there are two intercepts (due to combined data model) then we need to combine the intercepts now
   if (sum(intercept.term.id) > 1) {
     combined.intercepts <- sum(object$fixed.effects[intercept.term.id , 1L])
     betas[which(intercept.term.id)] <- NA
     betas[min(which(intercept.term.id))] <- combined.intercepts
-    betas <- as.vector(stats::na.omit(betas))
+    betas <- stats::na.omit(betas)
   }
+  # Perform a final check that the column names of X match the corresponding fixed effects
+  if (ncol(X) != length(betas)) {
+    if (!all(colnames(X) %in% names(betas))) {
+      stop(paste(colnames(X)[!colnames(X) %in% names(betas)], " not found in fixed effect coefficients for these prediction specifications."))
+    }
+    if (!all(names(betas) %in% colnames(X))) {
+      stop(paste(names(betas)[!names(betas) %in% colnames(X)], " not found in newdata design matrix for these prediction specifications."))
+    }
+  }
+
+  # Calculate fixed effect components of the linear predictor
   Xb <- X %*% betas
   # Calculate random components of the linear predictor based on density required (and if the model is not an IPP)
   if (!is.na(object$approx.type) & dens == "posterior") {
     mu <- as.numeric(object$random.effects[grepl(" Mean ", row.names(object$random.effects), fixed = T), 1L])
     Zmu <- Z %*% mu
-    # add in the second (PO biasing) latent field if present and the data.component required is "presence-only"
-    if (!is.null(object$bias.field) & data.component == "presence-only") {
+    # add in the second (PO biasing) latent field if present and the use.formula required is "presence-only"
+    if (!is.null(object$bias.field) & use.formula == "presence-only") {
       mu2 <- as.numeric(object$bias.field[grepl(" Mean ", row.names(object$bias.field), fixed = T), 1L])
       Zmu2 <- Z %*% mu2
       Zmu <- Zmu + Zmu2

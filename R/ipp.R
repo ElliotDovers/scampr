@@ -7,7 +7,7 @@
 #' @param starting.pars optional named list or scampr model that gives warm starts for the parameters of the model
 #' @param se logical indicating whether standard errors should be calculated
 #' @param coord.names vector of character strings describing the column names of the coordinates in data
-#' @param quad.weights.name charater string of the column name of quadrature weights in data
+#' @param quad.weights.name character string of the column name of quadrature weights in data
 #' @param subset an optional vector describing a subset of the data to be used.
 #'
 #' @return scampr model object
