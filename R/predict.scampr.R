@@ -92,9 +92,8 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   # if the user has specified terms to exclude, remove them from the design matrix and corresponding coefficients
   if (!missing(exclude.terms)) {
     X <- X[ , !colnames(X) %in% exclude.terms]
-    object$fixed.effects <- object$fixed.effects[!rownames(object$fixed.effects) %in% exclude.terms, ]
+    object$fixed.effects <- object$fixed.effects[na.omit(match(rownames(object$fixed.effects), colnames(X))), ]
   }
-
 
   betas <- object$fixed.effects[ , 1L]
   intercept.term.id <- grepl("Intercept)", rownames(object$fixed.effects), fixed = T)
