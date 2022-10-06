@@ -424,23 +424,23 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
       )
       rownames(res$bias.field) <- bias.rand.names
     }
-    rownames(res$random.effects) <- rand.names # THIS APPEARS A BUG
+    rownames(res$random.effects) <- rand.names
     res$basis.per.res <- dat.list$bf_per_res
     res$FRK.basis.functions <- FRK.basis.functions
     res$basis.fn.info <- bf.info
     res$approx.type <- "laplace" #model.type until POPA models can handle VA
     if (additional.latent.field) {
       res$fitted.values <- switch(biasing.terms,
-                                  present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
-                                  absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+                                  present = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1] + po.bias.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.bias.des.mat))), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$bias.field), fixed = T), 1]),
+                                  absent = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1] + po.bf.matrix %*% res$bias.field[grepl(" Mean ", rownames(res$bias.field), fixed = T), 1])
       )
-      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(pa.des.mat))), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     } else {
       res$fitted.values <- switch(biasing.terms,
-                                  present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
-                                  absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+                                  present = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1] + po.bias.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.bias.des.mat))), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1]),
+                                  absent = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1] + po.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
       )
-      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
+      attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(pa.des.mat))), 1] + pa.bf.matrix %*% res$random.effects[grepl(" Mean ", rownames(res$random.effects), fixed = T), 1])
     }
   } else {
     res$random.effects <- NA
@@ -449,10 +449,10 @@ popa <- function(po.formula, pa.formula, po.data, pa.data, coord.names = c("x", 
     res$basis.fn.info <- NULL
     res$approx.type <- NA
     res$fitted.values <- switch(biasing.terms,
-                                present = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1] + po.bias.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.bias.des.mat), 1]),
-                                absent = as.vector(po.des.mat %*% res$fixed.effects[fixed.names %in% colnames(po.des.mat), 1])
+                                present = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1] + po.bias.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.bias.des.mat))), 1]),
+                                absent = as.vector(po.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(po.des.mat))), 1])
     )
-    attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[fixed.names %in% colnames(pa.des.mat), 1])
+    attr(res$fitted.values, "abundance") <- as.vector(pa.des.mat %*% res$fixed.effects[na.omit(match(fixed.names, colnames(pa.des.mat))), 1])
   }
   res$starting.pars <- start.pars
   res$data <- po.data
