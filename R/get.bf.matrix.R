@@ -33,41 +33,58 @@ get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", 
 
   bf.matrix.type <- match.arg(bf.matrix.type)
 
-  # Check the object is of one of the two correct types
-  if(!"bf.df" %in% class(object)) {
-    if (class(object)[1] != "scampr") {
-      stop("'object' must be a model of class 'scampr' or a basis function data.frame of class 'bf.df'")
-    }
-  }
-  # If the object is a scampr model created without an FRK auto_basis use the basis function info data frame
-  object.switch <- T
-  if (class(object)[1] == "scampr") {
-    if (is.na(object$approx.type)) {
-      stop("Cannot get a basis function matrix from an IPP model")
+  # check if the provided object is a scampr model object and if so extract the basis functions
+  if (is(object, "scampr")) {
+    if (!is.null(object$basis.functions)) { # check that the model has basis functions
+      object <- object$basis.functions
     } else {
-      if (!is.null(object$FRK.basis.functions)) {
-        bf.mat <- FRK::eval_basis(object$FRK.basis.functions, as.matrix(point.locations))
-        attr(bf.mat, "bf.df") <- object$basis.fn.info
-        object.switch <- F
-      } else {
-        tmp <- object$basis.fn.info
-        object <- tmp
-      }
+      stop("No 'basis.functions' found in the scampr model provided to 'get.bf.matrix'")
     }
   }
-  if (object.switch) {
+
+  # alter approach based on whether basis functions are to be scampr's simple version or those of FRK
+  if (is(object, "Basis")) {
+    # evaluate the basis function matrix using FRK::eval_basis
+    bf.mat <- FRK::eval_basis(basis = object, as.matrix(point.locations))
+    # since these default to sparse we need to convert to dense if needed
+    if (bf.matrix.type == "dense") {
+      bf.mat <- methods::as(bf.mat, "matrix")
+    }
+    # set the basis information matrix
+    bf.info <- object@df
+    # add in a class for the basis information matrix
+    class(bf.info) <- c(class(bf.info), "bf.df")
+  } else if (is(object, "bf.df")) {
+    # initialise the basis function matrix
     bf.mat <- NULL
+    # loop through each resolution of basis functions
     for (res in unique(object$res)) {
+      # obtain the radius
       radius <- object$scale[object$res == res][1]
+      # calculate the distances from points to basis function nodes
       dist.mat <- fields::rdist(point.locations, object[,1:2][object$res == res, ])
-      Z <- matrix(0, nrow = nrow(dist.mat), ncol = ncol(dist.mat))
-      Z[dist.mat <= radius] <- (1 - (dist.mat[dist.mat <= radius] / radius)^2)^2
+      # set distances beyond the radius to zero
+      dist.mat[dist.mat > radius] <- 0
+      # if sparse we can save computation time here
+      if (bf.matrix.type == "sparse") {
+        dist.mat <- methods::as(dist.mat, "sparseMatrix")
+      }
+      # calculate the bi-square basis function matrix
+      Z <- ((dist.mat != 0) - (dist.mat / radius)^2)^2
+      # add resolution to matrix via columns
       bf.mat <- cbind(bf.mat, Z)
     }
-    if (bf.matrix.type == "sparse") {
-      bf.mat <- methods::as(bf.mat, "sparseMatrix")
-    }
-    attr(bf.mat, "bf.df") <- object
+    # set the basis information matrix
+    bf.info <- object
+  } else {
+    stop("Basis functions provided are not of the correct type. See documentation for details")
   }
+  # ensure the matrix is sparse if required
+  if (bf.matrix.type == "sparse") {
+    bf.mat <- methods::as(bf.mat, "sparseMatrix")
+  }
+  # add in the basis information matrix to the return object
+  attr(bf.mat, "bf.df") <- bf.info
+
   return(bf.mat)
 }
