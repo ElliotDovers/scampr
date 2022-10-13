@@ -24,7 +24,7 @@ print.scampr <- function(x, ...) {
   # Collect elements for reporting #
 
   # Model used
-  if (x$data.model.type == "popa") {
+  if (x$data.model.type == "IDM") {
     po.formula <- x$formula
     pa.formula <- attr(x$formula, "pa")
     pa.resp <- all.vars(pa.formula[[2]])
@@ -44,17 +44,17 @@ print.scampr <- function(x, ...) {
     mod.id <- x$approx.type
   }
   # Set the model description
-  if (x$data.model.type == "popa") {
+  if (x$data.model.type == "IDM") {
     Model.Desc <- switch(mod.id,
                         ipp = "Combined data inhomogeneous process model",
                         variational = "Combined data model w. spatially correlated errors - Variational approx.",
                         laplace = "Combined data model w. spatially correlated errors - Laplace approx.")
-  } else if (x$data.model.type == "po") {
+  } else if (x$data.model.type == "PO") {
     Model.Desc <- switch(mod.id,
                          ipp = "Inhomogeneous Poisson process",
                          variational = "Log-Gaussian Cox process - Variational Approx.",
                          laplace = "Log-Gaussian Cox process - Laplace Approx.")
-  } else if (x$data.model.type == "pa") {
+  } else if (x$data.model.type == "PA") {
     Model.Desc <- switch(mod.id,
                          ipp = "Binary regression model w. complimentary log-log link function",
                          variational = "Spatially correlated, binary regression model w. complimentary log-log link function - Variational approx.",

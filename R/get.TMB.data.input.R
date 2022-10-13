@@ -180,7 +180,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     arg.info$bias.type <- bias.type
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = cbind(pt.quad.id, row.id = order(c(pres.rows, quad.rows))), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
 
 
   } else if (data.type == "PA") { # Presence/absence data
@@ -272,7 +272,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     arg.info$bias.type <- "none"
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = NA, fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = NA, row.id = NA, fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
 
 
   } else { # Integrated data
@@ -502,7 +502,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     arg.info$bias.type <- bias.type
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, po.info = cbind(pt.quad.id, row.id = order(c(pres.rows, quad.rows))), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, args = arg.info)
 
   }
 }

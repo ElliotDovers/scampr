@@ -6,7 +6,7 @@
 #'
 #' When \code{data.type = "PA"}, the function will fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approximate latent field as spatial random effects (depending on argument \code{model.type}).
 #'
-#' When \code{data.type = "IDM}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{model.type} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
+#' When \code{data.type = "IDM"}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{model.type} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
 #'
 #' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.
 #' @param data a data frame containing response and predictors within \code{formula}.
@@ -169,7 +169,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   ## Create the TMB Objective Function and Optimise ############################
 
   obj <- make.objective.function(inputs, maxit)
-  try(assign("fit.time", system.time(assign("res", do.call("stats::optim", obj)))), silent = T)
+  try(assign("fit.time", system.time(assign("res", do.call("optim", obj)))), silent = T)
   if (!exists("res")) {
     stop(paste0("Fit failed: initial objective function values: ", obj$fn(), ". Try warm starting parameters or a simpler model"))
   }
@@ -301,23 +301,30 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     } else { # in either a PO or IDM case
 
       # need to put the presence-only data back together (pres and quad) and return to the ordering of the original data provided
-      oldX <- rbind(inputs$tmb.data$X_PO_pres, inputs$tmb.data$X_PO_quad)[inputs$po.info[ , "row.id"], ]
-      oldZ <- rbind(inputs$tmb.data$Z_PO_pres, inputs$tmb.data$Z_PO_quad)[inputs$po.info[ , "row.id"], ]
+      oldX <- rbind(inputs$tmb.data$X_PO_pres, inputs$tmb.data$X_PO_quad)[inputs$row.id, ]
+      oldZ <- rbind(inputs$tmb.data$Z_PO_pres, inputs$tmb.data$Z_PO_quad)[inputs$row.id, ]
 
       if (inputs$args$bias.type == "none") { # when no biasing covariates are present
         res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
       } else if (inputs$args$bias.type == "covariates") {
 
-        oldB <- rbind(inputs$tmb.data$B_PO_pres, inputs$tmb.data$B_PO_quad)[inputs$po.info[ , "row.id"], ]
-        res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldB %*% res$bias.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
-
+        # in case the design matrix for the biasing predictors has one column need to ensure it is dim n_{PO} x 1
+        if (ncol(inputs$tmb.data$B_PO_pres) == 1) {
+          # oldB <- as.data.frame(c(inputs$tmb.data$B_PO_pres, inputs$tmb.data$B_PO_quad)[inputs$row.id])
+          # colnames(oldB) <- inputs$bias.names
+          oldB <- matrix(c(inputs$tmb.data$B_PO_pres, inputs$tmb.data$B_PO_quad)[inputs$row.id], ncol = 1)
+          res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldB %*% res$bias.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
+        } else {
+          oldB <- rbind(inputs$tmb.data$B_PO_pres, inputs$tmb.data$B_PO_quad)[inputs$row.id, ]
+          res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldB %*% res$bias.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
+        }
       } else if (inputs$args$bias.type == "latent") {
 
         res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldZ %*% res$bias.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
 
       } else if (inputs$args$bias.type == "new_latent") {
 
-        oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$po.info[ , "row.id"], ]
+        oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id, ]
         res$fitted.values <- as.vector(oldX %*% res$fixed.effects[, 1L]) + as.vector(oldZ2 %*% res$bias.effects[, 1L]) + as.vector(oldZ %*% res$random.effects[, 1L])
 
       }
@@ -347,12 +354,12 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   }
   res$coord.names <- inputs$args$coord.names
   res$quad.weights.name <- inputs$args$quad.weights.name
-  res$pt.quad.id <- inputs$po.info[ , "pt.quad.id"]
+  res$pt.quad.id <- inputs$pt.quad.id
   res$data.model.type <- inputs$args$data.type
   res$bf.matrix.type <- inputs$args$bf.matrix.type
   res$bias.type <- inputs$args$bias.type
   class(res) <- "scampr"
 
-  return(res)
+  return(list(res = res, inputs = inputs))
 
 }
