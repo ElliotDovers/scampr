@@ -6,12 +6,13 @@
 #' @param IDM.presence.absence.df an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
 #' @param quad.weights.name a charater string of the column name of quadrature weights in the data.
-#' @param model.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.
-#' @param data.type a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).
+#' @param approx.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for models involving spatial random effects, OR 'not_sre' for a fixed effect model.
+#' @param model.type a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).
 #' @param basis.functions an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
-#' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{bias.formula = "latent"}, otherwise \code{basis.functions} are used.
+#' @param latent.po.biasing a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.
+#' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.
 #'
 #' @return list of elements required for TMB::MakeADFun
 #' @export
@@ -26,13 +27,13 @@
 #' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Get the TMB data lists for a combined data model without latent field
-#' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+#' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
 #' str(tmp.input)
-get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", model.type = c("variational", "laplace", "ipp"), data.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, po.biasing.basis.functions) {
+get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions) {
 
   # checks for parameters of restricted strings
-  data.type <- match.arg(data.type)
   model.type <- match.arg(model.type)
+  approx.type <- match.arg(approx.type)
   bf.matrix.type <- match.arg(bf.matrix.type)
 
   # store the arguments
@@ -40,7 +41,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
 
   # approach based on the data type #
 
-  if (data.type == "PO") { # Presence-only data
+  if (model.type == "PO") { # Presence-only data
 
     # get the presence point/ quadrature point identifier
     pt.quad.id <- as.numeric(data[ , all.vars(formula[[2]])])
@@ -50,30 +51,39 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     pres.rows <- row.id[pt.quad.id == 1]
     quad.rows <- row.id[pt.quad.id == 0]
 
+    # split the data into presence points and quadrature
+    data_pres <- data[pt.quad.id == 1, ]
+    data_quad <- data[pt.quad.id == 0, ]
+
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix
-    des.mat <- get.design.matrix(formula, data)
+    des.mat_pres <- get.design.matrix(formula, data_pres)
+    des.mat_quad <- get.design.matrix(formula, data_quad)
 
     # get the bias predictor design matrix
     if (missing(bias.formula)) {
-      bias.type <- "none"
+      fixed.bias.type <- "missing"
     } else if (is(bias.formula, "formula")) {
-      bias.des.mat <- get.design.matrix(bias.formula, data)
-      # Adjust the Intercept name if required
-      if (any(grepl("(Intercept)", colnames(bias.des.mat), fixed = T))) {
-        colnames(bias.des.mat)[grepl("(Intercept)", colnames(bias.des.mat), fixed = T)] <- "(Bias Intercept)"
+      bias.des.mat_pres <- get.design.matrix(bias.formula, data_pres)
+      bias.des.mat_quad <- get.design.matrix(bias.formula, data_quad)
+      # Adjust the Intercept names if required
+      if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
+        colnames(bias.des.mat_pres)[grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T)] <- "(Bias Intercept)"
       }
-      bias.type <- "covariates"
+      if (any(grepl("(Intercept)", colnames(bias.des.mat_quad), fixed = T))) {
+        colnames(bias.des.mat_quad)[grepl("(Intercept)", colnames(bias.des.mat_quad), fixed = T)] <- "(Bias Intercept)"
+      }
+      fixed.bias.type <- "covariates"
     } else {
-      stop(paste0("The type of 'bias.formula' provided is not compatible with 'data.type' = ", data.type))
+      stop(paste0("'bias.formula' provided is not of class formula"))
     }
     ############################################################################
 
     ## Random Effects ##########################################################
 
     # Determine the basis functions to be used
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       # when no basis functions are provided use a simple basis default
       if (missing(basis.functions)) {
         # get a rough guide for the number of basis functions (to be 50% of the presence points)
@@ -81,46 +91,50 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         # set the basis function
         basis.funtions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
       }
-      # calculate the basis function matrix
-      po.bf.matrix <- get.bf.matrix(basis.functions, point.locations = data[ , coord.names], bf.matrix.type = bf.matrix.type)
+      # calculate the basis function matrices
+      po.bf.matrix_pres <- get.bf.matrix(basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
+      po.bf.matrix_quad <- get.bf.matrix(basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
-      bf.info <- attr(po.bf.matrix, "bf.df")
+      bf.info <- attr(po.bf.matrix_pres, "bf.df")
     } else {
-      # set a trivial example for IPP models
-      po.bf.matrix <- matrix(rep(0, nrow(des.mat)), ncol = 1)
+      # set a trivial example for not_sre models
+      po.bf.matrix_pres <- matrix(rep(0, nrow(des.mat_pres)), ncol = 1)
+      po.bf.matrix_quad <- matrix(rep(0, nrow(des.mat_quad)), ncol = 1)
       # pa.bf.matrix <- matrix(0, nrow = 1)
-      bf.info <- cbind.data.frame(x = cNA, y = NA, scale = NA, res = 1)
+      bf.info <- cbind.data.frame(x = NA, y = NA, scale = NA, res = 1)
       basis.functions <- NULL
     }
     ############################################################################
 
     # TMB required data setup - depends on the type of presence-only bias handling
-    dat.list <- switch(bias.type,
-                       none = list(
-                         X_PO_pres = as.matrix(des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(des.mat[pt.quad.id == 0, ]),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
+    dat.list <- switch(fixed.bias.type,
+                       missing = list(
+                         X_PO_pres = des.mat_pres,
+                         X_PO_quad = des.mat_quad,
+                         Z_PO_pres = po.bf.matrix_pres,
+                         Z_PO_quad = po.bf.matrix_quad,
+                         quad_size = data_quad[ , quad.weights.name],
                          bf_per_res = as.numeric(table(bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
+                         approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                          bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 0, # no accounting for biasing (outside of fixed effects)
-                         data_type = 0 # PO data
+                         fixed_bias_type = 0, # no accounting for biasing via fixed effects
+                         random_bias_type = 0, # no accounting for biasing via random effects
+                         model_type = 0 # PO data
                        ),
                        covariates = list(
-                         X_PO_pres = as.matrix(des.mat[pt.quad.id == 1, ]),
-                         B_PO_pres = as.matrix(bias.des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(des.mat[pt.quad.id == 0, ]),
-                         B_PO_quad = as.matrix(bias.des.mat[pt.quad.id == 0, ]),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
+                         X_PO_pres = des.mat_pres,
+                         B_PO_pres = bias.des.mat_pres,
+                         X_PO_quad = des.mat_quad,
+                         B_PO_quad = bias.des.mat_pres,
+                         Z_PO_pres = po.bf.matrix_pres,
+                         Z_PO_quad = po.bf.matrix_quad,
+                         quad_size = data_quad[ , quad.weights.name],
                          bf_per_res = as.numeric(table(bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
+                         approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                          bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 1, # accounting for biasing with provided covariates
-                         data_type = 0 # PO data
+                         fixed_bias_type = 1, # accounting for biasing with provided fixed effects
+                         random_bias_type = 0, # no accounting for biasing via random effects
+                         model_type = 0 # PO data
                        )
     )
     ############################################################################
@@ -128,38 +142,40 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Parameters ##############################################################
 
     # create the appropriate start parameters for the variance component w.r.t. approx. type
-    var.starts <- switch(model.type,
-                         ipp = rep(0, ncol(dat.list$Z_PO_pres)),
+    var.starts <- switch(approx.type,
+                         not_sre = rep(0, ncol(dat.list$Z_PO_pres)),
                          variational = rep(0, ncol(dat.list$Z_PO_pres)),
                          laplace = rep(0, length(dat.list$bf_per_res))
     )
     # initialise starting parameters at 0
-    start.pars <- switch(bias.type,
-                       none = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                   random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                   log_variance_component = var.starts
-                       ),
-                       covariates = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                         bias = rep(0, ncol(dat.list$B_PO_pres)),
-                                         random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                         log_variance_component = var.starts
-                       )
+    start.pars <- switch(fixed.bias.type,
+                         missing = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                     random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                     log_variance_component = var.starts
+                         ),
+                         covariates = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                           bias = rep(0, ncol(dat.list$B_PO_pres)),
+                                           random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                           log_variance_component = var.starts
+                         )
     )
 
     # update to the warm starting parameters if provided
     if (!missing(starting.pars)) {
-      start.pars <- update.starting.parameters(starting.pars, start.pars, target.model.type = model.type)
+      start.pars <- update.starting.parameters(starting.pars, start.pars, target.approx.type = approx.type)
     }
 
     ############################################################################
 
     # collect the fixed effect names
-    fixed.names <- colnames(des.mat)
+    fixed.names <- colnames(des.mat_pres)
     # collect the biasing term names
-    bias.names <- NULL
-    if (bias.type == "covariates") {
-      bias.names <-colnames(bias.des.mat)
-    }
+    bias.names <- switch(fixed.bias.type,
+                         missing = NULL,
+                         covariates = colnames(bias.des.mat_pres)
+    )
+    random.bias.names <- NULL # cannot be present in the "PO" model case
+
     # get the random coefficient numbers (with <resolution level>.<coefficient number>)
     random.nos <- NULL
     if (length(dat.list$bf_per_res) == 1L) {
@@ -170,20 +186,21 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       }
     }
     # collect the random effect term names
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       random.names <- paste0("u", random.nos)
     } else {
       random.names <- NULL
     }
 
-    # add bias.type to arg list
-    arg.info$bias.type <- bias.type
+    # add bias types to arg list
+    arg.info$fixed.bias.type <- fixed.bias.type
+    arg.info$random.bias.type <- "none"
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
 
 
-  } else if (data.type == "PA") { # Presence/absence data
+  } else if (model.type == "PA") { # Presence/absence data
 
     # get the binary response
     Y = as.numeric(data[ , all.vars(formula[[2]])] > 0) # corrects in the case of abundance
@@ -198,7 +215,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Random Effects ##########################################################
 
     # Determine the basis functions to be used
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       # when no basis functions are provided use a simple basis default
       if (missing(basis.functions)) {
         # get a rough guide for the number of basis functions (to be 50% of the presence points)
@@ -211,7 +228,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       # store the basis function information
       bf.info <- attr(pa.bf.matrix, "bf.df")
     } else {
-      # set a trivial example for IPP models
+      # set a trivial example for not_sre models
       pa.bf.matrix <- matrix(rep(0, nrow(des.mat)), ncol = 1)
       # pa.bf.matrix <- matrix(0, nrow = 1)
       bf.info <- cbind.data.frame(x = NA, y = NA, scale = NA, res = 1)
@@ -225,9 +242,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       Z_PA = pa.bf.matrix,
       Y = Y,
       bf_per_res = as.numeric(table(bf.info$res)),
-      mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
+      approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
       bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-      data_type = 1
+      model_type = 1
     )
 
     ## Parameters ##############################################################
@@ -242,7 +259,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
 
     # update to the warm starting parameters if provided
     if (!missing(starting.pars)) {
-      start.pars <- update.starting.parameters(starting.pars, start.pars, target.model.type = model.type)
+      start.pars <- update.starting.parameters(starting.pars, start.pars, target.approx.type = approx.type)
     }
 
     ############################################################################
@@ -251,6 +268,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     fixed.names <- colnames(des.mat)
     # collect the biasing term names
     bias.names <- NULL
+    random.bias.names <- NULL
 
     # get the random coefficient numbers (with <resolution level>.<coefficient number>)
     random.nos <- NULL
@@ -262,17 +280,18 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       }
     }
     # collect the random effect term names
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       random.names <- paste0("u", random.nos)
     } else {
       random.names <- NULL
     }
 
-    # add bias.type to arg list
-    arg.info$bias.type <- "none"
+    # add bias types to arg list
+    arg.info$fixed.bias.type <- "missing"
+    arg.info$random.bias.type <- "none"
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = NA, row.id = NA, fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = NA, row.id = NA, fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, basis.functions = basis.functions, args = arg.info)
 
 
   } else { # Integrated data
@@ -285,44 +304,74 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     pres.rows <- row.id[pt.quad.id == 1]
     quad.rows <- row.id[pt.quad.id == 0]
 
+    # split the data into presence points and quadrature
+    data_pres <- data[pt.quad.id == 1, ]
+    data_quad <- data[pt.quad.id == 0, ]
+
     # get the binary response
     Y = as.numeric(IDM.presence.absence.df[ , all.vars(formula[[2]])] > 0) # corrects in the case of abundance
 
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix on the presence-only data
-    po.des.mat <- get.design.matrix(formula, data)
+    po.des.mat_pres <- get.design.matrix(formula, data_pres)
+    po.des.mat_quad <- get.design.matrix(formula, data_quad)
     pa.des.mat <- get.design.matrix(formula, IDM.presence.absence.df)
 
     # get the bias predictor design matrix
     if (missing(bias.formula)) {
-      # assign bias.type indicator
-      bias.type <- "none"
-    } else if (is(bias.formula, "formula")) {
-      bias.des.mat <- get.design.matrix(bias.formula, data)
-      # Adjust the Intercept name if required
-      if (any(grepl("(Intercept)", colnames(bias.des.mat), fixed = T))) {
-        colnames(bias.des.mat)[grepl("(Intercept)", colnames(bias.des.mat), fixed = T)] <- "(Bias Intercept)"
-      }
-      # assign bias.type indicator
-      bias.type <- "covariates"
-    } else if (bias.formula == "latent") {
-      if (missing(po.biasing.basis.functions)) {
-        # assign bias.type indicator
-        bias.type <- "latent"
+      # assign fixed.bias.type indicator
+      fixed.bias.type <- "missing"
+      # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
+      if (approx.type != "not_sre") {
+        if (latent.po.biasing) {
+          if (missing(po.biasing.basis.functions)) {
+            random.bias.type <- "field1"
+          } else {
+            random.bias.type <- "field2"
+          }
+        } else {
+          random.bias.type <- "none"
+        }
       } else {
-        # assign bias.type indicator
-        bias.type <- "new_latent"
+        random.bias.type <- "none"
+      }
+    } else if (is(bias.formula, "formula")) {
+      bias.des.mat_pres <- get.design.matrix(bias.formula, data_pres)
+      bias.des.mat_quad <- get.design.matrix(bias.formula, data_quad)
+      # Adjust the Intercept names if required
+      if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
+        colnames(bias.des.mat_pres)[grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T)] <- "(Bias Intercept)"
+      }
+      if (any(grepl("(Intercept)", colnames(bias.des.mat_quad), fixed = T))) {
+        colnames(bias.des.mat_quad)[grepl("(Intercept)", colnames(bias.des.mat_quad), fixed = T)] <- "(Bias Intercept)"
+      }
+      # assign fixed.bias.type indicator
+      fixed.bias.type <- "covariates"
+
+      # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
+      if (approx.type != "not_sre") {
+        if (latent.po.biasing) {
+          if (missing(po.biasing.basis.functions)) {
+            random.bias.type <- "field1"
+          } else {
+            random.bias.type <- "field2"
+          }
+        } else {
+          random.bias.type <- "none"
+        }
+      } else {
+        random.bias.type <- "none"
       }
     } else {
-      stop(paste0("The type of 'bias.formula' provided is not compatible with 'data.type' = ", data.type))
+      stop(paste0("'bias.formula' provided is not of class formula"))
     }
     ############################################################################
 
     ## Random Effects ##########################################################
 
     # Determine the basis functions to be used
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       # when no basis functions are provided use a simple basis default
       if (missing(basis.functions)) {
         # get a rough guide for the number of basis functions (to be 50% of the presence points)
@@ -331,134 +380,202 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         basis.funtions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
       }
       # calculate the basis function matrices
-      po.bf.matrix <- get.bf.matrix(basis.functions, point.locations = data[ , coord.names], bf.matrix.type = bf.matrix.type)
+      po.bf.matrix_pres <- get.bf.matrix(basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
+      po.bf.matrix_quad <- get.bf.matrix(basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
       pa.bf.matrix <- get.bf.matrix(basis.functions, point.locations = IDM.presence.absence.df[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
-      bf.info <- attr(po.bf.matrix, "bf.df")
+      bf.info <- attr(po.bf.matrix_pres, "bf.df")
     } else {
-      # set a trivial example for IPP models
-      po.bf.matrix <- matrix(rep(0, nrow(po.des.mat)), ncol = 1)
+      # set a trivial example for not_sre models
+      po.bf.matrix_pres <- matrix(rep(0, nrow(po.des.mat_pres)), ncol = 1)
+      po.bf.matrix_quad <- matrix(rep(0, nrow(po.des.mat_quad)), ncol = 1)
       pa.bf.matrix <- matrix(rep(0, nrow(pa.des.mat)), ncol = 1)
       # pa.bf.matrix <- matrix(0, nrow = 1)
       bf.info <- cbind.data.frame(x = NA, y = NA, scale = NA, res = 1)
       basis.functions <- NULL
     }
     # Determine the additional basis functions to be used for presence
-    if (bias.type == "new_latent") {
+    if (random.bias.type == "field2") {
       # calculate the basis function matrices
-      po.bias.bf.matrix <- get.bf.matrix(po.biasing.basis.functions, point.locations = data[ , coord.names], bf.matrix.type = bf.matrix.type)
+      po.bias.bf.matrix_pres <- get.bf.matrix(po.biasing.basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
+      po.bias.bf.matrix_quad <- get.bf.matrix(po.biasing.basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
-      bias.bf.info <- attr(po.bias.bf.matrix, "bf.df")
+      bias.bf.info <- attr(po.bias.bf.matrix_pres, "bf.df")
     } else {
       bias.bf.info <- NULL
     }
     ############################################################################
 
     # TMB required data setup
-    dat.list <- switch(bias.type,
-                       none = list(
-                         X_PO_pres = as.matrix(po.des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(po.des.mat[pt.quad.id == 0, ]),
-                         X_PA = as.matrix(pa.des.mat),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         Z_PA = pa.bf.matrix,
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
-                         Y = Y,
-                         bf_per_res = as.numeric(table(bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
-                         bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 0, # no accounting for biasing (outside of fixed effects)
-                         data_type = 2 # integrated data
+    dat.list <- switch(fixed.bias.type,
+                       missing = switch(random.bias.type,
+                                        none = list(
+                                          X_PO_pres = po.des.mat_pres,
+                                          X_PO_quad = po.des.mat_quad,
+                                          X_PA = pa.des.mat,
+                                          Z_PO_pres = po.bf.matrix_pres,
+                                          Z_PO_quad = po.bf.matrix_quad,
+                                          Z_PA = pa.bf.matrix,
+                                          quad_size = data_quad[ , quad.weights.name],
+                                          Y = Y,
+                                          bf_per_res = as.numeric(table(bf.info$res)),
+                                          approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                          bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                          fixed_bias_type = 0, # no accounting for biasing via fixed effects
+                                          random_bias_type = 0, # no accounting for biasing via random effects
+                                          model_type = 2 # integrated data
+                                        ),
+                                        field1 = list(
+                                          X_PO_pres = po.des.mat_pres,
+                                          X_PO_quad = po.des.mat_quad,
+                                          X_PA = pa.des.mat,
+                                          Z_PO_pres = po.bf.matrix_pres,
+                                          Z_PO_quad = po.bf.matrix_quad,
+                                          Z_PA = pa.bf.matrix,
+                                          quad_size = data_quad[ , quad.weights.name],
+                                          Y = Y,
+                                          bf_per_res = as.numeric(table(bf.info$res)),
+                                          approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                          bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                          fixed_bias_type = 0, # no accounting for biasing via fixed effects
+                                          random_bias_type = 1, # accounting for biasing using additional latent field on existing basis functions
+                                          model_type = 2 # integrated data
+                                        ),
+                                        field2 = list(
+                                          X_PO_pres = po.des.mat_pres,
+                                          X_PO_quad = po.des.mat_quad,
+                                          X_PA = pa.des.mat,
+                                          Z_PO_pres = po.bf.matrix_pres,
+                                          Z_PO_quad = po.bf.matrix_quad,
+                                          Z2_PO_pres = po.bias.bf.matrix_pres,
+                                          Z2_PO_quad = po.bias.bf.matrix_quad,
+                                          Z_PA = pa.bf.matrix,
+                                          quad_size = data_quad[ , quad.weights.name],
+                                          Y = Y,
+                                          bf_per_res = as.numeric(table(bf.info$res)),
+                                          bias_bf_per_res = as.numeric(table(bias.bf.info$res)),
+                                          approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                          bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                          fixed_bias_type = 0, # no accounting for biasing via fixed effects
+                                          random_bias_type = 2, # accounting for biasing using additional latent field on additional basis functions
+                                          model_type = 2 # integrated data
+                                        )
                        ),
-                       covariates = list(
-                         X_PO_pres = as.matrix(po.des.mat[pt.quad.id == 1, ]),
-                         B_PO_pres = as.matrix(bias.des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(po.des.mat[pt.quad.id == 0, ]),
-                         B_PO_quad = as.matrix(bias.des.mat[pt.quad.id == 0, ]),
-                         X_PA = as.matrix(pa.des.mat),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         Z_PA = pa.bf.matrix,
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
-                         Y = Y,
-                         bf_per_res = as.numeric(table(bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
-                         bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 1, # accounting for biasing using covariates
-                         data_type = 2 # integrated data
-                       ),
-                       latent = list(
-                         X_PO_pres = as.matrix(po.des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(po.des.mat[pt.quad.id == 0, ]),
-                         X_PA = as.matrix(pa.des.mat),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         Z_PA = pa.bf.matrix,
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
-                         Y = Y,
-                         bf_per_res = as.numeric(table(bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
-                         bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 2, # accounting for biasing using additional latent field on existing basis functions
-                         data_type = 2 # integrated data
-                       ),
-                       new_latent = list(
-                         X_PO_pres = as.matrix(po.des.mat[pt.quad.id == 1, ]),
-                         X_PO_quad = as.matrix(po.des.mat[pt.quad.id == 0, ]),
-                         X_PA = as.matrix(pa.des.mat),
-                         Z_PO_pres = po.bf.matrix[pt.quad.id == 1, ],
-                         Z_PO_quad = po.bf.matrix[pt.quad.id == 0, ],
-                         Z2_PO_pres = po.bias.bf.matrix[pt.quad.id == 1, ],
-                         Z2_PO_quad = po.bias.bf.matrix[pt.quad.id == 0, ],
-                         Z_PA = pa.bf.matrix,
-                         quad_size = data[pt.quad.id == 0, quad.weights.name],
-                         Y = Y,
-                         bf_per_res = as.numeric(table(bf.info$res)),
-                         bias_bf_per_res = as.numeric(table(bias.bf.info$res)),
-                         mod_type = as.integer(which(model.type == c("ipp", "variational", "laplace")) - 1),
-                         bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-                         bias_type = 3, # accounting for biasing using additional latent field on additional basis functions
-                         data_type = 2 # integrated data
+                       covariates = switch(random.bias.type,
+                                           none = list(
+                                             X_PO_pres = po.des.mat_pres,
+                                             B_PO_pres = bias.des.mat_pres,
+                                             X_PO_quad = po.des.mat_quad,
+                                             B_PO_quad = bias.des.mat_quad,
+                                             X_PA = pa.des.mat,
+                                             Z_PO_pres = po.bf.matrix_pres,
+                                             Z_PO_quad = po.bf.matrix_quad,
+                                             Z_PA = pa.bf.matrix,
+                                             quad_size = data_quad[ , quad.weights.name],
+                                             Y = Y,
+                                             bf_per_res = as.numeric(table(bf.info$res)),
+                                             approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                             bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                             fixed_bias_type = 1, # accounting for biasing with fixed effects
+                                             random_bias_type = 0, # no accounting for biasing via random effects
+                                             model_type = 2 # integrated data
+                                           ),
+                                           field1 = list(
+                                             X_PO_pres = po.des.mat_pres,
+                                             B_PO_pres = bias.des.mat_pres,
+                                             X_PO_quad = po.des.mat_quad,
+                                             B_PO_quad = bias.des.mat_quad,
+                                             X_PA = pa.des.mat,
+                                             Z_PO_pres = po.bf.matrix_pres,
+                                             Z_PO_quad = po.bf.matrix_quad,
+                                             Z_PA = pa.bf.matrix,
+                                             quad_size = data_quad[ , quad.weights.name],
+                                             Y = Y,
+                                             bf_per_res = as.numeric(table(bf.info$res)),
+                                             approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                             bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                             fixed_bias_type = 1, # accounting for biasing with fixed effects
+                                             random_bias_type = 1, # accounting for biasing using additional latent field on existing basis functions
+                                             model_type = 2 # integrated data
+                                           ),
+                                           field2 = list(
+                                             X_PO_pres = po.des.mat_pres,
+                                             B_PO_pres = bias.des.mat_pres,
+                                             X_PO_quad = po.des.mat_quad,
+                                             B_PO_quad = bias.des.mat_quad,
+                                             X_PA = pa.des.mat,
+                                             Z_PO_pres = po.bf.matrix_pres,
+                                             Z_PO_quad = po.bf.matrix_quad,
+                                             Z2_PO_pres = po.bias.bf.matrix_pres,
+                                             Z2_PO_quad = po.bias.bf.matrix_quad,
+                                             Z_PA = pa.bf.matrix,
+                                             quad_size = data_quad[ , quad.weights.name],
+                                             Y = Y,
+                                             bf_per_res = as.numeric(table(bf.info$res)),
+                                             bias_bf_per_res = as.numeric(table(bias.bf.info$res)),
+                                             approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
+                                             bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
+                                             fixed_bias_type = 1, # accounting for biasing with fixed effects
+                                             random_bias_type = 2, # accounting for biasing using additional latent field on additional basis functions
+                                             model_type = 2 # integrated data
+                                           )
                        )
     )
 
     ## Parameters ##############################################################
 
     # initialise starting parameters at 0 (can only use Laplace approach so no var.starts switch needed)
-    start.pars <- switch(bias.type,
-                         none = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                     random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                     log_variance_component = rep(0, length(dat.list$bf_per_res))
+    start.pars <- switch(fixed.bias.type,
+                         missing = switch(random.bias.type,
+                                          none = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                      random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                      log_variance_component = rep(0, length(dat.list$bf_per_res))
+                                          ),
+                                          field1 = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                        random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                        random_bias = rep(0, sum(dat.list$bf_per_res)),
+                                                        log_variance_component = rep(0, length(dat.list$bf_per_res)),
+                                                        log_variance_component_bias = rep(0, length(dat.list$bf_per_res))
+                                          ),
+                                          field2 = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                        random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                        random_bias = rep(0, sum(dat.list$bias_bf_per_res)),
+                                                        log_variance_component = rep(0, length(dat.list$bf_per_res)),
+                                                        log_variance_component_bias = rep(0, length(dat.list$bias_bf_per_res))
+                                          )
                          ),
-                         covariates = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                           bias = rep(0, ncol(dat.list$B_PO_pres)),
-                                           random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                           log_variance_component = rep(0, length(dat.list$bf_per_res))
-                         ),
-                         latent = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                     random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                     bias = rep(0, sum(dat.list$bf_per_res)),
-                                     log_variance_component = rep(0, length(dat.list$bf_per_res)),
-                                     log_variance_component_bias = rep(0, length(dat.list$bf_per_res))
-                         ),
-                         new_latent = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
-                                       random = rep(0, ncol(dat.list$Z_PO_pres)),
-                                       bias = rep(0, sum(dat.list$bias_bf_per_res)),
-                                       log_variance_component = rep(0, length(dat.list$bf_per_res)),
-                                       log_variance_component_bias = rep(0, length(dat.list$bias_bf_per_res))
+                         covariates = switch(random.bias.type,
+                                             none = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                         bias = rep(0, ncol(dat.list$B_PO_pres)),
+                                                         random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                         log_variance_component = rep(0, length(dat.list$bf_per_res))
+                                             ),
+                                             field1 = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                           bias = rep(0, ncol(dat.list$B_PO_pres)),
+                                                           random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                           random_bias = rep(0, sum(dat.list$bf_per_res)),
+                                                           log_variance_component = rep(0, length(dat.list$bf_per_res)),
+                                                           log_variance_component_bias = rep(0, length(dat.list$bf_per_res))
+                                             ),
+                                             field2 = list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+                                                           bias = rep(0, ncol(dat.list$B_PO_pres)),
+                                                           random = rep(0, ncol(dat.list$Z_PO_pres)),
+                                                           random_bias = rep(0, sum(dat.list$bias_bf_per_res)),
+                                                           log_variance_component = rep(0, length(dat.list$bf_per_res)),
+                                                           log_variance_component_bias = rep(0, length(dat.list$bias_bf_per_res))
+                                             )
                          )
     )
 
     # update to the warm starting parameters if provided
     if (!missing(starting.pars)) {
-      start.pars <- update.starting.parameters(starting.pars, start.pars, target.model.type = model.type)
+      start.pars <- update.starting.parameters(starting.pars, start.pars, target.approx.type = approx.type)
     }
 
     ############################################################################
 
     # collect the fixed effect names
-    fixed.names <- colnames(po.des.mat)
+    fixed.names <- colnames(po.des.mat_pres)
 
     # get the random coefficient numbers (with <resolution level>.<coefficient number>)
     random.nos <- NULL
@@ -471,7 +588,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     }
     # check if there is a bias field in an IDM model
     bias.random.nos <- NULL
-    if (bias.type %in% c("latent", "new_latent")) {
+    if (random.bias.type %in% c("field1", "field2")) {
       if (!is.null(dat.list$bias_bf_per_res)) {
         if (length(dat.list$bias_bf_per_res) == 1L) {
           bias.random.nos <- 1L:dat.list$bias_bf_per_res
@@ -484,25 +601,31 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         bias.random.nos <- random.nos
       }
     }
-    # collect the biasing term names
-    bias.names <- switch(bias.type,
-                         none = NULL,
-                         covariates = colnames(bias.des.mat),
-                         latent = paste0("tau", bias.random.nos),
-                         new_latent = paste0("tau", bias.random.nos)
+    # collect the fixed effect biasing term names
+    bias.names <- switch(fixed.bias.type,
+                               missing = NULL,
+                               covariates = colnames(bias.des.mat_pres)
     )
+    # collect the random effect biasing term names
+    if(random.bias.type %in% c("field1", "field2")) {
+      random.bias.names <- paste0("tau", bias.random.nos)
+    } else {
+      random.bias.names <- NULL
+    }
+
     # collect the random effect term names
-    if (model.type != "ipp") {
+    if (approx.type != "not_sre") {
       random.names <- paste0("u", random.nos)
     } else {
       random.names <- NULL
     }
 
-    # add bias.type to arg list
-    arg.info$bias.type <- bias.type
+    # add bias types to arg list
+    arg.info$fixed.bias.type <- fixed.bias.type
+    arg.info$random.bias.type <- random.bias.type
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, args = arg.info)
 
   }
 }

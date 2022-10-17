@@ -28,7 +28,7 @@ AIC.scampr <- function(object, ..., k = 2) {
     mod.names <- NULL
     for (i in 1:length(extra.args)) {
       mod.names[i] <- as.character(extra.arg.names[i])
-      if (class(extra.args[[i]]) == "scampr") {
+      if (is(extra.args[[i]], "scampr")) {
         aics[i] <- get.single.model.aic(extra.args[[i]], k = k)
       } else {
         aics[i] <- NA

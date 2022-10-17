@@ -14,8 +14,8 @@
   // Initialise the n_{PA} vector of probabiities of absence at the survey sites
   vector<Type> prob_abs(Xfixed_PA.size());
   
-  switch (mod_type){
-  case ipp:
+  switch (approx_type){
+  case not_sre:
   {
     // probability of absence at the sites  //
     prob_abs = exp(-exp(Xfixed_PA));

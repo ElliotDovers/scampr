@@ -7,7 +7,7 @@
 \method{update}{starting.parameters}(
   new.start.pars,
   old.start.pars,
-  target.model.type = c("laplace", "variational", "ipp")
+  target.approx.type = c("laplace", "variational", "not_sre")
 )
 }
 \arguments{
@@ -15,7 +15,7 @@
 
 \item{old.start.pars}{a named list of starting parameters}
 
-\item{target.model.type}{a character string, one of 'laplace', 'variational' or 'ipp'.}
+\item{target.approx.type}{a character string, one of 'laplace', 'variational' or 'not_sre'.}
 }
 \value{
 a data.frame (sparse or dense depending on parameter bf.matrix.type)

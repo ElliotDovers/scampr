@@ -11,8 +11,8 @@ get.TMB.data.input(
   IDM.presence.absence.df,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  model.type = c("variational", "laplace", "ipp"),
-  data.type = c("PO", "PA", "IDM"),
+  approx.type = c("variational", "laplace", "not_sre"),
+  model.type = c("PO", "PA", "IDM"),
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
   starting.pars,
@@ -32,9 +32,9 @@ get.TMB.data.input(
 
 \item{quad.weights.name}{a charater string of the column name of quadrature weights in the data.}
 
-\item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.}
+\item{approx.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for models involving spatial random effects, OR 'not_sre' for a fixed effect model.}
 
-\item{data.type}{a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).}
+\item{model.type}{a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).}
 
 \item{basis.functions}{an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.}
 
@@ -59,6 +59,6 @@ dat_pa <- flora$pa
 dat_po <- rbind.data.frame(dat_po, flora$quad)
 
 # Get the TMB data lists for a combined data model without latent field
-tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, model.type = "ipp")
+tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
 str(tmp.input)
 }

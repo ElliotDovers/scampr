@@ -17,7 +17,7 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit a scampr model to the point pattern
-#' m <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
+#' m <- scampr(pres ~ elev.std, data = dat, model.type = "not_sre")
 #'
 #' summary(m)
 summary.scampr <- function(object, ...) {
@@ -25,14 +25,14 @@ summary.scampr <- function(object, ...) {
   # Collect elements for reporting #
 
   # Model used
-  if (object$data.model.type == "IDM") {
-    po.formula <- object$formula
-    pa.formula <- attr(object$formula, "pa")
-    pa.resp <- all.vars(pa.formula[[2]])
-    pa.pred <- all.vars(pa.formula[[3]])
-    po.resp <- all.vars(po.formula[[2]])
-    po.pred <- all.vars(po.formula[[3]])
-    tmp.formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
+  if (!is.null(attr(object$formula, "bias"))) {
+    fixed.formula <- object$formula
+    bias.formula <- attr(object$formula, "bias")
+    bias.resp <- all.vars(bias.formula[[2]])
+    bias.pred <- all.vars(bias.formula[[3]])
+    fixed.resp <- all.vars(fixed.formula[[2]])
+    fixed.pred <- all.vars(fixed.formula[[3]])
+    tmp.formula <- paste0(fixed.resp, " ~ ", paste(fixed.pred, collapse = " + "), " with biasing: ", bias.resp, " ~ ", paste(bias.pred, collapse = " + "))
   } else {
     tmp.formula <- as.character(object$formula)
   }
@@ -40,29 +40,29 @@ summary.scampr <- function(object, ...) {
   # get an identifier for the model type
   mod.id <- NULL
   if (is.na(object$approx.type)) {
-    mod.id <- "ipp"
+    mod.id <- "not_sre"
   } else {
     mod.id <- object$approx.type
   }
 
   # Set the model description
-  if (object$data.model.type == "IDM") {
+  if (object$model.type == "IDM") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Combined data inhomogeneous process model",
-                         variational = "Combined data model\n w. spatially correlated errors - Variational approx.",
-                         laplace = "Combined data model\n w. spatially correlated errors - Laplace approx.")
-  } else if (object$data.model.type == "PO") {
+                         not_sre = "Integrated Data Model without spatial random effects",
+                         variational = "Integrated Data Model with spatially correlated errors - Variational approx.",
+                         laplace = "Integrated Data Model with spatially correlated errors - Laplace approx.")
+  } else if (object$model.type == "PO") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Inhomogeneous Poisson process",
+                         not_sre = "Inhomogeneous Poisson process",
                          variational = "Log-Gaussian Cox process - Variational Approx.",
                          laplace = "Log-Gaussian Cox process - Laplace Approx.")
-  } else if (object$data.model.type == "PA") {
+  } else if (object$model.type == "PA") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Binary regression model\nw. complimentary log-log link function",
+                         not_sre = "Binary regression model\nw. complimentary log-log link function (without spatial random effects)",
                          variational = "Spatially correlated binary regression model\nw. complimentary log-log link function - Variational approx.",
                          laplace = "Spatially correlated binary regression model\nw. complimentary log-log link function - Laplace approx.")
   } else (
-    stop("unknown 'data.model.type' in scampr model")
+    stop("unknown 'model.type' in scampr model")
   )
 
 
@@ -71,36 +71,36 @@ summary.scampr <- function(object, ...) {
   tmp.fixed_effects$`z value` <- tmp.fixed_effects$Estimate / tmp.fixed_effects$`Std. Error`
   tmp.fixed_effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed_effects$`z value`), lower.tail = FALSE)
   # Random effects of the model
-  if (mod.id == "ipp") {
+  if (mod.id == "not_sre") {
     post.means.summary <- NA
     prior.variance <- NA
   } else {
     tmp.random_effects <- object$random.effects
-    post.means <- tmp.random_effects[grepl(" Mean ", row.names(tmp.random_effects), fixed = T), 1]
-    prior.variance <- as.data.frame(t(formatC(tmp.random_effects[grepl("Prior Var", row.names(tmp.random_effects), fixed = T), 1], digits = 2)))
+    post.means <- tmp.random_effects[ , 1]
+    prior.variance <- as.data.frame(t(formatC(object$variances[!grepl("_bias", row.names(object$variances), fixed = T), 1L], digits = 2)))
     colnames(prior.variance) <- paste0("res. ", 1:length(prior.variance))
     rownames(prior.variance) <- ""
-    tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0)}))
-    tmp.25 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.25)}))
-    tmp.50 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.5)}))
-    tmp.mean <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){mean(x)}))
-    tmp.75 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.75)}))
-    tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 1)}))
+    tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 0)}))
+    tmp.25 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 0.25)}))
+    tmp.50 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 0.5)}))
+    tmp.mean <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){mean(x)}))
+    tmp.75 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 0.75)}))
+    tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 1)}))
     post.means.summary <- as.data.frame(cbind(tmp.min[ , -1], tmp.25[ , -1], tmp.50[ , -1], tmp.mean[ , -1], tmp.75[ , -1], tmp.max[ , -1]))
     colnames(post.means.summary) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
     # if the model contains a secondary latent field capturing bias in the presence-only data
-    if (!is.null(object$bias.field)) {
-      tmp.bias_field <- object$bias.field
-      post.means <- tmp.bias_field[grepl(" Mean ", row.names(tmp.bias_field), fixed = T), 1]
-      prior.variance_bias.field <- as.data.frame(t(formatC(tmp.bias_field[grepl("Prior Var", row.names(tmp.bias_field), fixed = T), 1], digits = 2)))
+    if (object$random.bias.type %in% c("field1", "field2")) {
+      tmp.bias_field <- object$random.bias.effects
+      post.means <- tmp.bias_field[, 1L]
+      prior.variance_bias.field <- as.data.frame(t(formatC(object$variances[grepl("_bias", row.names(object$variances), fixed = T), 1L], digits = 2)))
       colnames(prior.variance_bias.field) <- paste0("res. ", 1:length(prior.variance_bias.field))
       rownames(prior.variance_bias.field) <- ""
-      tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0)}))
-      tmp.25 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.25)}))
-      tmp.50 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.5)}))
-      tmp.mean <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){mean(x)}))
-      tmp.75 <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 0.75)}))
-      tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$basis.fn.info$res), FUN = function(x){stats::quantile(x, probs = 1)}))
+      tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 0)}))
+      tmp.25 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 0.25)}))
+      tmp.50 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 0.5)}))
+      tmp.mean <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){mean(x)}))
+      tmp.75 <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 0.75)}))
+      tmp.max <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 1)}))
       post.means.summary_bias.field <- as.data.frame(cbind(tmp.min[ , -1], tmp.25[ , -1], tmp.50[ , -1], tmp.mean[ , -1], tmp.75[ , -1], tmp.max[ , -1]))
       colnames(post.means.summary_bias.field) <- c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max.")
     }
@@ -110,11 +110,11 @@ summary.scampr <- function(object, ...) {
 
   cat(
     "Model Type: ", Model.Desc, "\n\nFormula: ", if (length(tmp.formula) > 1) { tmp.formula[c(2, 1, 3)] } else { tmp.formula }, "\n\nAIC: ",
-    AIC.scampr(object), "\ ", " approx.", if (mod.id != "ipp") {"marginal"} else {""}, "logLik: ", logLik.scampr(object),
-    if (mod.id != "ipp") {paste0("\n\nBasis functions per res. ", paste(object$basis.per.res, collapse = ", "))} else {""}, "\n\nFixed Effects:\n\n"
+    AIC.scampr(object), "\ ", " approx.", if (mod.id != "not_sre") {"marginal"} else {""}, "logLik: ", logLik.scampr(object),
+    if (mod.id != "not_sre") {paste0("\n\nBasis functions per res. ", paste(object$basis.per.res, collapse = ", "))} else {""}, "\n\nFixed Effects:\n\n"
   )
   stats::printCoefmat(tmp.fixed_effects)
-  if (mod.id != "ipp") {
+  if (mod.id != "not_sre") {
     cat(
       "---\n\nSpatial Random Effects:\n\nPosterior Means per Spatial Resolution(s):\n"
     )
@@ -123,7 +123,7 @@ summary.scampr <- function(object, ...) {
       "\nPrior Variance(s):\n"
     )
     print(prior.variance)
-    if (!is.null(object$bias.field)) {
+    if (object$random.bias.type %in% c("field1", "field2")) {
       cat(
         "---\n\nSpatial Random Effects on the second latent field:\n\nPosterior Means per Spatial Resolution(s):\n"
       )

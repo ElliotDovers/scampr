@@ -11,7 +11,8 @@ scampr(
   IDM.presence.absence.df,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
-  model.type = c("variational", "laplace", "ipp"),
+  include.sre = TRUE,
+  sre.approx = c("variational", "laplace"),
   data.type = c("PO", "PA", "IDM"),
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
@@ -35,7 +36,9 @@ scampr(
 
 \item{quad.weights.name}{a character string of the column name of quadrature weights in the data.}
 
-\item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomgeneous Poisson process.}
+\item{include.sre}{a logical indicating whether to fit the model with spatial random effects (SRE).}
+
+\item{sre.approx}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors.}
 
 \item{data.type}{a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).}
 
@@ -59,11 +62,11 @@ a scampr model object
 \description{
 This is the main function for modelling presences within the \code{scampr} framework. The type of model will depend on the arguments provided. This can be used to model point patterns as a log-Gaussian Cox process (LGCP) or Inhomogeneous Poisson process (IPP), as well as, jointly fitting a model to presence-only and presence/absence data if both are provided. This function can also fit binary regression with a complimentary log-log link function (with optional spatial random effects) when \code{data.type = "PA"}.
 
-When \code{data.type = "PO"}, the function will fit either an IPP, or LGCP model to the point pattern (depending on argument \code{model.type}). This uses numerical quadrature (provided with the data, see e.g. scampr::gorillas) to approximate the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
+When \code{data.type = "PO"}, the function will fit either an IPP, or LGCP model to the point pattern (depending on argument \code{sre.approx}). This uses numerical quadrature (provided with the data, see e.g. scampr::gorillas) to approximate the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
 
-When \code{data.type = "PA"}, the function will fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approximate latent field as spatial random effects (depending on argument \code{model.type}).
+When \code{data.type = "PA"}, the function will fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approximate latent field as spatial random effects (depending on argument \code{sre.approx}).
 
-When \code{data.type = "IDM"}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{model.type} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
+When \code{data.type = "IDM"}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{sre.approx} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
 }
 \examples{
 # Get the flora data for one of the species
@@ -75,12 +78,12 @@ dat_po <- rbind.data.frame(dat_po, flora$quad)
 
 # Fit models without a latent effects (IPP) #
 # Point Process Model
-m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
+m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, sre.approx = "ipp")
 # Binary Regression
-m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
+m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, sre.approx = "ipp")
 # Combined Data Model
 m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-dat_pa, model.type = "ipp")
+dat_pa, sre.approx = "ipp")
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)

@@ -9,30 +9,32 @@ Type objective_function<Type>::operator() ()
 
   // Utilities
   DATA_IVECTOR(bf_per_res);                 // Integer vector describing the number of basis functions within each spatial resolution
-  DATA_INTEGER(mod_type);                   // Integer = 0 for no latent effects; = 1 for VA LGCP; = 2 for Laplace LGCP
+  DATA_INTEGER(approx_type);                // Integer = 0 for no latent effects; = 1 for SRE approx. with VA; = 2 for SRE approx. with Laplace
   DATA_INTEGER(bf_type);                    // Integer = 0 for sparse; = 1 for dense basis function matrices
-  DATA_INTEGER(data_type);                  // Integer = 0 for PO data; = 1 for PA data; = 2 for combined data
+  DATA_INTEGER(model_type);                 // Integer = 0 for Presence-only data model (PO); = 1 for Presence/absence data model (PA); = 2 for Integrated data model (IDM)
 
   // Parameters
   PARAMETER_VECTOR(fixed);                  // Fixed effects coefficients
   PARAMETER_VECTOR(random);                 // Random effect coefficients (for LAPLACE)
   PARAMETER_VECTOR(log_variance_component); // log(Variance) of each k random coefficient for VA; OR log(Standard Dev.) of random coefficient within spatial res. for LAPLACE - length l
 
-  // Create enumeration of the data_type for switch function
-  enum data_type { PO, PA, IDM };
-  // Create enumeration of the mod_type for switch function
-  enum mod_type { ipp, variational, laplace };
-  // Create enumeration of the mod_type for switch function
+  // Create enumeration of the model_type for switch function
+  enum model_type { PO, PA, IDM };
+  // Create enumeration of the approx_type for switch function
+  enum approx_type { not_sre, variational, laplace };
+  // Create enumeration of the bf_type for switch function
   enum bf_type { sparse, dense };
 
   // Initialise the negative log-likelihood to be minimised (negative sum of the LL components)
   Type nll = 0.0;
   // Initialise the random effect contribution to the log-likelihood (as this is shared by each data type)
   Type LL_random = 0.0;
-  // loop control variable for multi-resolution random effects
+  // Initialise loop control variable for multi-resolution random effects
   int LCV = 0;
+  // Initialise the prior mean on the random coefficients
+  Type mu = 0.0;
 
-  switch (data_type){
+  switch (model_type){
   case PO:
   {
     #include "scampr_ppm.h"

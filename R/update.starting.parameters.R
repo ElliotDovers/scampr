@@ -2,7 +2,7 @@
 #'
 #' @param new.start.pars either a fitted model or named list of starting parameters
 #' @param old.start.pars a named list of starting parameters
-#' @param target.model.type a character string, one of 'laplace', 'variational' or 'ipp'.
+#' @param target.approx.type a character string, one of 'laplace', 'variational' or 'not_sre'.
 #'
 #' @return a data.frame (sparse or dense depending on parameter bf.matrix.type)
 #' @export
@@ -10,8 +10,8 @@
 #' @examples
 #' # Get the gorilla nesting data
 #' dat <- gorillas
-update.starting.parameters <- function(new.start.pars, old.start.pars, target.model.type = c("laplace", "variational", "ipp")) {
-  target.model.type <- match.arg(target.model.type)
+update.starting.parameters <- function(new.start.pars, old.start.pars, target.approx.type = c("laplace", "variational", "not_sre")) {
+  target.approx.type <- match.arg(target.approx.type)
   # check if the new starting parameters are a fitted scampr model
   if (is(new.start.pars, "scampr")) {
     # collect the model object
@@ -19,10 +19,10 @@ update.starting.parameters <- function(new.start.pars, old.start.pars, target.mo
     new.start.pars <- lapply(split(tmp.m$par, names(tmp.m$par)), unname)
     # check the model isn't an IPP
     if (!is.na(tmp.m$approx.type)) {
-      if (target.model.type == "laplace" & tmp.m$approx.type == "variational") {
+      if (target.approx.type == "laplace" & tmp.m$approx.type == "variational") {
         # make appropriate change to the variance parameter if going from VA to Laplace
         new.start.pars$log_variance_component <- unname(log(sqrt(tmp.m$random.effects[grepl("Prior Var ", rownames(tmp.m$random.effects), fixed = T), 1L])))
-      } else if (target.model.type == "variational" & tmp.m$approx.type == "laplace") {
+      } else if (target.approx.type == "variational" & tmp.m$approx.type == "laplace") {
         # make appropriate change to the variance parameter going from Laplace to VA
         new.start.pars$log_variance_component <- NULL
       }
