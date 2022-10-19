@@ -31,7 +31,7 @@
 #' @export
 #'
 #' @importFrom methods as
-#' @importFrom stats optim
+#' @importFrom stats optim terms
 #' @importFrom TMB sdreport
 #'
 #' @examples
@@ -282,10 +282,15 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   }
   # biasing random effect variance components
   if (any(names(res$par) == "log_variance_component_bias")) {
+    if (is.null(inputs$tmb.data$bias_bf_per_res)) {
+      K <- length(inputs$tmb.data$bf_per_res)
+    } else {
+      K <- length(inputs$tmb.data$bias_bf_per_res)
+    }
     names(res$coefficients)[names(res$par) == "log_variance_component_bias"] <- switch(inputs$args$approx.type,
                                                                                 not_sre = stop("random effects found in model without spatial random effects!"),
                                                                                 variational = stop("biasing random effects found in a VA-based model"),
-                                                                                laplace = paste0("Prior log sd(tau) (res. ", 1:length(inputs$tmb.data$bf_per_res), ")")
+                                                                                laplace = paste0("Prior log sd(tau) (res. ", 1:K, ")")
     )
   }
 
@@ -344,17 +349,30 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     res$random.bias.effects <- NULL
   }
 
-  # add the variance/sd estimates if present
-  if (any(grepl("PriorVar", row.names(tmp.estimates), fixed = T))) {
-    if (sum(grepl("PriorVar", row.names(tmp.estimates), fixed = T)) == 1) { # check for a single fixed effect to adjust the resulting data frame
-      res$variances <- data.frame(t(tmp.estimates[grepl("PriorVar", row.names(tmp.estimates), fixed = T), ]))
-      colnames(res$variances)[2] <- "Std. Error" # need to correct the white space in name
-      rownames(res$variances) <- row.names(tmp.estimates)[grepl("PriorVar", row.names(tmp.estimates), fixed = T)]
+  # add the posterior variance/sd estimates if present
+  if (any(grepl("PosteriorVar", row.names(tmp.estimates), fixed = T))) {
+    if (sum(grepl("PosteriorVar", row.names(tmp.estimates), fixed = T)) == 1) { # check for a single fixed effect to adjust the resulting data frame
+      res$post.variances <- data.frame(t(tmp.estimates[grepl("PosteriorVar", row.names(tmp.estimates), fixed = T), ]))
+      colnames(res$post.variances)[2] <- "Std. Error" # need to correct the white space in name
+      rownames(res$post.variances) <- row.names(tmp.estimates)[grepl("PosteriorVar", row.names(tmp.estimates), fixed = T)]
     } else {
-      res$variances <- tmp.estimates[grepl("PriorVar", row.names(tmp.estimates), fixed = T), ]
+      res$post.variances <- tmp.estimates[grepl("PosteriorVar", row.names(tmp.estimates), fixed = T), ]
     }
   } else {
-    res$variances <- NULL
+    res$post.variances <- NULL
+  }
+
+  # add the prior variance/sd estimates if present
+  if (any(grepl("PriorVar", row.names(tmp.estimates), fixed = T))) {
+    if (sum(grepl("PriorVar", row.names(tmp.estimates), fixed = T)) == 1) { # check for a single fixed effect to adjust the resulting data frame
+      res$prior.variances <- data.frame(t(tmp.estimates[grepl("PriorVar", row.names(tmp.estimates), fixed = T), ]))
+      colnames(res$prior.variances)[2] <- "Std. Error" # need to correct the white space in name
+      rownames(res$prior.variances) <- row.names(tmp.estimates)[grepl("PriorVar", row.names(tmp.estimates), fixed = T)]
+    } else {
+      res$prior.variances <- tmp.estimates[grepl("PriorVar", row.names(tmp.estimates), fixed = T), ]
+    }
+  } else {
+    res$prior.variances <- NULL
   }
   ##############################################################################
 
@@ -367,16 +385,16 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
     # get the random effect component if the model has spatial random effects
     if (inputs$args$approx.type != "not_sre") {
-      Zu_pa <- as.vector(inputs$tmb.data$Z_PA %*% res$random.effects[, 1L])
+      Zmu_pa <- as.vector(inputs$tmb.data$Z_PA %*% res$random.effects[, 1L])
     } else {
-      Zu_pa <- NULL
+      Zmu_pa <- NULL
     }
 
     # zero off the remaining components
     Xbeta <- NULL
     Btau <- NULL
-    Zu <- NULL
-    Z2u2 <- NULL
+    Zmu <- NULL
+    Z2mu2 <- NULL
     # res$fitted.values <- as.vector(inputs$tmb.data$X_PA %*% res$fixed.effects[, 1L]) + as.vector(inputs$tmb.data$Z_PA %*% res$random.effects[, 1L])
 
     } else { # in either a PO or IDM case
@@ -397,9 +415,9 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
         } else {
           oldZ <- rbind(inputs$tmb.data$Z_PO_pres, inputs$tmb.data$Z_PO_quad)[inputs$row.id, ]
         }
-        Zu <- as.vector(oldZ %*% res$random.effects[, 1L])
+        Zmu <- as.vector(oldZ %*% res$random.effects[, 1L])
       } else {
-        Zu <- NULL
+        Zmu <- NULL
       }
 
       # get the biasing fixed effects component if included in the model
@@ -422,17 +440,17 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
           } else {
             oldZ <- rbind(inputs$tmb.data$Z_PO_pres, inputs$tmb.data$Z_PO_quad)[inputs$row.id, ]
           }
-          Z2u2 <- as.vector(oldZ %*% res$random.bias.effects[, 1L])
+          Z2mu2 <- as.vector(oldZ %*% res$random.bias.effects[, 1L])
         } else {
           if (ncol(inputs$tmb.data$Z2_PO_pres) == 1) { # when there is only one variable
             oldZ2 <- matrix(c(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id], ncol = 1)
           } else {
             oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id, ]
           }
-          Z2u2 <- as.vector(oldZ2 %*% res$random.bias.effects[, 1L])
+          Z2mu2 <- as.vector(oldZ2 %*% res$random.bias.effects[, 1L])
         }
       } else {
-        Z2u2 <- NULL
+        Z2mu2 <- NULL
       }
 
       # get the PA components for the IDM
@@ -442,34 +460,34 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
         # get the random effect component if the model has spatial random effects
         if (inputs$args$approx.type != "not_sre") {
-          Zu_pa <- as.vector(inputs$tmb.data$Z_PA %*% res$random.effects[, 1L])
+          Zmu_pa <- as.vector(inputs$tmb.data$Z_PA %*% res$random.effects[, 1L])
         } else {
-          Zu_pa <- NULL
+          Zmu_pa <- NULL
         }
       } else {
         Xbeta_pa <- NULL
-        Zu_pa <- NULL
+        Zmu_pa <- NULL
       }
     }
 
   # calculate the fitted values
   if (inputs$args$model.type == "PA") {
-    res$fitted.values <- rowSums(cbind(Xbeta_pa, Zu_pa))
+    res$fitted.values <- rowSums(cbind(Xbeta_pa, Zmu_pa))
     attr(res$fitted.values, "Xbeta") <- Xbeta_pa
-    attr(res$fitted.values, "Zu") <- Zu_pa
+    attr(res$fitted.values, "Zmu") <- Zmu_pa
   } else if (inputs$args$model.type == "PO") {
-    res$fitted.values <- rowSums(cbind(Xbeta, Btau, Zu, Z2u2))
+    res$fitted.values <- rowSums(cbind(Xbeta, Btau, Zmu, Z2mu2))
     attr(res$fitted.values, "Xbeta") <- Xbeta
     attr(res$fitted.values, "Btau") <- Btau
-    attr(res$fitted.values, "Zu") <- Zu
-    attr(res$fitted.values, "Z2u2") <- Z2u2
+    attr(res$fitted.values, "Zmu") <- Zmu
+    attr(res$fitted.values, "Z2mu2") <- Z2mu2
   } else {
-    res$fitted.values <- rowSums(cbind(Xbeta, Btau, Zu, Z2u2))
-    attr(res$fitted.values, "PA") <- rowSums(cbind(Xbeta_pa, Zu_pa))
+    res$fitted.values <- rowSums(cbind(Xbeta, Btau, Zmu, Z2mu2))
+    attr(res$fitted.values, "PA") <- rowSums(cbind(Xbeta_pa, Zmu_pa))
     attr(res$fitted.values, "Xbeta") <- Xbeta
     attr(res$fitted.values, "Btau") <- Btau
-    attr(res$fitted.values, "Zu") <- Zu
-    attr(res$fitted.values, "Z2u2") <- Z2u2
+    attr(res$fitted.values, "Zmu") <- Zmu
+    attr(res$fitted.values, "Z2mu2") <- Z2mu2
   }
 
   ##############################################################################
@@ -477,6 +495,11 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   # final additions for interfacing with other functions
   res$basis.per.res <- inputs$tmb.data$bf_per_res
   res$basis.functions <- inputs$basis.functions
+  if (!missing(po.biasing.basis.functions)) {
+    res$po.biasing.basis.functions <- po.biasing.basis.functions
+  } else {
+    res$po.biasing.basis.functions <- NULL
+  }
   res$basis.fn.info <- inputs$bf.info
   res$approx.type <- inputs$args$approx.type
   res$starting.pars <- inputs$args$starting.pars

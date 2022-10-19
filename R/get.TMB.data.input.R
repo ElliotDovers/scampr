@@ -330,20 +330,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     if (missing(bias.formula)) {
       # assign fixed.bias.type indicator
       fixed.bias.type <- "missing"
-      # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
-      if (approx.type != "not_sre") {
-        if (latent.po.biasing) {
-          if (missing(po.biasing.basis.functions)) {
-            random.bias.type <- "field1"
-          } else {
-            random.bias.type <- "field2"
-          }
-        } else {
-          random.bias.type <- "none"
-        }
-      } else {
-        random.bias.type <- "none"
-      }
+
     } else if (is(bias.formula, "formula")) {
       bias.des.mat_pres <- get.design.matrix(bias.formula, data_pres)
       bias.des.mat_quad <- get.design.matrix(bias.formula, data_quad)
@@ -357,22 +344,23 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       # assign fixed.bias.type indicator
       fixed.bias.type <- "covariates"
 
-      # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
-      if (approx.type != "not_sre") {
-        if (latent.po.biasing) {
-          if (missing(po.biasing.basis.functions)) {
-            random.bias.type <- "field1"
-          } else {
-            random.bias.type <- "field2"
-          }
+    } else {
+      stop(paste0("'bias.formula' provided is not of class formula"))
+    }
+
+    # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
+    if (approx.type != "not_sre") {
+      if (latent.po.biasing) {
+        if (missing(po.biasing.basis.functions)) {
+          random.bias.type <- "field1"
         } else {
-          random.bias.type <- "none"
+          random.bias.type <- "field2"
         }
       } else {
         random.bias.type <- "none"
       }
     } else {
-      stop(paste0("'bias.formula' provided is not of class formula"))
+      random.bias.type <- "none"
     }
     ############################################################################
 

@@ -79,7 +79,7 @@ summary.scampr <- function(object, ...) {
   } else {
     tmp.random_effects <- object$random.effects
     post.means <- tmp.random_effects[ , 1]
-    prior.variance <- as.data.frame(t(formatC(object$variances[!grepl("_bias", row.names(object$variances), fixed = T), 1L], digits = 2)))
+    prior.variance <- as.data.frame(t(formatC(object$prior.variances[!grepl("_bias", row.names(object$prior.variances), fixed = T), 1L], digits = 2)))
     colnames(prior.variance) <- paste0("res. ", 1:length(prior.variance))
     rownames(prior.variance) <- ""
     tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$random.effects$res), FUN = function(x){stats::quantile(x, probs = 0)}))
@@ -94,7 +94,7 @@ summary.scampr <- function(object, ...) {
     if (object$random.bias.type %in% c("field1", "field2")) {
       tmp.bias_field <- object$random.bias.effects
       post.means <- tmp.bias_field[, 1L]
-      prior.variance_bias.field <- as.data.frame(t(formatC(object$variances[grepl("_bias", row.names(object$variances), fixed = T), 1L], digits = 2)))
+      prior.variance_bias.field <- as.data.frame(t(formatC(object$prior.variances[grepl("_bias", row.names(object$prior.variances), fixed = T), 1L], digits = 2)))
       colnames(prior.variance_bias.field) <- paste0("res. ", 1:length(prior.variance_bias.field))
       rownames(prior.variance_bias.field) <- ""
       tmp.min <- as.data.frame(stats::aggregate(post.means, by = list(object$random.bias.effects$res), FUN = function(x){stats::quantile(x, probs = 0)}))

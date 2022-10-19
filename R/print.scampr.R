@@ -25,8 +25,8 @@ print.scampr <- function(x, ...) {
 
   # Model used
   if (!is.null(attr(x$formula, "bias"))) {
-    fixed.formula <- object$formula
-    bias.formula <- attr(object$formula, "bias")
+    fixed.formula <- x$formula
+    bias.formula <- attr(x$formula, "bias")
     tmp.formula <- paste0(Reduce(paste, deparse(fixed.formula)), ", accounting for presence-only biasing with: ", Reduce(paste, deparse(bias.formula)))
   } else {
     tmp.formula <- as.character(x$formula)
