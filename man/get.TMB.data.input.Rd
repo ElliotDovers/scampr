@@ -16,6 +16,7 @@ get.TMB.data.input(
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
   starting.pars,
+  latent.po.biasing = FALSE,
   po.biasing.basis.functions
 )
 }
@@ -42,7 +43,9 @@ get.TMB.data.input(
 
 \item{starting.pars}{an optional named list or scampr model object that gives warm starting values for the parameters of the model.}
 
-\item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{bias.formula = "latent"}, otherwise \code{basis.functions} are used.}
+\item{latent.po.biasing}{a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.}
+
+\item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 }
 \value{
 list of elements required for TMB::MakeADFun

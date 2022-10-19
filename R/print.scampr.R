@@ -25,13 +25,9 @@ print.scampr <- function(x, ...) {
 
   # Model used
   if (!is.null(attr(x$formula, "bias"))) {
-    fixed.formula <- x$formula
-    bias.formula <- attr(x$formula, "bias")
-    bias.resp <- all.vars(bias.formula[[2]])
-    bias.pred <- all.vars(bias.formula[[3]])
-    fixed.resp <- all.vars(fixed.formula[[2]])
-    fixed.pred <- all.vars(fixed.formula[[3]])
-    tmp.formula <- paste0(fixed.resp, " ~ ", paste(fixed.pred, collapse = " + "), " with biasing: ", bias.resp, " ~ ", paste(bias.pred, collapse = " + "))
+    fixed.formula <- object$formula
+    bias.formula <- attr(object$formula, "bias")
+    tmp.formula <- paste0(Reduce(paste, deparse(fixed.formula)), ", accounting for presence-only biasing with: ", Reduce(paste, deparse(bias.formula)))
   } else {
     tmp.formula <- as.character(x$formula)
   }

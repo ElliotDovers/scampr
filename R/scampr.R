@@ -25,7 +25,7 @@
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional vector describing a subset of the data to be used. Not applicable to integrated data models.
-#' @param maxit a numeric indicating the maximum number of iterations for the optimizer. Default is 1000.
+#' @param maxit a numeric indicating the maximum number of iterations for the optimizer. Default is 100 as the optimizer uses a gradient based approach.
 #'
 #' @return a scampr model object
 #' @export
@@ -39,17 +39,26 @@
 #' dat_po <- flora$po$sp1
 #' dat_pa <- flora$pa
 #'
-#' # Attach the quadrature to the PO data
-#' dat_po <- rbind.data.frame(dat_po, flora$quad)
+#' # obtain a sample of 10,000 quadrature points for the point process model
+#' set.seed(1)
+#' quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+#' set.seed(NULL)
+#'
+#' # Attach the quadrature points to the presence-only data
+#' dat_po <- rbind.data.frame(dat_po, quad.pts)
+#'
+#' # Ensure the "response" variable in each data set shares the same name
+#' dat_po$presence <- dat_po$pres
+#' dat_pa$presence <- dat_pa$sp1
 #'
 #' # Fit models without a latent effects (IPP) #
 #' # Point Process Model
-#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, sre.approx = "ipp")
+#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, include.sre = F)
 #' # Binary Regression
-#' m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, sre.approx = "ipp")
+#' m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, include.sre = F)
 #' # Combined Data Model
-#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-#' dat_pa, sre.approx = "ipp")
+#' m.comb <- scampr(pres ~ MNT, dat_po, bias.formula = ~ D.Main,
+#' dat_pa, include.sre = F)
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
@@ -59,12 +68,12 @@
 #' # Point Process Model
 #' m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po, basis.functions = bfs)
 #' # Binary Regression with spatial random effects
-#' m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, basis.functions = bfs)
+#' m.bin_w_sre <- scampr(sp1 ~ MNT, dat_pa, basis.functions = bfs)
 #' # Combined Data Model with spatial random effects
-#' m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+#' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, se = TRUE, starting.pars, subset, maxit = 1000) {
+scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, se = TRUE, starting.pars, subset, maxit = 100) {
 
   ## checks ####################################################################
 
@@ -90,10 +99,12 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     stop(paste0("'quad.weights.name', ", quad.weights.name, ", not found in 'data'"))
   }
   if (!missing(bias.formula)) {
-    if (bias.formula != "latent") {
+    if (is(bias.formula, "formula")) {
       if (!all(labels(terms(bias.formula)) %in% colnames(data))) {
         stop("'data' does not contain the formula terms")
       }
+    } else {
+
     }
   }
   if (!is.logical(se)) {
@@ -106,6 +117,18 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     warning(paste0("'model.type' = ", model.type, " is not compatible with a variational approx. Will instead use a Laplace approx."))
     sre.approx <- "laplace"
   }
+  if (model.type == "PA" & latent.po.biasing) {
+    warning(paste0("'model.type' = ", model.type, " is not compatible with 'latent.po.biasing' - will be ignored"))
+    latent.po.biasing <- FALSE
+  }
+  if (model.type == "PO" & latent.po.biasing) {
+    if (include.sre) {
+      warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
+    } else {
+      stop(paste0("Please use 'include.sre' = TRUE instead of 'latent.po.biasing' for an Inhomogeneous Poisson Process model"))
+    }
+    latent.po.biasing <- FALSE
+  }
   if (model.type == "IDM") {
     if (missing(IDM.presence.absence.df)) {
       stop("Please provide presence/absence data as 'IDM.presence.absence.df' for the Integrated Data Model")
@@ -114,6 +137,9 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
         stop("'IDM.presence.absence.df' does not contain all of the terms in 'formula'")
       }
     }
+  }
+  if (!latent.po.biasing & !missing(po.biasing.basis.functions)) {
+    warning("'po.biasing.basis.functions' provided without indicating a need to account for presence-only biasing using spatial random effects - will be ignored")
   }
 
   # create 3 level indicator for model type and marginal approximation type
@@ -168,6 +194,10 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
           stop("subset has an incorrect format")
         }
       }
+    }
+  } else {
+    if (!missing(subset)) {
+      warning("'subset' is not currently applicable for Integrated Data Models and will be ignored")
     }
   }
   ##############################################################################
@@ -232,7 +262,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   names(res$coefficients)[names(res$par) == "fixed"] <- inputs$fixed.names
   # biasing variable effect names
   if (any(names(res$par) == "bias")) {
-    names(res$coefficients)[names(res$par) == "bias"] <- inputs$fixed.bias.names
+    names(res$coefficients)[names(res$par) == "bias"] <- inputs$bias.names
   }
   # random effect coefficient means (in the case of a variational model)
   if (any(names(res$par) == "random")) {
@@ -273,10 +303,10 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     if (sum(rownames(tmp.estimates) == "bias") == 1) { # check for a single fixed effect to adjust the resulting data frame
       res$fixed.bias.effects <- data.frame(t(tmp.estimates[rownames(tmp.estimates) == "bias", ]))
       colnames(res$fixed.bias.effects)[2] <- "Std. Error" # need to correct the white space in columnn name
-      rownames(res$fixed.bias.effects) <- inputs$fixed.bias.names
+      rownames(res$fixed.bias.effects) <- inputs$bias.names
     } else {
       res$fixed.bias.effects <- tmp.estimates[rownames(tmp.estimates) == "bias", ]
-      rownames(res$fixed.bias.effects) <- inputs$fixed.bias.names
+      rownames(res$fixed.bias.effects) <- inputs$bias.names
     }
   } else {
     res$fixed.bias.effects <- NULL

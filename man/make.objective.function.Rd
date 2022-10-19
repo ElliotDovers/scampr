@@ -4,12 +4,12 @@
 \alias{make.objective.function}
 \title{Internal scampr function that uses TMB to make the objective function of scampr models}
 \usage{
-make.objective.function(TMB.inputs, maxit = 1000)
+make.objective.function(TMB.inputs, maxit = 100)
 }
 \arguments{
 \item{TMB.inputs}{a list created by the internal scampr function: \code{get.TMB.data.input}.}
 
-\item{maxit}{a numeric indicating the maximum number of iterations for the optimizer. Default is 1000.}
+\item{maxit}{a numeric indicating the maximum number of iterations for the optimizer. Default is 100 as this optimization uses gradient information.}
 }
 \value{
 a data.frame (sparse or dense depending on parameter bf.matrix.type)

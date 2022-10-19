@@ -28,11 +28,7 @@ summary.scampr <- function(object, ...) {
   if (!is.null(attr(object$formula, "bias"))) {
     fixed.formula <- object$formula
     bias.formula <- attr(object$formula, "bias")
-    bias.resp <- all.vars(bias.formula[[2]])
-    bias.pred <- all.vars(bias.formula[[3]])
-    fixed.resp <- all.vars(fixed.formula[[2]])
-    fixed.pred <- all.vars(fixed.formula[[3]])
-    tmp.formula <- paste0(fixed.resp, " ~ ", paste(fixed.pred, collapse = " + "), " with biasing: ", bias.resp, " ~ ", paste(bias.pred, collapse = " + "))
+    tmp.formula <- paste0(Reduce(paste, deparse(fixed.formula)), ", accounting for presence-only biasing with: ", Reduce(paste, deparse(bias.formula)))
   } else {
     tmp.formula <- as.character(object$formula)
   }
@@ -70,6 +66,12 @@ summary.scampr <- function(object, ...) {
   tmp.fixed_effects <- as.data.frame(object$fixed.effects)
   tmp.fixed_effects$`z value` <- tmp.fixed_effects$Estimate / tmp.fixed_effects$`Std. Error`
   tmp.fixed_effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed_effects$`z value`), lower.tail = FALSE)
+  # PO biasing fixed effects if present
+  if (!is.null(object$fixed.bias.effects)) {
+    tmp.fixed.bias.effects <- as.data.frame(object$fixed.bias.effects)
+    tmp.fixed.bias.effects$`z value` <- tmp.fixed.bias.effects$Estimate / tmp.fixed.bias.effects$`Std. Error`
+    tmp.fixed.bias.effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed.bias.effects$`z value`), lower.tail = FALSE)
+  }
   # Random effects of the model
   if (mod.id == "not_sre") {
     post.means.summary <- NA
@@ -114,6 +116,10 @@ summary.scampr <- function(object, ...) {
     if (mod.id != "not_sre") {paste0("\n\nBasis functions per res. ", paste(object$basis.per.res, collapse = ", "))} else {""}, "\n\nFixed Effects:\n\n"
   )
   stats::printCoefmat(tmp.fixed_effects)
+  if (!is.null(object$fixed.bias.effects)) {
+    cat("\nFixed Biasing Effects:\n\n")
+    stats::printCoefmat(tmp.fixed.bias.effects)
+  }
   if (mod.id != "not_sre") {
     cat(
       "---\n\nSpatial Random Effects:\n\nPosterior Means per Spatial Resolution(s):\n"

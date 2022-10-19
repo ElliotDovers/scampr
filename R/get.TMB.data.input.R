@@ -125,7 +125,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                          X_PO_pres = des.mat_pres,
                          B_PO_pres = bias.des.mat_pres,
                          X_PO_quad = des.mat_quad,
-                         B_PO_quad = bias.des.mat_pres,
+                         B_PO_quad = bias.des.mat_quad,
                          Z_PO_pres = po.bf.matrix_pres,
                          Z_PO_quad = po.bf.matrix_quad,
                          quad_size = data_quad[ , quad.weights.name],
@@ -234,6 +234,8 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       bf.info <- cbind.data.frame(x = NA, y = NA, scale = NA, res = 1)
       basis.functions <- NULL
     }
+
+
     ############################################################################
 
     # TMB required data setup
@@ -284,6 +286,12 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       random.names <- paste0("u", random.nos)
     } else {
       random.names <- NULL
+    }
+
+    # adjust the bias formula if mistakenly provided:
+    if (!missing(bias.formula)) {
+      warning(paste0("'bias.formula' will be ignored since it is not compatible with model.type = 'PA'."))
+      arg.info$bias.formula <- NULL
     }
 
     # add bias types to arg list
