@@ -10,8 +10,7 @@
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
-  use.formula = c("presence-only", "presence-absence"),
-  exclude.terms
+  include.bias.accounting = FALSE
 )
 }
 \arguments{
@@ -25,9 +24,7 @@
 
 \item{dens}{a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.}
 
-\item{use.formula}{a character string, one of 'presence-only' or 'presence-absence', indicating the formula to be used for prediction estimated. Only available for combined data models.}
-
-\item{exclude.terms}{Optionally, a character string (or vector of character strings) specifying model terms to be excluded from the predictions. This is useful for removing predictors that were used only to account for bias in the presence-only data.}
+\item{include.bias.accounting}{a logical indicating if biasing effects (random or fixed) should be included in the predictions. Default is FALSE.}
 }
 \value{
 a numeric vector of length newdata (or length of fitted data) containing the predictions.

@@ -31,6 +31,9 @@
 #' scampr:::get.bf.matrix(m.lgcp_va, new.sites)
 get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", "dense")) {
 
+  ## WANT TO ADD IN FUNCTIONALITY TO MAKE BF MATRIX ORTHOGONAL TO FIXED EFFECT MATRIX AS IN MGCV
+  # Uses: PX = X(X′X)−1X′ and QX = I − PX
+
   bf.matrix.type <- match.arg(bf.matrix.type)
 
   # check if the provided object is a scampr model object and if so extract the basis functions
