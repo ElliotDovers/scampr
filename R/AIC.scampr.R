@@ -28,9 +28,10 @@ AIC.scampr <- function(object, ..., k = 2) {
     mod.names <- NULL
     for (i in 1:length(extra.args)) {
       mod.names[i] <- as.character(extra.arg.names[i])
-      if (class(extra.args[[i]]) == "scampr") {
+      if (is(extra.args[[i]], "scampr")) {
         aics[i] <- get.single.model.aic(extra.args[[i]], k = k)
       } else {
+        warning(paste0("argument ", mod.names[i], " is not a scampr model. AIC for this object will appear as NA"))
         aics[i] <- NA
       }
       return.obj <- cbind.data.frame(model = c(deparse(substitute(object)), mod.names), AIC = c(get.single.model.aic(object, k = k), aics))

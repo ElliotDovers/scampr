@@ -24,14 +24,10 @@ print.scampr <- function(x, ...) {
   # Collect elements for reporting #
 
   # Model used
-  if (x$data.model.type == "popa") {
-    po.formula <- x$formula
-    pa.formula <- attr(x$formula, "pa")
-    pa.resp <- all.vars(pa.formula[[2]])
-    pa.pred <- all.vars(pa.formula[[3]])
-    po.resp <- all.vars(po.formula[[2]])
-    po.pred <- all.vars(po.formula[[3]])
-    tmp.formula <- paste0(po.resp, " ~ ", paste(po.pred, collapse = " + "), " |&| ", pa.resp, " ~ ", paste(pa.pred, collapse = " + "))
+  if (!is.null(attr(x$formula, "bias"))) {
+    fixed.formula <- x$formula
+    bias.formula <- attr(x$formula, "bias")
+    tmp.formula <- paste0(Reduce(paste, deparse(fixed.formula)), ", accounting for presence-only biasing with: ", Reduce(paste, deparse(bias.formula)))
   } else {
     tmp.formula <- as.character(x$formula)
   }
@@ -44,23 +40,23 @@ print.scampr <- function(x, ...) {
     mod.id <- x$approx.type
   }
   # Set the model description
-  if (x$data.model.type == "popa") {
+  if (x$model.type == "IDM") {
     Model.Desc <- switch(mod.id,
-                        ipp = "Combined data inhomogeneous process model",
-                        variational = "Combined data model w. spatially correlated errors - Variational approx.",
-                        laplace = "Combined data model w. spatially correlated errors - Laplace approx.")
-  } else if (x$data.model.type == "po") {
+                        ipp = "Integrated Data Model without spatial random effects",
+                        variational = "Integrated Data Model with spatially correlated errors - Variational Approx.",
+                        laplace = "Integrated Data Model with spatially correlated errors - Laplace approx.")
+  } else if (x$model.type == "PO") {
     Model.Desc <- switch(mod.id,
                          ipp = "Inhomogeneous Poisson process",
                          variational = "Log-Gaussian Cox process - Variational Approx.",
                          laplace = "Log-Gaussian Cox process - Laplace Approx.")
-  } else if (x$data.model.type == "pa") {
+  } else if (x$model.type == "PA") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Binary regression model w. complimentary log-log link function",
+                         ipp = "Binary regression model w. complimentary log-log link function (without spatial random effects)",
                          variational = "Spatially correlated, binary regression model w. complimentary log-log link function - Variational approx.",
                          laplace = "Spatially correlated, binary regression model w. complimentary log-log link function - Laplace approx.")
   } else (
-    stop("unknown 'data.model.type' in scampr model")
+    stop("unknown 'model.type' in scampr model")
   )
 
   # Fixed effects of the model

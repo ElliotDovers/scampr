@@ -18,7 +18,7 @@
 #'
 #' logLik(m)
 logLik.scampr <- function(object, ...) {
-  if (class(object) != "scampr") {
+  if (!is(object, "scampr")) {
     stop("provided model is not of class 'scampr'")
   }
   extra.args <- list(...)
@@ -30,9 +30,10 @@ logLik.scampr <- function(object, ...) {
     mod.names <- NULL
     for (i in 1:length(extra.args)) {
       mod.names[i] <- as.character(extra.arg.names[i])
-      if (class(extra.args[[i]]) == "scampr") {
+      if (is(extra.args[[i]], "scampr")) {
         lls[i] <- -extra.args[[i]]$value
       } else {
+        warning(paste0("argument ", mod.names[i], " is not a scampr model. Likelihood for this object will appear as NA"))
         lls[i] <- NA
       }
       return.obj <- cbind.data.frame(model = c(deparse(substitute(object)), mod.names), logLik = c(-object$value, lls))

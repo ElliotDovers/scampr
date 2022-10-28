@@ -7,74 +7,95 @@
 scampr(
   formula,
   data,
-  pa.formula,
-  pa.data,
+  bias.formula,
+  IDM.presence.absence.df,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
+  include.sre = TRUE,
+  sre.approx = c("variational", "laplace"),
+  model.type = c("PO", "PA", "IDM"),
   basis.functions,
-  model.type = c("variational", "laplace", "ipp"),
-  sparse = TRUE,
+  bf.matrix.type = c("sparse", "dense"),
+  latent.po.biasing = FALSE,
+  po.biasing.basis.functions,
   se = TRUE,
   starting.pars,
   subset,
-  additional.latent.field = FALSE
+  maxit = 100
 )
 }
 \arguments{
-\item{formula}{an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence-only data model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or quadrature point. See GLM function for further formula details.}
+\item{formula}{an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.}
 
-\item{data}{a data frame containing predictors at both point locations and quadrature as well as the formula 'response' found in \code{formula}.}
+\item{data}{a data frame containing response and predictors within \code{formula}.}
 
-\item{pa.formula}{Optionally, an object of class "formula" (or one that can be coerced to that class): a symbolic description of the Presence/Absence data model to be fitted. All predictor terms must also be included in the \code{formula} argument. The 'response' must be a must be either the site abundance or a binary indicating whether there is a presence or not. See GLM function for further formula details.}
+\item{bias.formula}{an object of class "formula" (or one that can be coerced to that class) OR the character string "latent". In the formula case, this is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed). In the case of fitting an integrated data model, \code{bias.formula = "latent"} will fit an approximate latent Gaussian field to account for the bias.}
 
-\item{pa.data}{Optionally, a data frame containing predictors and response described in \code{pa.formula}.}
+\item{IDM.presence.absence.df}{an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.}
 
-\item{coord.names}{a vector of length 2 containing character strings describing the column names of the coordinates in any data provided. First coordinate name should refer to the horizontal axis.}
+\item{coord.names}{a vector of character strings describing the column names of the coordinates in both data frames.}
 
-\item{quad.weights.name}{a character string of the column name of quadrature weights in \code{data}.}
+\item{quad.weights.name}{a character string of the column name of quadrature weights in the data.}
+
+\item{include.sre}{a logical indicating whether to fit the model with spatial random effects (SRE).}
+
+\item{sre.approx}{a character string indicating the type of approximation to be used to marginalise over the spatial random effects. May be one of 'laplace' or 'variational'.}
+
+\item{model.type}{a character string indicating the type of data to be used. May be one of 'PO' (for a presence-only PPM) or 'PA' (for a presence/absence Binary GLM) or 'IDM' (for an integrated data model).}
 
 \item{basis.functions}{an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.}
 
-\item{model.type}{a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for Cox Processes involving spatially correlated errors or 'ipp' for a model that follows an inhomogeneous Poisson process.}
+\item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 
-\item{sparse}{a logical indicating whether sparse matrix calculations should be used. Should only be turned off when using dense basis functions, e.g. Gaussian Kernel with long range parameter.}
+\item{latent.po.biasing}{a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.}
+
+\item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 
 \item{se}{a logical indicating whether standard errors should be calculated.}
 
 \item{starting.pars}{an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.}
 
-\item{subset}{an optional vector describing a subset of the data to be used.}
+\item{subset}{an optional vector describing a subset of the data to be used. Not applicable to integrated data models.}
 
-\item{additional.latent.field}{a logical indicating whether an additional latent field should be included in the Presence-only data model to capture additional detection bias. Only used in the integrated data model.}
+\item{maxit}{a numeric indicating the maximum number of iterations for the optimizer. Default is 100 as the optimizer uses a gradient based approach.}
 }
 \value{
 a scampr model object
 }
 \description{
-This is the main function for modelling presences within the \code{scampr} framework. The type of model will depend on the arguments provided. This can be used to model point patterns as a log-Gaussian Cox process (LGCP) or Inhomogeneous Poisson process (IPP), as well as, jointly fitting a model to presence-only and presence/absence data if both are provided. This function can also fit binary regression with a complimentary log-log link function (with optional spatial random effects) when only presence/absence data is provided.
+This is the main function for modelling presences within the \code{scampr} framework. The type of model will depend on the arguments provided. This can be used to model point patterns as a log-Gaussian Cox process (LGCP) or Inhomogeneous Poisson process (IPP), as well as, jointly fitting a model to presence-only and presence/absence data if both are provided. This function can also fit binary regression with a complimentary log-log link function (with optional spatial random effects) when \code{model.type = "PA"}.
 
-If only \code{formula} and \code{data} are provided, the function will fit either an IPP, or LGCP model to the point pattern (depending on argument \code{model.type}). This uses numerical quadrature (provided with the data, see e.g. scampr::gorillas) to approximate the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
+When \code{model.type = "PO"}, the function will fit either an IPP, or LGCP model to the point pattern (depending on argument \code{sre.approx}). This uses numerical quadrature (provided with the data, see e.g. scampr::gorillas) to approximate the spatial integral. If fitting a LGCP, uses one of either a Laplace or variational approximation to marginalise over the latent field.
 
-If only \code{pa.formula} and \code{pa.data} are provided, the function will fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approximate latent field as spatial random effects (depending on argument \code{model.type}).
+When \code{model.type = "PA"}, the function will fits a binary regression model to presence/absence data using a complimentary log-log link function. Can accomodate an approximate latent field as spatial random effects (depending on argument \code{sre.approx}).
 
-If both \code{formula} and \code{pa.formula}, as well as, \code{data} and \code{pa.data} are provided, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{model.type} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
+When \code{model.type = "IDM"}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{sre.approx} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
 }
 \examples{
 # Get the flora data for one of the species
 dat_po <- flora$po$sp1
 dat_pa <- flora$pa
 
-# Attach the quadrature to the PO data
-dat_po <- rbind.data.frame(dat_po, flora$quad)
+# obtain a sample of 10,000 quadrature points for the point process model
+set.seed(1)
+quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+set.seed(NULL)
+
+# Attach the quadrature points to the presence-only data
+dat_po <- rbind.data.frame(dat_po, quad.pts)
+
+# Ensure the "response" variable in each data set shares the same name
+dat_po$presence <- dat_po$pres
+dat_pa$presence <- dat_pa$sp1
 
 # Fit models without a latent effects (IPP) #
 # Point Process Model
-m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
+m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, include.sre = F)
 # Binary Regression
-m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
+m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, include.sre = F)
 # Combined Data Model
-m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-dat_pa, model.type = "ipp")
+m.comb <- scampr(pres ~ MNT, dat_po, bias.formula = ~ D.Main,
+dat_pa, include.sre = F)
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
@@ -84,9 +105,9 @@ bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
 # Point Process Model
 m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po, basis.functions = bfs)
 # Binary Regression with spatial random effects
-m.bin_w_sre <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, basis.functions = bfs)
+m.bin_w_sre <- scampr(sp1 ~ MNT, dat_pa, basis.functions = bfs)
 # Combined Data Model with spatial random effects
-m.comb_w_sre <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
+m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 dat_pa, basis.functions = bfs)
 }
 }

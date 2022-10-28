@@ -10,8 +10,7 @@
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
-  data.component = c("presence-only", "presence-absence"),
-  exclude.terms
+  include.bias.accounting = FALSE
 )
 }
 \arguments{
@@ -25,15 +24,13 @@
 
 \item{dens}{a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.}
 
-\item{data.component}{a character string, one of 'presence-only' or 'presence-absence', indicating the data.component to be estimated. Only available for combined data models.}
-
-\item{exclude.terms}{Optionally, a character string (or vector of character strings) specifying model terms to be excluded from the predictions. This is useful for removing predictors that were used only to account for bias in the presence-only data.}
+\item{include.bias.accounting}{a logical indicating if biasing effects (random or fixed) should be included in the predictions. Default is FALSE.}
 }
 \value{
 a numeric vector of length newdata (or length of fitted data) containing the predictions.
 }
 \description{
-Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (data.component = "presence-only") or the underlying abundance rate (data.component = "presence-absence").
+Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (use.formula = "presence-only") or the underlying abundance rate (use.formula = "presence-absence").
 }
 \examples{
 # Get the flora data for one of the species
@@ -67,8 +64,8 @@ m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 
 predict(m.ipp, test_po)
-predict(m.comb, test_po, data.component = "presence-only")
-predict(m.comb, test_pa, data.component = "presence-absence")
+predict(m.comb, test_po, use.formula = "presence-only")
+predict(m.comb, test_pa, use.formula = "presence-absence")
 predict(m.pa, test_pa)
 predict(m.lgcp_va, test_po)
 predict(m.lgcp_va, test_po, dens = "prior")
