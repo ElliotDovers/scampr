@@ -69,11 +69,11 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
   if (!all(object$coord.names %in% colnames(newdata))) {
     stop("Not all coordinates of the model are found in new data provided")
   }
-  if (include.bias.accounting) {
-    if (is.null(object$fixed.bias.effects) & is.null(object$object$random.bias.effects)) {
-      warning("the model provided does not account for presence-only biasing, yet 'include.bias.accounting' = TRUE. This will be ignored")
-    }
-  }
+  # if (include.bias.accounting) {
+  #   if (is.null(object$fixed.bias.effects) & is.null(object$random.bias.effects)) {
+  #     warning("the model provided does not account for presence-only biasing, yet 'include.bias.accounting' = TRUE. This will be ignored")
+  #   }
+  # }
   ##############################################################################
 
   ## Fixed Effects

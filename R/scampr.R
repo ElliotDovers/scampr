@@ -73,7 +73,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, se = TRUE, starting.pars, subset, maxit = 100) {
+scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
   ## checks ####################################################################
 
@@ -84,7 +84,8 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   # get the variables for checking
   resp <- all.vars(formula[[2]])
-  pred <- labels(stats::terms(formula))
+  # pred <- labels(stats::terms(formula)) # THIS BREAKS FOR I(X^2) FOR EXAMPLE
+  pred <- all.vars(formula[[3]])
 
   if (length(resp) != 1) {
     stop("'formula' can only take a single response")
@@ -206,17 +207,19 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   mc <- match.call() # gets the arguments (after being altered above)
   call.list <- as.list(mc)
-  # remove unused terms from the call
-  call.list <- call.list[!names(call.list) %in% c("subset", "se", "include.sre", "sre.approx", "maxit")]
   # alter the call according to alterations made above
-  call.list$approx.type <- approx.type
   call.list$bf.matrix.type <- bf.matrix.type
   call.list$model.type <- model.type
-  # convert back to call
-  mc <- as.call(call.list)
-  # change the function to be evaluated
-  mc[[1]] <- quote(scampr::get.TMB.data.input) # tell the call the function to be evaluated
-  inputs <- eval(mc, envir = parent.frame())
+  call.list$sre.approx <- sre.approx
+  mod.call <- as.call(call.list)
+  # remove unused terms from the call
+  call.list <- call.list[!names(call.list) %in% c("subset", "se", "include.sre", "sre.approx", "maxit")]
+  # add approx.type to the call for get.TMB.data.input()
+  call.list$approx.type <- approx.type
+  # remove the call function
+  call.list[[1]] <- NULL
+  # get the TMB inputs
+  inputs <- do.call("get.TMB.data.input", call.list)
   ##############################################################################
 
   ## Create the TMB Objective Function and Optimise ############################
@@ -502,22 +505,23 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   }
   res$basis.fn.info <- inputs$bf.info
   res$approx.type <- inputs$args$approx.type
-  res$starting.pars <- inputs$args$starting.pars
-  res$data <- inputs$args$data
+  res$starting.pars <- inputs$start.pars
+  res$data <- data
   if (inputs$args$model.type == "IDM") {
-    attr(res$data, "PA") <- inputs$args$IDM.presence.absence.df
+    attr(res$data, "PA") <- IDM.presence.absence.df
   }
-  res$formula <- inputs$args$formula
-  if (is(inputs$args$bias.formula, "formula")) {
-    attr(res$formula, "bias") <- inputs$args$bias.formula
+  res$formula <- formula
+  if (!missing(bias.formula)) {
+    attr(res$formula, "bias") <- bias.formula
   }
-  res$coord.names <- inputs$args$coord.names
-  res$quad.weights.name <- inputs$args$quad.weights.name
+  res$coord.names <- coord.names
+  res$quad.weights.name <- quad.weights.name
   res$pt.quad.id <- inputs$pt.quad.id
   res$model.type <- inputs$args$model.type
   res$bf.matrix.type <- inputs$args$bf.matrix.type
   res$fixed.bias.type <- inputs$args$fixed.bias.type
   res$random.bias.type <- inputs$args$random.bias.type
+  res$call <- mod.call
   class(res) <- "scampr"
 
   return(res)

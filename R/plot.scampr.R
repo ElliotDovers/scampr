@@ -1,4 +1,4 @@
-#' Plot diagnositcs for objects of class 'scampr'
+#' Plot diagnositcs for objects of class 'scampr' ### WIP ###
 #'
 #' @description Currently plots residuals as in 'spatstat', as well as the fitted intensity, over the quadrature used to model the point pattern. In the case of presence/absence data fitted vs. residuals is plotted.
 #'

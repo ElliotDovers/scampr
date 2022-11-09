@@ -2,7 +2,7 @@
 % Please edit documentation in R/residuals.scampr.R
 \name{residuals.scampr}
 \alias{residuals.scampr}
-\title{Extract Model Residuals for objects of class 'scampr'}
+\title{Extract Model Residuals for objects of class 'scampr' ### WIP ###}
 \usage{
 \method{residuals}{scampr}(
   object,
@@ -24,7 +24,7 @@
 a numeric vector, of length of the model data, containing the extracted residuals.
 }
 \description{
-Extract Model Residuals for objects of class 'scampr'
+Extract Model Residuals for objects of class 'scampr' ### WIP ###
 }
 \examples{
 # Get the flora data for one of the species

@@ -37,7 +37,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
   bf.matrix.type <- match.arg(bf.matrix.type)
 
   # store the arguments
-  arg.info <- as.list(environment())
+  # arg.info <- as.list(environment())
+  arg.info <- as.list(match.call())
+
 
   # approach based on the data type #
 

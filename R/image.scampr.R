@@ -1,4 +1,4 @@
-#' Plot the image of a field over a model quadrature
+#' Plot the image of a field over a model quadrature ### WIP ###
 #'
 #' @description An image plotting function that uses fields::image.plot() to display the specified variable as a field over the quadrature.
 #'

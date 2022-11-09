@@ -21,7 +21,8 @@ scampr(
   se = TRUE,
   starting.pars,
   subset,
-  maxit = 100
+  maxit = 100,
+  ...
 )
 }
 \arguments{

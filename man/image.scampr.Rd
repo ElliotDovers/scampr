@@ -2,7 +2,7 @@
 % Please edit documentation in R/image.scampr.R
 \name{image.scampr}
 \alias{image.scampr}
-\title{Plot the image of a field over a model quadrature}
+\title{Plot the image of a field over a model quadrature ### WIP ###}
 \usage{
 \method{image}{scampr}(x, z, residual.type, residual.smoothing = 0.5, ...)
 }
