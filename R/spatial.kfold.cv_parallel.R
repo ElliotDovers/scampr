@@ -1,4 +1,4 @@
-#' Performs a spatial hold-one-out K fold cross validation on a scampr model
+#' Performs a spatial hold-one-out K fold cross validation on a scampr model (using parallelisation via \code{foreach})
 #'
 #' @param object a scampr model object
 #' @param po.fold.id An integer or factor vector the same length as the presence-only data used in the model \code{object} - describes the CV fold that each location falls into.
@@ -9,6 +9,9 @@
 #' @export
 #'
 #' @importFrom pROC roc auc
+#' @importFrom foreach foreach "%dopar%"
+#' @importFrom parallel detectCores makeCluster stopCluster
+#' @importFrom doParallel registerDoParallel
 #'
 #' @examples
 #' #' # Get the Eucalypt data
@@ -20,7 +23,7 @@
 #' res <- simple_basis_search_popa(pres ~ TMP_MIN + D_MAIN_RDS, Y ~ TMP_MIN,
 #' po.data = dat_po, pa.data = dat_pa)
 #' }
-spatial.kfold.cv <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-7) {
+spatial.kfold.cv_parallel <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-7) {
 
   if (object$model.type == "IDM") {
 
@@ -33,50 +36,64 @@ spatial.kfold.cv <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-
     po.fold.id <- as.numeric(po.fold.id)
     pa.fold.id <- as.numeric(pa.fold.id)
 
-    # Extract the data
+    # Extract the data (these elements need to be evaluated here to be accessible to parallel cores)
     po.data <- object$data
     pa.data <- attr(object$data, "PA")
     po.resp <- po.data[, all.vars(object$formula[[2]])]
     pa.resp <- pa.data[, all.vars(object$formula[[2]])]
     quad.sizes <- po.data[, object$quad.weights.name]
-
-    # Initialise Objects #
-    train_mods <- list() # training models
-    test.pa <- list() # predicted abundance rate on PA data
-    test.po <- list() # predicted intensity rate on PO data
-    po.test.rows <- list() # storage for row indices
-    pa.test.rows <- list() # storage for row indices
+    bfs_shared <- object$basis.functions
+    bfs_bias <- object$po.biasing.basis.functions
+    folds <- sort(unique(po.fold.id)) # fold levels
     po.row.id <- 1:nrow(po.data) # index reference for returning original PO dataset order
     pa.row.id <- 1:nrow(pa.data) # index reference for returning original PA dataset order
 
-    # Loop through CV folds
-    for (i in sort(unique(po.fold.id))) {
-      # create index for storage (in case the folds are not 1:k)
-      j = which(i == sort(unique(po.fold.id)))
-      # get the model's call
+    # Determine the number of cores and set number of instances to initialise in parallel
+    ncores <- parallel::detectCores() # partition number will be based on the cores available
+    if (length(folds) < ncores) {
+      k <- length(folds)
+    } else {
+      k <- ncores - 1
+    }
+
+    # Start the clusters
+    sock <- parallel::makeCluster(rep("localhost", k), type = "SOCK")
+    doParallel::registerDoParallel(sock)
+    # print("Computing CV folds in parallel.", quote=FALSE)
+    comb_res <- foreach::foreach(fold = folds, .combine = rbind, .packages='scampr') %dopar% {
       call.list <- as.list(object$call)
       # adjust the training data
-      call.list$data <- po.data[po.fold.id != i, ]
-      call.list$IDM.presence.absence.df <- pa.data[pa.fold.id != i, ]
+      call.list$data <- po.data[po.fold.id != fold, ]
+      call.list$IDM.presence.absence.df <- pa.data[pa.fold.id != fold, ]
+      call.list$basis.functions <- bfs_shared
+      call.list$po.biasing.basis.functions <- bfs_bias
       # train the model
       call.list[[1]] <- NULL
-      train_mods[[j]] <- do.call("scampr", call.list)
+      train_mod <- do.call("scampr", call.list)
       # test on held out fold
-      test.pa[[j]] <- predict.scampr(train_mods[[i]], newdata = pa.data[pa.fold.id == i, ])
-      test.po[[j]] <- predict.scampr(train_mods[[i]], newdata = po.data[po.fold.id == i, ], include.bias.accounting = TRUE)
+      test.pa <- predict.scampr(train_mod, newdata = pa.data[pa.fold.id == fold, ])
+      test.po <- predict.scampr(train_mod, newdata = po.data[po.fold.id == fold, ], include.bias.accounting = TRUE)
       # calculate the row indices of the new test datasets
-      po.test.rows[[j]] <- po.row.id[po.fold.id == i]
-      pa.test.rows[[j]] <- pa.row.id[pa.fold.id == i]
+      po.test.rows <- po.row.id[po.fold.id == fold]
+      pa.test.rows <- pa.row.id[pa.fold.id == fold]
+      # set the return object
+      ret.obj <- data.frame(preds = c(test.pa, test.po),
+                       row_id = c(pa.test.rows, po.test.rows),
+                       # fold_id = rep(fold, length(c(pa.test.rows, po.test.rows))),
+                       data_id = c(rep(0, length(pa.test.rows)), rep(1, length(po.test.rows)))
+      )
+      return(ret.obj)
     }
-    # combine results into vectors
-    po.test.rows <- do.call("c", po.test.rows)
-    pa.test.rows <- do.call("c", pa.test.rows)
-    test.pa <- do.call("c", test.pa)
-    test.po <- do.call("c", test.po)
+    parallel::stopCluster(sock)
+    # print("Stopping parallel clusters.", quote=FALSE)
+
+    # separate the results by data sets
+    res_pa <- data.frame(comb_res[comb_res$data_id == 0, ])
+    res_po <- data.frame(comb_res[comb_res$data_id == 1, ])
 
     # re-order the test datasets to match the raw datasets
-    pred.po <- test.po[order(po.test.rows)]
-    pred.pa <- test.pa[order(pa.test.rows)]
+    pred.po <- res_po$preds[order(res_po$row_id)]
+    pred.pa <- res_pa$preds[order(res_pa$row_id)]
 
     # predicted presence probability
     pres_prob <- 1 - exp(-exp(pred.pa))
@@ -101,39 +118,49 @@ spatial.kfold.cv <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-
     # Convert CV fold into a numeric in case factor is provided
     po.fold.id <- as.numeric(po.fold.id)
 
-    # Extract the data
+    # Extract the data (these elements need to be evaluated here to be accessible to parallel cores)
     po.data <- object$data
     po.resp <- po.data[, all.vars(object$formula[[2]])]
     quad.sizes <- po.data[, object$quad.weights.name]
-
-    # Initialise Objects #
-    train_mods <- list() # training models
-    test.po <- list() # predicted intensity rate on PO data
-    po.test.rows <- list() # storage for row indices
+    bfs <- object$basis.functions
+    folds <- sort(unique(po.fold.id)) # fold levels
     po.row.id <- 1:nrow(po.data) # index reference for returning original PO dataset order
 
-    # Loop through CV folds
-    for (i in sort(unique(po.fold.id))) {
-      # create index for storage (in case the folds are not 1:k)
-      j = which(i == sort(unique(po.fold.id)))
-      # get the model's call
+    # Determine the number of cores and set number of instances to initialise in parallel
+    ncores <- parallel::detectCores() # partition number will be based on the cores available
+    if (length(folds) < ncores) {
+      k <- length(folds)
+    } else {
+      k <- ncores - 1
+    }
+
+    # Start the clusters
+    sock <- parallel::makeCluster(rep("localhost", k), type = "SOCK")
+    doParallel::registerDoParallel(sock)
+    print("Computing CV folds in parallel.", quote=FALSE)
+    comb_res <- foreach::foreach(fold = folds, .combine = rbind, .packages='scampr') %dopar% {
       call.list <- as.list(object$call)
       # adjust the training data
-      call.list$data <- po.data[po.fold.id != i, ]
+      call.list$data <- po.data[po.fold.id != fold, ]
+      call.list$basis.functions <- bfs
       # train the model
       call.list[[1]] <- NULL
-      train_mods[[j]] <- do.call("scampr", call.list)
+      train_mod <- do.call("scampr", call.list)
       # test on held out fold
-      test.po[[j]] <- predict.scampr(train_mods[[i]], newdata = po.data[po.fold.id == i, ], include.bias.accounting = TRUE)
-      # calculate the row indices of the new test dataset
-      po.test.rows[[j]] <- po.row.id[po.fold.id == i]
+      test.po <- predict.scampr(train_mod, newdata = po.data[po.fold.id == fold, ], include.bias.accounting = TRUE)
+      # calculate the row indices of the new test datasets
+      po.test.rows <- po.row.id[po.fold.id == fold]
+      # set the return object
+      ret.obj <- data.frame(preds = test.po,
+                       row_id = po.test.rows
+      )
+      return(ret.obj)
     }
-    # combine results into vectors
-    po.test.rows <- do.call("c", po.test.rows)
-    test.po <- do.call("c", test.po)
+    parallel::stopCluster(sock)
+    print("Stopping parallel clusters.", quote=FALSE)
 
     # re-order the test datasets to match the raw dataset
-    pred.po <- test.po[order(po.test.rows)]
+    pred.po <- comb_res$preds[order(comb_res$row_id)]
 
     # predicted conditional log-likelihood on the PA data
     pll_pa <- NA
@@ -152,38 +179,48 @@ spatial.kfold.cv <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-
     # Convert CV fold to a numeric in case factor is provided
     pa.fold.id <- as.numeric(pa.fold.id)
 
-    # Extract the data
+    # Extract the data (these elements need to be evaluated here to be accessible to parallel cores)
     pa.data <- object$data
     pa.resp <- pa.data[, all.vars(object$formula[[2]])]
-
-    # Initialise Objects #
-    train_mods <- list() # training models
-    test.pa <- list() # predicted abundance rate on PA data
-    pa.test.rows <- list() # storage for row indices
+    bfs <- object$basis.functions
+    folds <- sort(unique(pa.fold.id)) # fold levels
     pa.row.id <- 1:nrow(pa.data) # index reference for returning original PA dataset order
 
-    # Loop through CV folds
-    for (i in sort(unique(pa.fold.id))) {
-      # create index for storage (in case the folds are not 1:k)
-      j = which(i == sort(unique(pa.fold.id)))
-      # get the model's call
+    # Determine the number of cores and set number of instances to initialise in parallel
+    ncores <- parallel::detectCores() # partition number will be based on the cores available
+    if (length(folds) < ncores) {
+      k <- length(folds)
+    } else {
+      k <- ncores - 1
+    }
+
+    # Start the clusters
+    sock <- parallel::makeCluster(rep("localhost", k), type = "SOCK")
+    doParallel::registerDoParallel(sock)
+    print("Computing CV folds in parallel.", quote=FALSE)
+    comb_res <- foreach::foreach(fold = folds, .combine = rbind, .packages='scampr') %dopar% {
       call.list <- as.list(object$call)
       # adjust the training data
-      call.list$data <- pa.data[pa.fold.id != i, ]
+      call.list$data <- pa.data[pa.fold.id != fold, ]
+      call.list$basis.functions <- bfs
       # train the model
       call.list[[1]] <- NULL
-      train_mods[[j]] <- do.call("scampr", call.list)
+      train_mod <- do.call("scampr", call.list)
       # test on held out fold
-      test.pa[[j]] <- predict.scampr(train_mods[[i]], newdata = pa.data[pa.fold.id == i, ])
+      test.pa <- predict.scampr(train_mod, newdata = pa.data[pa.fold.id == fold, ])
       # calculate the row indices of the new test dataset
-      pa.test.rows[[j]] <- pa.row.id[pa.fold.id == i]
+      pa.test.rows <- pa.row.id[pa.fold.id == fold]
+      # set the return object
+      ret.obj <- data.frame(preds = test.pa,
+                            row_id = pa.test.rows
+      )
+      return(ret.obj)
     }
-    # combine results into vectors
-    pa.test.rows <- do.call("c", pa.test.rows)
-    test.pa <- do.call("c", test.pa)
+    parallel::stopCluster(sock)
+    print("Stopping parallel clusters.", quote=FALSE)
 
     # re-order the test datasets to match the raw dataset
-    pred.pa <- test.pa[order(pa.test.rows)]
+    pred.pa <- comb_res$preds[order(comb_res$row_id)]
 
     # predicted presence probability
     pres_prob <- 1 - exp(-exp(pred.pa))

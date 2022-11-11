@@ -11,6 +11,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param domain.data Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.
 #' @param trunc.pa.prob Optional. A small positive number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoiding within the cross-validation.
+#' @param in.parallel a logical indicating whether to calculate the spatial cross validation on parallel cores (only relevant if po.fold.id or/and pa.fold.id are supplied)
 #'
 #' @return a data.frame with columns including- 'nodes.on.long.edge': number used in scampr::simple_basis to create basis configuration. 'bf': the number of basis functions. 'loglik': the fitting marginal log-likelihood. 'aic': the corresponding AIC. Optionally, 'predicted_cll_po': the conditional (on the latent field) Presence-only likelihood. 'predicted_cll_pa': the conditional (on the latent field) Presence/Absence likelihood. 'roc_auc': Area under the ROC curve on the Presence/Absence data. Optional columns are the results from a cross-validation described by 'po.fold.id' and/or 'pa.fold.id'. (_va or _lp subscript for approx. type if both are calculated).
 #' @export
@@ -28,11 +29,17 @@
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- simple_basis_search(m.ipp)
 #' }
-basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, trunc.pa.prob = 1e-7) {
+basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, trunc.pa.prob = 1e-7, in.parallel = FALSE) {
 
   # checks not covered by model fitting
   radius.type <- match.arg(radius.type)
   bf.matrix.type <- match.arg(bf.matrix.type)
+  # set switch for parallel computing
+  if (in.parallel) {
+    para.switch <- "yes"
+  } else {
+    para.switch <- "no"
+  }
 
   # Use provided model data as domain.data if missing and check coords are present
   if (missing(domain.data)) {
@@ -84,14 +91,16 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
   ##############################################################################
 
   # initialise the result objects
-  fitted.ll <- NULL
-  logloss <- NULL
-  auc <- NULL
-  predicted.ll <- NULL
-  ks <- 0
-  k_bias <- NULL
-  timing <- NULL
-  flag_fit <- NULL
+  fitted.ll <- c()
+  fitted.ll_po <- c()
+  fitted.ll_pa <- c()
+  logloss <- c()
+  auc <- c()
+  predicted.ll <- c()
+  ks <- c()
+  k_bias <- c()
+  timing <- c()
+  flag_fit <- c()
 
   ## FOR AN IDM
   if (object$model.type == "IDM") {
@@ -108,20 +117,26 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
 
       # if spatial folds are provided, perform cross validation
       if (!missing(po.fold.id) & !missing(pa.fold.id)) {
-        tmp.cv <- spatial.kfold.cv(base.model, po.fold.id, pa.fold.id)
-        logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-        predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-        auc <- c(auc, tmp.cv$auc)
+        tmp.cv <- switch(para.switch,
+                         no = spatial.kfold.cv(base.model, po.fold.id, pa.fold.id),
+                         yes = spatial.kfold.cv_parallel(base.model, po.fold.id, pa.fold.id)
+        )
+        logloss[1] <- tmp.cv$predicted.cll.pa
+        predicted.ll[1] <- tmp.cv$predicted.cll.po
+        auc[1] <- tmp.cv$auc
       }
-
-      # attach the bias field k
-      k_bias <- c(k_bias, 0)
-      # attach the fitted loglikelihood
-      fitted.ll <- c(fitted.ll, logLik(base.model))
-      # attach the timing
-      timing <- c(timing, sum(base.model$cpu))
-      # attach the convergence flag
-      flag_fit <- c(flag_fit, base.model$se.flag != 0 | base.model$convergence != 0)
+      # record the current k
+      ks[1] <- 0
+      # record the bias field k
+      k_bias[1] <- 0
+      # record the fitted loglikelihood
+      fitted.ll[1] <- logLik(base.model)
+      fitted.ll_po[1] <- base.model$ll.components$LL_PO_pres + base.model$ll.components$LL_PO_quad + base.model$ll.components$LL_random
+      fitted.ll_pa[1] <- base.model$ll.components$LL_PA + base.model$ll.components$LL_random
+      # record the timing
+      timing[1] <- sum(base.model$cpu)
+      # record the convergence flag
+      flag_fit[1] <- base.model$se.flag != 0 | base.model$convergence != 0
 
       # reset the 'include.sre' flag
       call.list$include.sre <- quote(TRUE)
@@ -129,27 +144,34 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
       # loop through the basis configurations to get the model fits
       for (config in 1:length(basis.functions.list)) {
         for (config2 in 1:length(basis.functions.list)) {
+          # set the storage index for the nested loop
+          lcv <- config2 + ((config - 1) * length(basis.functions.list))
           # adjust the basis functions
           call.list$basis.functions <- basis.functions.list[[config]]
           call.list$po.biasing.basis.functions <- basis.functions.list[[config2]]
           # fit the model
           tmp.mod <- do.call("scampr", call.list)
           # record the fitted loglikelihood
-          fitted.ll <- c(fitted.ll, logLik(tmp.mod))
-          # attach the timing
-          timing <- c(timing, sum(tmp.mod$cpu))
-          # attach the convergence flag
-          flag_fit <- c(flag_fit, tmp.mod$se.flag != 0 | tmp.mod$convergence != 0)
+          fitted.ll[lcv + 1] <- logLik(tmp.mod)
+          fitted.ll_po[lcv + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
+          fitted.ll_pa[lcv + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
+          # record the timing
+          timing[lcv + 1] <- sum(tmp.mod$cpu)
+          # record the convergence flag
+          flag_fit[lcv + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
           # record the number of basis functions
-          ks <- c(ks, nrow(basis.functions.list[[config]]))
-          # attach the bias field k
-          k_bias <- c(k_bias, nrow(basis.functions.list[[config2]]))
+          ks[lcv + 1] <- nrow(basis.functions.list[[config]])
+          # record the bias field k
+          k_bias[lcv + 1] <- nrow(basis.functions.list[[config2]])
           # if spatial folds are provided, perform cross validation
           if (!missing(po.fold.id) & !missing(pa.fold.id)) {
-            tmp.cv <- spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id)
-            logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-            predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-            auc <- c(auc, tmp.cv$auc)
+            tmp.cv <- switch(para.switch,
+                             no = spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id),
+                             yes = spatial.kfold.cv_parallel(tmp.mod, po.fold.id, pa.fold.id)
+            )
+            logloss[lcv + 1] <- tmp.cv$predicted.cll.pa
+            predicted.ll[lcv + 1] <- tmp.cv$predicted.cll.po
+            auc[lcv + 1] <- tmp.cv$auc
           }
         }
       }
@@ -164,18 +186,24 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
 
       # if spatial folds are provided, perform cross validation
       if (!missing(po.fold.id) & !missing(pa.fold.id)) {
-        tmp.cv <- spatial.kfold.cv(base.model, po.fold.id, pa.fold.id)
-        logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-        predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-        auc <- c(auc, tmp.cv$auc)
+        tmp.cv <- switch(para.switch,
+                         no = spatial.kfold.cv(base.model, po.fold.id, pa.fold.id),
+                         yes = spatial.kfold.cv_parallel(base.model, po.fold.id, pa.fold.id)
+        )
+        logloss[1] <- tmp.cv$predicted.cll.pa
+        predicted.ll[1] <- tmp.cv$predicted.cll.po
+        auc[1] <- tmp.cv$auc
       }
-
-      # attach the fitted loglikelihood
-      fitted.ll <- c(fitted.ll, logLik(base.model))
-      # attach the timing
-      timing <- c(timing, sum(base.model$cpu))
-      # attach the convergence flag
-      flag_fit <- c(flag_fit, base.model$se.flag != 0 | base.model$convergence != 0)
+      # record the current k
+      ks[1] <- 0
+      # record the fitted loglikelihood
+      fitted.ll[1] <- logLik(base.model)
+      fitted.ll_po[1] <- base.model$ll.components$LL_PO_pres + base.model$ll.components$LL_PO_quad + base.model$ll.components$LL_random
+      fitted.ll_pa[1] <- base.model$ll.components$LL_PA + base.model$ll.components$LL_random
+      # record the timing
+      timing[1] <- sum(base.model$cpu)
+      # record the convergence flag
+      flag_fit[1] <- base.model$se.flag != 0 | base.model$convergence != 0
 
       # reset the 'include.sre' flag
       call.list$include.sre <- quote(TRUE)
@@ -187,19 +215,24 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
         # fit the model
         tmp.mod <- do.call("scampr", call.list)
         # record the fitted loglikelihood
-        fitted.ll <- c(fitted.ll, logLik(tmp.mod))
-        # attach the timing
-        timing <- c(timing, sum(tmp.mod$cpu))
-        # attach the convergence flag
-        flag_fit <- c(flag_fit, tmp.mod$se.flag != 0 | tmp.mod$convergence != 0)
+        fitted.ll[config + 1] <- logLik(tmp.mod)
+        fitted.ll_po[config + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
+        fitted.ll_pa[config + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
+        # record the timing
+        timing[config + 1] <- sum(tmp.mod$cpu)
+        # record the convergence flag
+        flag_fit[config + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
         # record the number of basis functions
-        ks <- c(ks, nrow(basis.functions.list[[config]]))
+        ks[config + 1] <- nrow(basis.functions.list[[config]])
         # if spatial folds are provided, perform cross validation
         if (!missing(po.fold.id) & !missing(pa.fold.id)) {
-          tmp.cv <- spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id)
-          logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-          predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-          auc <- c(auc, tmp.cv$auc)
+          tmp.cv <- switch(para.switch,
+                           no = spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id),
+                           yes = spatial.kfold.cv_parallel(tmp.mod, po.fold.id, pa.fold.id)
+          )
+          logloss[config + 1] <- tmp.cv$predicted.cll.pa
+          predicted.ll[config + 1] <- tmp.cv$predicted.cll.po
+          auc[config + 1] <- tmp.cv$auc
         }
       }
     }
@@ -217,18 +250,22 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
 
     # if spatial fold is provided, perform cross validation
     if (!missing(po.fold.id)) {
-      tmp.cv <- spatial.kfold.cv(base.model, po.fold.id)
-      # logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-      predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-      # auc <- c(auc, tmp.cv$auc)
+      tmp.cv <- switch(para.switch,
+                       no = spatial.kfold.cv(base.model, po.fold.id),
+                       yes = spatial.kfold.cv_parallel(base.model, po.fold.id)
+      )
+      predicted.ll[1] <- tmp.cv$predicted.cll.po
     }
-
-    # attach the fitted loglikelihood
-    fitted.ll <- c(fitted.ll, logLik(base.model))
-    # attach the timing
-    timing <- c(timing, sum(base.model$cpu))
-    # attach the convergence flag
-    flag_fit <- c(flag_fit, base.model$se.flag != 0 | base.model$convergence != 0)
+    # record the current k
+    ks[1] <- 0
+    # record the fitted loglikelihood
+    fitted.ll[1] <- logLik(base.model)
+    fitted.ll_po[1] <- base.model$ll.components$LL_PO_pres + base.model$ll.components$LL_PO_quad + base.model$ll.components$LL_random
+    fitted.ll_pa[1] <- base.model$ll.components$LL_PA + base.model$ll.components$LL_random
+    # record the timing
+    timing[1] <- sum(base.model$cpu)
+    # record the convergence flag
+    flag_fit[1] <- base.model$se.flag != 0 | base.model$convergence != 0
 
     # reset the 'include.sre' flag
     call.list$include.sre <- quote(TRUE)
@@ -240,19 +277,22 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
       # fit the model
       tmp.mod <- do.call("scampr", call.list)
       # record the fitted loglikelihood
-      fitted.ll <- c(fitted.ll, logLik(tmp.mod))
-      # attach the timing
-      timing <- c(timing, sum(tmp.mod$cpu))
-      # attach the convergence flag
-      flag_fit <- c(flag_fit, tmp.mod$se.flag != 0 | tmp.mod$convergence != 0)
+      fitted.ll[config + 1] <- logLik(tmp.mod)
+      fitted.ll_po[config + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
+      fitted.ll_pa[config + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
+      # record the timing
+      timing[config + 1] <- sum(tmp.mod$cpu)
+      # record the convergence flag
+      flag_fit[config + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
       # record the number of basis functions
-      ks <- c(ks, nrow(basis.functions.list[[config]]))
+      ks[config + 1] <- nrow(basis.functions.list[[config]])
       # if spatial fold is provided, perform cross validation
       if (!missing(po.fold.id)) {
-        tmp.cv <- spatial.kfold.cv(tmp.mod, po.fold.id)
-        # logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-        predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-        # auc <- c(auc, tmp.cv$predicted.cll.po)
+        tmp.cv <- switch(para.switch,
+                         no = spatial.kfold.cv(tmp.mod, po.fold.id),
+                         yes = spatial.kfold.cv(tmp.mod, po.fold.id)
+        )
+        predicted.ll[config + 1] <- tmp.cv$predicted.cll.po
       }
     }
 
@@ -269,18 +309,24 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
 
     # if spatial folds are provided, perform cross validation
     if (!missing(pa.fold.id)) {
-      tmp.cv <- spatial.kfold.cv(base.model, pa.fold.id = pa.fold.id)
-      logloss <- c(logloss, tmp.cv$predicted.cll.pa)
+      tmp.cv <- switch(para.switch,
+                       no = spatial.kfold.cv(base.model, pa.fold.id = pa.fold.id),
+                       yes = spatial.kfold.cv_parallel(base.model, pa.fold.id = pa.fold.id)
+      )
+      logloss[1] <- tmp.cv$predicted.cll.pa
       # predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-      auc <- c(auc, tmp.cv$auc)
+      auc[1] <- tmp.cv$auc
     }
-
-    # attach the fitted loglikelihood
-    fitted.ll <- c(fitted.ll, logLik(base.model))
-    # attach the timing
-    timing <- c(timing, sum(base.model$cpu))
-    # attach the convergence flag
-    flag_fit <- c(flag_fit, base.model$se.flag != 0 | base.model$convergence != 0)
+    # record the current k
+    ks[1] <- 0
+    # record the fitted loglikelihood
+    fitted.ll[1] <- logLik(base.model)
+    fitted.ll_po[1] <- base.model$ll.components$LL_PO_pres + base.model$ll.components$LL_PO_quad + base.model$ll.components$LL_random
+    fitted.ll_pa[1] <- base.model$ll.components$LL_PA + base.model$ll.components$LL_random
+    # record the timing
+    timing[1] <- sum(base.model$cpu)
+    # record the convergence flag
+    flag_fit[1] <- base.model$se.flag != 0 | base.model$convergence != 0
 
     # reset the 'include.sre' flag
     call.list$include.sre <- quote(TRUE)
@@ -292,19 +338,23 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
       # fit the model
       tmp.mod <- do.call("scampr", call.list)
       # record the fitted loglikelihood
-      fitted.ll <- c(fitted.ll, logLik(tmp.mod))
-      # attach the timing
-      timing <- c(timing, sum(tmp.mod$cpu))
-      # attach the convergence flag
-      flag_fit <- c(flag_fit, tmp.mod$se.flag != 0 | tmp.mod$convergence != 0)
+      fitted.ll[config + 1] <- logLik(tmp.mod)
+      fitted.ll_po[config + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
+      fitted.ll_pa[config + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
+      # record the timing
+      timing[config + 1] <- sum(tmp.mod$cpu)
+      # record the convergence flag
+      flag_fit[config + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
       # record the number of basis functions
-      ks <- c(ks, nrow(basis.functions.list[[config]]))
+      ks[config + 1] <- nrow(basis.functions.list[[config]])
       # if spatial folds are provided, perform cross validation
       if (!missing(pa.fold.id)) {
-        tmp.cv <- spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id)
-        logloss <- c(logloss, tmp.cv$predicted.cll.pa)
-        # predicted.ll <- c(predicted.ll, tmp.cv$predicted.cll.po)
-        auc <- c(auc, tmp.cv$predicted.cll.po)
+        tmp.cv <- switch(para.switch,
+                         no = spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id),
+                         yes=  spatial.kfold.cv_parallel(tmp.mod, po.fold.id, pa.fold.id)
+        )
+        logloss[config + 1] <- tmp.cv$predicted.cll.pa
+        auc[config + 1] <- tmp.cv$auc
       }
     }
   } else {
@@ -316,11 +366,11 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
   ##############################################################################
 
   if (object$model.type == "IDM" & object$random.bias.type == "field2") {
-    res <- data.frame(cbind(k = ks[-1], k_bias = k_bias[-1], fitted.ll = fitted.ll[-1], predicted.ll_po = predicted.ll[-1], predicted.ll_pa = logloss[-1], AUC = auc[-1], cpu = timing[-1], convergence = flag_fit[-1]))
+    res <- data.frame(cbind(k = ks[-1], k_bias = k_bias[-1], fitted.ll = fitted.ll[-1], fitted.ll_pa = fitted.ll_pa[-1], fitted.ll_po = fitted.ll_po[-1], predicted.ll_po = predicted.ll[-1], predicted.ll_pa = logloss[-1], AUC = auc[-1], cpu = timing[-1], convergence = flag_fit[-1]))
     attr(res, "basis.functions.list") <- basis.functions.list
-    attr(res, "baseline") <- data.frame(cbind(k = ks[1], k_bias = k_bias[1], fitted.ll = fitted.ll[1], predicted.ll_po = predicted.ll[1], predicted.ll_pa = logloss[1], AUC = auc[1], cpu = timing[-1], convergence = flag_fit[-1]))
+    attr(res, "baseline") <- data.frame(cbind(k = ks[1], k_bias = k_bias[1], fitted.ll = fitted.ll[1], fitted.ll_pa = fitted.ll_pa[1], fitted.ll_po = fitted.ll_po[1], predicted.ll_po = predicted.ll[1], predicted.ll_pa = logloss[1], AUC = auc[1], cpu = timing[1], convergence = flag_fit[1]))
   } else {
-    res <- data.frame(cbind(k = ks, k_bias = k_bias, fitted.ll = fitted.ll, predicted.ll_po = predicted.ll, predicted.ll_pa = logloss, AUC = auc, cpu = timing, convergence = flag_fit))
+    res <- data.frame(cbind(k = ks, k_bias = k_bias, fitted.ll = fitted.ll, fitted.ll_pa = fitted.ll_pa, fitted.ll_po = fitted.ll_po, predicted.ll_po = predicted.ll, predicted.ll_pa = logloss, AUC = auc, cpu = timing, convergence = flag_fit))
     attr(res, "basis.functions.list") <- basis.functions.list
   }
 

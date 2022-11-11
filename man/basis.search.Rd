@@ -13,7 +13,8 @@ basis.search(
   radius.type = c("diag", "limiting"),
   bf.matrix.type = c("sparse", "dense"),
   domain.data,
-  trunc.pa.prob = 1e-07
+  trunc.pa.prob = 1e-07,
+  in.parallel = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ basis.search(
 \item{domain.data}{Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.}
 
 \item{trunc.pa.prob}{Optional. A small positive number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoiding within the cross-validation.}
+
+\item{in.parallel}{a logical indicating whether to calculate the spatial cross validation on parallel cores (only relevant if po.fold.id or/and pa.fold.id are supplied)}
 }
 \value{
 a data.frame with columns including- 'nodes.on.long.edge': number used in scampr::simple_basis to create basis configuration. 'bf': the number of basis functions. 'loglik': the fitting marginal log-likelihood. 'aic': the corresponding AIC. Optionally, 'predicted_cll_po': the conditional (on the latent field) Presence-only likelihood. 'predicted_cll_pa': the conditional (on the latent field) Presence/Absence likelihood. 'roc_auc': Area under the ROC curve on the Presence/Absence data. Optional columns are the results from a cross-validation described by 'po.fold.id' and/or 'pa.fold.id'. (_va or _lp subscript for approx. type if both are calculated).

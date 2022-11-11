@@ -82,10 +82,10 @@ Type objective_function<Type>::operator() ()
 
     // Combine for the loglikelihood
     nll = -(LL_PO_pres + LL_PO_quad + LL_PA + LL_random);
-    //REPORT(LL_PO_pres);
-    //REPORT(LL_PO_quad);
-    //REPORT(LL_PA);
-    //REPORT(LL_random);
+    REPORT(LL_PO_pres);
+    REPORT(LL_PO_quad);
+    REPORT(LL_PA);
+    REPORT(LL_random);
 
     break;
   }

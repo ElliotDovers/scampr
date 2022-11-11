@@ -4,12 +4,14 @@
 \alias{plot_search}
 \title{Plot basis function search results - for objects of class 'basis.search' ### WIP ###}
 \usage{
-plot_search(x, ...)
+plot_search(x, ..., plot.metric = 1:6)
 }
 \arguments{
 \item{x}{an object of class 'basis.search'}
 
 \item{...}{additional plotting arguments}
+
+\item{plot.metric}{one or more numbers from 1 to 6 indicating the metric(s) to be plotted. 1: Fitted approximate log-likelihood. 2: Fitted approx. log-Likelihood (Presence-only component). 3: Fitted approx. log-Likelihood (Presence/absence component). 4: Predicted Conditional log-Likelihood (Presence-only Data). 5: Predicted Conditional log-Likelihood (Presence/absence Data). 6: Area Under the Operator/Receiver Characteristic Curve (AUC) on the Presence/absence data.}
 }
 \description{
 Plots the results of a simple basis function search created by \code{scampr::basis.search()}.
