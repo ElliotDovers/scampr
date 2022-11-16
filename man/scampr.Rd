@@ -59,6 +59,8 @@ scampr(
 \item{subset}{an optional vector describing a subset of the data to be used. Not applicable to integrated data models.}
 
 \item{maxit}{a numeric indicating the maximum number of iterations for the optimizer. Default is 100 as the optimizer uses a gradient based approach.}
+
+\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
 }
 \value{
 a scampr model object

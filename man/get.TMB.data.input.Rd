@@ -17,7 +17,8 @@ get.TMB.data.input(
   bf.matrix.type = c("sparse", "dense"),
   starting.pars,
   latent.po.biasing = FALSE,
-  po.biasing.basis.functions
+  po.biasing.basis.functions,
+  prune.bfs = TRUE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ get.TMB.data.input(
 \item{latent.po.biasing}{a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.}
 
 \item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
+
+\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
 }
 \value{
 list of elements required for TMB::MakeADFun
@@ -63,5 +66,5 @@ dat_po <- rbind.data.frame(dat_po, flora$quad)
 
 # Get the TMB data lists for a combined data model without latent field
 tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
-str(tmp.input)
+str(tmb.input)
 }

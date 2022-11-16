@@ -22,6 +22,7 @@
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #' @param latent.po.biasing a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.
 #' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.
+#' @param prune.bfs a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional vector describing a subset of the data to be used. Not applicable to integrated data models.

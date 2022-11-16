@@ -13,6 +13,7 @@
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #' @param latent.po.biasing a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.
 #' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.
+#' @param prune.bfs a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM
 #'
 #' @return list of elements required for TMB::MakeADFun
 #' @export
@@ -28,8 +29,8 @@
 #'
 #' # Get the TMB data lists for a combined data model without latent field
 #' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
-#' str(tmp.input)
-get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions) {
+#' str(tmb.input)
+get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = TRUE) {
 
   # checks for parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -98,6 +99,27 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       po.bf.matrix_quad <- get.bf.matrix(basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
+
+      # prune the basis function if required
+      if (prune.bfs) {
+        # determine basis functions that do not intersect any presence points
+        prune.id <- colSums(as.matrix(po.bf.matrix_pres)) == 0
+        # prune from both basis function matrices
+        po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
+        po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+        # adjust the basis function information
+        tmp <- bf.info
+        bf.info <- tmp[!prune.id, ]
+        attr(bf.info, "pruned") <- tmp[prune.id, ]
+        # adjust the supplied basis functions depending on whether they are simple_basis or FRK package
+        if (is(basis.functions, "bf.df")) {
+          basis.functions <- basis.functions[!prune.id, ]
+        } else {
+          prune.idx <- (1:length(prune.id))[prune.id]
+          basis.functions <- FRK::remove_basis(basis.functions, prund.idx)
+        }
+      }
+
     } else {
       # set a trivial example for not_sre models
       po.bf.matrix_pres <- matrix(rep(0, nrow(des.mat_pres)), ncol = 1)
@@ -383,6 +405,27 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       pa.bf.matrix <- get.bf.matrix(basis.functions, point.locations = IDM.presence.absence.df[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
+
+      # prune the basis function if required
+      if (prune.bfs) {
+        # determine basis functions that do not intersect any presence points or presence/absence data
+        prune.id <- colSums(as.matrix(po.bf.matrix_pres)) == 0 & colSums(as.matrix(pa.bf.matrix)) == 0
+        # prune from both basis function matrices
+        po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
+        po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+        pa.bf.matrix <- pa.bf.matrix[ , !prune.id]
+        # adjust the basis function information
+        tmp <- bf.info
+        bf.info <- tmp[!prune.id, ]
+        attr(bf.info, "pruned") <- tmp[prune.id, ]
+        # adjust the supplied basis functions depending on whether they are simple_basis or FRK package
+        if (is(basis.functions, "bf.df")) {
+          basis.functions <- basis.functions[!prune.id, ]
+        } else {
+          prune.idx <- (1:length(prune.id))[prune.id]
+          basis.functions <- FRK::remove_basis(basis.functions, prund.idx)
+        }
+      }
     } else {
       # set a trivial example for not_sre models
       po.bf.matrix_pres <- matrix(rep(0, nrow(po.des.mat_pres)), ncol = 1)
@@ -399,6 +442,20 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       po.bias.bf.matrix_quad <- get.bf.matrix(po.biasing.basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
       bias.bf.info <- attr(po.bias.bf.matrix_pres, "bf.df")
+
+      # prune the basis functions if required
+      if (prune.bfs) {
+        # determine basis functions that do not intersect any presence points
+        bias.prune.id <- colSums(as.matrix(po.bias.bf.matrix_pres)) == 0
+        # prune from both basis function matrices
+        po.bias.bf.matrix_pres <- po.bias.bf.matrix_pres[ , !bias.prune.id]
+        po.bias.bf.matrix_quad <- po.bias.bf.matrix_quad[ , !bias.prune.id]
+        # adjust the basis function information
+        tmp <- bias.bf.info
+        bias.bf.info <- tmp[!bias.prune.id, ]
+        attr(bias.bf.info, "pruned") <- tmp[bias.prune.id, ]
+      }
+
     } else {
       bias.bf.info <- NULL
     }
