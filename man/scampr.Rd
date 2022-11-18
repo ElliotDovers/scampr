@@ -18,6 +18,7 @@ scampr(
   bf.matrix.type = c("sparse", "dense"),
   latent.po.biasing = FALSE,
   po.biasing.basis.functions,
+  prune.bfs = TRUE,
   se = TRUE,
   starting.pars,
   subset,
@@ -52,6 +53,8 @@ scampr(
 
 \item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 
+\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
+
 \item{se}{a logical indicating whether standard errors should be calculated.}
 
 \item{starting.pars}{an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.}
@@ -59,8 +62,6 @@ scampr(
 \item{subset}{an optional vector describing a subset of the data to be used. Not applicable to integrated data models.}
 
 \item{maxit}{a numeric indicating the maximum number of iterations for the optimizer. Default is 100 as the optimizer uses a gradient based approach.}
-
-\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
 }
 \value{
 a scampr model object

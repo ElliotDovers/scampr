@@ -74,7 +74,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, se = TRUE, starting.pars, subset, maxit = 100, ...) {
+scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = TRUE, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
   ## checks ####################################################################
 
