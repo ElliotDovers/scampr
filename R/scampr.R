@@ -206,12 +206,16 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   ## Create the TMB data and parameter inputs ##################################
 
-  mc <- match.call() # gets the arguments (after being altered above)
+  mc <- match.call() # gets the arguments (must be updated to the alterations above)
   call.list <- as.list(mc)
   # alter the call according to alterations made above
   call.list$bf.matrix.type <- bf.matrix.type
   call.list$model.type <- model.type
   call.list$sre.approx <- sre.approx
+  call.list$data <- data
+  if (!missing(IDM.presence.absence.df)) {
+    call.list$IDM.presence.absence.df <- IDM.presence.absence.df
+  }
   mod.call <- as.call(call.list)
   # remove unused terms from the call
   call.list <- call.list[!names(call.list) %in% c("subset", "se", "include.sre", "sre.approx", "maxit")]
