@@ -144,34 +144,65 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
       # loop through the basis configurations to get the model fits
       for (config in 1:length(basis.functions.list)) {
         for (config2 in 1:length(basis.functions.list)) {
+
           # set the storage index for the nested loop
           lcv <- config2 + ((config - 1) * length(basis.functions.list))
-          # adjust the basis functions
-          call.list$basis.functions <- basis.functions.list[[config]]
-          call.list$po.biasing.basis.functions <- basis.functions.list[[config2]]
-          # fit the model
-          tmp.mod <- do.call("scampr", call.list)
-          # record the fitted loglikelihood
-          fitted.ll[lcv + 1] <- logLik(tmp.mod)
-          fitted.ll_po[lcv + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
-          fitted.ll_pa[lcv + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
-          # record the timing
-          timing[lcv + 1] <- sum(tmp.mod$cpu)
-          # record the convergence flag
-          flag_fit[lcv + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
-          # record the number of basis functions
-          ks[lcv + 1] <- nrow(basis.functions.list[[config]])
-          # record the bias field k
-          k_bias[lcv + 1] <- nrow(basis.functions.list[[config2]])
-          # if spatial folds are provided, perform cross validation
-          if (!missing(po.fold.id) & !missing(pa.fold.id)) {
-            tmp.cv <- switch(para.switch,
-                             no = spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id),
-                             yes = spatial.kfold.cv_parallel(tmp.mod, po.fold.id, pa.fold.id)
-            )
-            logloss[lcv + 1] <- tmp.cv$predicted.cll.pa
-            predicted.ll[lcv + 1] <- tmp.cv$predicted.cll.po
-            auc[lcv + 1] <- tmp.cv$auc
+
+          # skip the model fit if the configurations are the same
+          if (config == config2) {
+
+            # adjust the basis functions
+            call.list$basis.functions <- basis.functions.list[[config]]
+            call.list$po.biasing.basis.functions <- basis.functions.list[[config2]]
+            # fit the model
+            tmp.mod <- do.call("scampr", call.list)
+            # record the fitted loglikelihood
+            fitted.ll[lcv + 1] <- NA
+            fitted.ll_po[lcv + 1] <- NA
+            fitted.ll_pa[lcv + 1] <- NA
+            # record the timing
+            timing[lcv + 1] <- 0
+            # record the convergence flag
+            flag_fit[lcv + 1] <- 0
+            # record the number of basis functions
+            ks[lcv + 1] <- nrow(basis.functions.list[[config]])
+            # record the bias field k
+            k_bias[lcv + 1] <- nrow(basis.functions.list[[config2]])
+            # if spatial folds are provided, perform cross validation
+            if (!missing(po.fold.id) & !missing(pa.fold.id)) {
+              logloss[lcv + 1] <- NA
+              predicted.ll[lcv + 1] <- NA
+              auc[lcv + 1] <- NA
+            }
+          } else {
+
+            # adjust the basis functions
+            call.list$basis.functions <- basis.functions.list[[config]]
+            call.list$po.biasing.basis.functions <- basis.functions.list[[config2]]
+            # fit the model
+            tmp.mod <- do.call("scampr", call.list)
+            # record the fitted loglikelihood
+            fitted.ll[lcv + 1] <- logLik(tmp.mod)
+            fitted.ll_po[lcv + 1] <- tmp.mod$ll.components$LL_PO_pres + tmp.mod$ll.components$LL_PO_quad + tmp.mod$ll.components$LL_random
+            fitted.ll_pa[lcv + 1] <- tmp.mod$ll.components$LL_PA + tmp.mod$ll.components$LL_random
+            # record the timing
+            timing[lcv + 1] <- sum(tmp.mod$cpu)
+            # record the convergence flag
+            flag_fit[lcv + 1] <- tmp.mod$se.flag != 0 | tmp.mod$convergence != 0
+            # record the number of basis functions
+            ks[lcv + 1] <- nrow(basis.functions.list[[config]])
+            # record the bias field k
+            k_bias[lcv + 1] <- nrow(basis.functions.list[[config2]])
+            # if spatial folds are provided, perform cross validation
+            if (!missing(po.fold.id) & !missing(pa.fold.id)) {
+              tmp.cv <- switch(para.switch,
+                               no = spatial.kfold.cv(tmp.mod, po.fold.id, pa.fold.id),
+                               yes = spatial.kfold.cv_parallel(tmp.mod, po.fold.id, pa.fold.id)
+              )
+              logloss[lcv + 1] <- tmp.cv$predicted.cll.pa
+              predicted.ll[lcv + 1] <- tmp.cv$predicted.cll.po
+              auc[lcv + 1] <- tmp.cv$auc
+            }
           }
         }
       }
@@ -367,10 +398,43 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
 
   if (object$model.type == "IDM" & object$random.bias.type == "field2") {
     res <- data.frame(cbind(k = ks[-1], k_bias = k_bias[-1], fitted.ll = fitted.ll[-1], fitted.ll_pa = fitted.ll_pa[-1], fitted.ll_po = fitted.ll_po[-1], predicted.ll_po = predicted.ll[-1], predicted.ll_pa = logloss[-1], AUC = auc[-1], cpu = timing[-1], convergence = flag_fit[-1]))
+    # determine the maximum fitted log-likelihood (excluding fits with poor convergence)
+
+    # with dense k and coarse k_bias (1)
+    tmp.res1 <- res[res$k_bias < res$k, ]
+    tmp.res1$fitted.ll[tmp.res1$convergence == 1] <- NA
+    k1 <- tmp.res1$k[which.max(tmp.res1$fitted.ll)]
+    k1_bias <- tmp.res1$k_bias[which.max(tmp.res1$fitted.ll)]
+    best.bfs1 <- list(k = basis.functions.list[[match(k1, lapply(basis.functions.list, nrow))]],
+                      k_bias = basis.functions.list[[match(k1_bias, lapply(basis.functions.list, nrow))]]
+    )
+    attr(best.bfs1, "fitted logLik") <- tmp.res1$fitted.ll[which.max(tmp.res1$fitted.ll)]
+    attr(res, "basis.config: k dense k_bias coarse") <- best.bfs1
+
+    # with coarse k and dense k_bias (2)
+    tmp.res2 <- res[res$k_bias > res$k, ]
+    tmp.res2$fitted.ll[tmp.res2$convergence == 1] <- NA
+    k2 <- tmp.res2$k[which.max(tmp.res2$fitted.ll)]
+    k2_bias <- tmp.res2$k_bias[which.max(tmp.res2$fitted.ll)]
+    best.bfs2 <- list(k = basis.functions.list[[match(k2, lapply(basis.functions.list, nrow))]],
+                      k_bias = basis.functions.list[[match(k2_bias, lapply(basis.functions.list, nrow))]]
+    )
+    attr(best.bfs2, "fitted logLik") <- tmp.res2$fitted.ll[which.max(tmp.res2$fitted.ll)]
+    attr(res, "basis.config: k coarse k_bias dense") <- best.bfs2
+
+    # add on the basis function list searched
     attr(res, "basis.functions.list") <- basis.functions.list
+    # add in the baseline (no SRE) scenario
     attr(res, "baseline") <- data.frame(cbind(k = ks[1], k_bias = k_bias[1], fitted.ll = fitted.ll[1], fitted.ll_pa = fitted.ll_pa[1], fitted.ll_po = fitted.ll_po[1], predicted.ll_po = predicted.ll[1], predicted.ll_pa = logloss[1], AUC = auc[1], cpu = timing[1], convergence = flag_fit[1]))
   } else {
     res <- data.frame(cbind(k = ks, k_bias = k_bias, fitted.ll = fitted.ll, fitted.ll_pa = fitted.ll_pa, fitted.ll_po = fitted.ll_po, predicted.ll_po = predicted.ll, predicted.ll_pa = logloss, AUC = auc, cpu = timing, convergence = flag_fit))
+    # determine the maximum fitted log-likelihood (excluding fits with poor convergence)
+    tmp.res <- res
+    tmp.res$fitted.ll[tmp.res$convergence == 1] <- NA
+    best.bfs <- basis.functions.list[[which.max(tmp.res$fitted.ll) - 1]] # minus one since the search results include the NULL model in this case
+    attr(best.bfs, "fitted logLik") <- tmp.res$fitted.ll[which.max(tmp.res$fitted.ll)]
+    attr(res, "basis.config") <- best.bfs
+    # add on the basis function list searched
     attr(res, "basis.functions.list") <- basis.functions.list
   }
 
