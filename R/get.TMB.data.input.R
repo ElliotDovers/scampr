@@ -454,10 +454,18 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         tmp <- bias.bf.info
         bias.bf.info <- tmp[!bias.prune.id, ]
         attr(bias.bf.info, "pruned") <- tmp[bias.prune.id, ]
+        # adjust the supplied basis functions depending on whether they are simple_basis or FRK package
+        if (is(po.biasing.basis.functions, "bf.df")) {
+          po.biasing.basis.functions <- po.biasing.basis.functions[!bias.prune.id, ]
+        } else {
+          bias.prune.idx <- (1:length(bias.prune.id))[bias.prune.id]
+          po.biasing.basis.functions <- FRK::remove_basis(po.biasing.basis.functions, bias.prund.idx)
+        }
       }
 
     } else {
       bias.bf.info <- NULL
+      po.biasing.basis.functions <- NULL
     }
     ############################################################################
 
@@ -680,7 +688,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     arg.info$random.bias.type <- random.bias.type
 
     # collate info to be returned
-    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, args = arg.info)
+    return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, po.biasing.basis.functions = po.biasing.basis.functions, args = arg.info)
 
   }
 }

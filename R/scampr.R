@@ -504,7 +504,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   res$basis.per.res <- inputs$tmb.data$bf_per_res
   res$basis.functions <- inputs$basis.functions
   if (!missing(po.biasing.basis.functions)) {
-    res$po.biasing.basis.functions <- po.biasing.basis.functions
+    res$po.biasing.basis.functions <- inputs$po.biasing.basis.functions
   } else {
     res$po.biasing.basis.functions <- NULL
   }
