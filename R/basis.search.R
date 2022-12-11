@@ -431,12 +431,13 @@ basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, m
     # determine the maximum fitted log-likelihood (excluding fits with poor convergence)
     tmp.res <- res
     tmp.res$fitted.ll[tmp.res$convergence == 1] <- NA
-    # check whether the highest fitted log-likelihood is for a model without SRE, else set the basis functions that acheive the best:
-    if (which.max(tmp.res$fitted.ll) == 1) {
-      best.bfs <- "no spatial random effects"
-    } else {
-      best.bfs <- basis.functions.list[[which.max(tmp.res$fitted.ll) - 1]] # minus 1 since the tmp.res list includes the model without SRE
-    }
+    # check whether the highest fitted log-likelihood is for a model without SRE, else set the basis functions that achieve the best:
+    # if (which.max(tmp.res$fitted.ll) == 1) { # THIS IS BUGGING: INCORRECT DIM ON basis.functions.list[[which.max(tmp.res$fitted.ll) - 1]]
+    #   best.bfs <- "no spatial random effects"
+    # } else {
+    #   best.bfs <- basis.functions.list[[which.max(tmp.res$fitted.ll) - 1]] # minus 1 since the tmp.res list includes the model without SRE
+    # }
+    best.bfs <- NA
     attr(best.bfs, "fitted logLik") <- tmp.res$fitted.ll[which.max(tmp.res$fitted.ll)]
     attr(res, "basis.config") <- best.bfs
     # add on the basis function list searched
