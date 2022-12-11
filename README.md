@@ -25,6 +25,9 @@ The package name stands for Spatially Correlated, Approximate Modelling of Point
 captures the motivation of this package: to give researchers access to complex spatial models that fit quickly and require only a light touch.
 
 ## Installing scampr
-As scampr is not on CRAN please install via:
 
-`devtools::install_github("ElliotDovers/scampr", dependencies = "Imports", upgrade = "never")`
+As scampr is not on CRAN please install via `devtools::install_github()`.
+
+I recommend using the working branch as this contains the latest functionality, as well as the most efficient code. This will be merged to the main branch once a code review for a previously submitted work has been completed:
+
+`devtools::install_github("ElliotDovers/scampr@working", dependencies = "Imports", upgrade = "never")`
