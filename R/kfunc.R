@@ -11,7 +11,7 @@
 #' @return a data.frame of two columns - distance (dist) and corresponding K function values (Kfn).
 #' @export
 #'
-#' @importFrom spatstat.core Kinhom
+#' @importFrom spatstat.explore Kinhom
 #' @importFrom spatstat.geom ppp owin interp.im
 #'
 #' @examples
