@@ -17,7 +17,7 @@ kfunc(
 \arguments{
 \item{model}{a scampr model object}
 
-\item{correction}{a character string describing the correction type to be used. See \code{spatstat.core::Kinhom()} for details.}
+\item{correction}{a character string describing the correction type to be used. See \code{spatstat.explore::Kinhom()} for details.}
 
 \item{point.pattern}{Optionally, a data frame, the first two columns of which describe the horizontal and vertical coordinates of point locations respectively.}
 
@@ -25,7 +25,7 @@ kfunc(
 
 \item{spatstat.win}{Optionally, a spatstat window object.}
 
-\item{intensity.at}{Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat.core::Kinhom()} is an image object or just provided at the presence points.}
+\item{intensity.at}{Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat.explore::Kinhom()} is an image object or just provided at the presence points.}
 
 \item{dists}{a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.}
 }

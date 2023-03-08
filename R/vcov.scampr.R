@@ -21,6 +21,31 @@
 #' vcov(m)
 vcov.scampr <- function(object, ...) {
 
+  # get the TMB data inputs so we can recalculate the Hessian
+  inputs <- do.call("get.TMB.data.input", m$tmb.call.list)
+
+  # adjust the start pars to be the fitted par values
+  inputs$tmb.pars <- update.starting.parameters(object)
+
+  obj <- make.objective.function(inputs)
+
+  # get the sdreport that produces the full precision matrix
+  tmp <- TMB::sdreport(obj, getJointPrecision = T) # This will change pre to post optim but ok with ML starting pars
+  if (is.null(tmp$jointPrecision)) {
+    vcov_mat <- tmp$cov.fixed
+  } else {
+    Hess <- as.matrix(tmp$jointPrecision)
+    vcov_mat <- solve(Hess)
+  }
+  # re-name the rows and columns
+  if (mod.id == "laplace") {
+    rownames(vcov_mat)[rownames(vcov_mat) != "random"] <- names(object$coefficients)
+    colnames(vcov_mat)[colnames(vcov_mat) != "random"] <- names(object$coefficients)
+  } else {
+    rownames(vcov_mat) <- names(object$coefficients)
+    colnames(vcov_mat) <- names(object$coefficients)
+  }
+
   # get an identifier for the model type
   mod.id <- NULL
   if (is.na(object$approx.type)) {
@@ -36,7 +61,7 @@ vcov.scampr <- function(object, ...) {
     # Check the type of basis functions used. Currently supports simple or FRK basis
     if (is.null(object$FRK.basis.functions)) {
       if (is.null(object$basis.fn.info)) {
-        if (!is.na(object$approx.type)) {
+        if (object$approx.type != "not_sre") {
           stop("The model's basis functions are incompatible with obtaining a Hessian matrix")
         } else {
           inputs <- get.TMB.data.input(formula = object$formula, data = object$data,

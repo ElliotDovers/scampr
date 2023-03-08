@@ -106,7 +106,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
         stop("'data' does not contain the formula terms")
       }
     } else {
-
+      stop("'bias.formula' must be of class formula")
     }
   }
   if (!is.logical(se)) {
@@ -528,6 +528,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   res$random.bias.type <- inputs$args$random.bias.type
   res$ll.components <- obj$report()
   res$call <- mod.call
+  res$tmb.call.list <- call.list
   class(res) <- "scampr"
 
   return(res)

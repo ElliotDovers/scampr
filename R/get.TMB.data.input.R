@@ -61,8 +61,11 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix
-    des.mat_pres <- get.design.matrix(formula, data_pres)
-    des.mat_quad <- get.design.matrix(formula, data_quad)
+    # des.mat_pres <- get.design.matrix(formula, data_pres) # splitting here can result in different factor levels being present!
+    # des.mat_quad <- get.design.matrix(formula, data_quad)
+    des.mat <- get.design.matrix(formula, data)
+    des.mat_pres <- des.mat[pt.quad.id == 1, ]
+    des.mat_quad <- des.mat[pt.quad.id == 0, ]
 
     # get the bias predictor design matrix
     if (missing(bias.formula)) {
@@ -346,8 +349,11 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix on the presence-only data
-    po.des.mat_pres <- get.design.matrix(formula, data_pres)
-    po.des.mat_quad <- get.design.matrix(formula, data_quad)
+    # po.des.mat_pres <- get.design.matrix(formula, data_pres) # splitting here can result in different factor levels being present!
+    # po.des.mat_quad <- get.design.matrix(formula, data_quad)
+    des.mat <- get.design.matrix(formula, data)
+    po.des.mat_pres <- des.mat[pt.quad.id == 1, ]
+    po.des.mat_quad <- des.mat[pt.quad.id == 0, ]
     pa.des.mat <- get.design.matrix(formula, IDM.presence.absence.df)
 
     # get the bias predictor design matrix

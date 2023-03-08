@@ -36,8 +36,8 @@ image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
   xtrargs <- list(...)
   # set a residual plot identifier
   is.resid <- F
-  # check if model is from pa data - no image available so just plot the data
-  if (x$data.model.type == "pa") {
+  # check if model is from PA data - no image available so just plot the data
+  if (x$model.type == "PA") {
     quad <- x$data
     resp <- quad[ , all.vars(x$formula[[2L]])] > 0
     pa.col <- resp
