@@ -34,6 +34,11 @@
 #' }
 image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
   xtrargs <- list(...)
+
+  if (!is(x, "scampr")) {
+    stop("x must be a fitted scampr model")
+  }
+
   # set a residual plot identifier
   is.resid <- F
   # check if model is from PA data - no image available so just plot the data

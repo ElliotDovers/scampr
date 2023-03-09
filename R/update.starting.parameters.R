@@ -18,17 +18,17 @@ update.starting.parameters <- function(new.start.pars, old.start.pars, target.ap
     tmp.m <- new.start.pars
     new.start.pars <- lapply(split(tmp.m$par, names(tmp.m$par)), unname)
     # check the model isn't an IPP
-    if (!is.na(tmp.m$approx.type)) {
+    if (tmp.m$approx.type != "not_sre") {
       if (target.approx.type == "laplace" & tmp.m$approx.type == "variational") {
         # make appropriate change to the variance parameter if going from VA to Laplace
-        new.start.pars$log_variance_component <- unname(log(sqrt(tmp.m$random.effects[grepl("Prior Var ", rownames(tmp.m$random.effects), fixed = T), 1L])))
+        new.start.pars$log_variance_component <- unname(log(sqrt(tmp.m$prior.variances)))
       } else if (target.approx.type == "variational" & tmp.m$approx.type == "laplace") {
         # make appropriate change to the variance parameter going from Laplace to VA
         new.start.pars$log_variance_component <- NULL
       }
       # need to add the random parameters if the existing model is laplace
       if (tmp.m$approx.type == "laplace") {
-        new.start.pars$random <- unname(tmp.m$random.effects[grepl("LP Posterior Mean", rownames(tmp.m$random.effects), fixed = T), 1L])
+        new.start.pars$random <- unname(tmp.m$random.effects[, 1L])
       }
     }
     rm(tmp.m)
