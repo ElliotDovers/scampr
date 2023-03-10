@@ -4,12 +4,14 @@
 \alias{image.scampr}
 \title{Plot the image of a field over a model quadrature ### WIP ###}
 \usage{
-\method{image}{scampr}(x, z, residual.type, residual.smoothing = 0.5, ...)
+\method{image}{scampr}(x, z, domain.data, residual.type, residual.smoothing = 0.5, ...)
 }
 \arguments{
-\item{x}{A scampr model object}
+\item{x}{a scampr model object}
 
 \item{z}{Either a single characater string of the variable name (in the model data) or one of 'fitted', 'residuals'. Alternatively, a vector of numeric values to be plotted}
+
+\item{domain.data}{a data frame containing (at least) the horizontal and vertical coordinates as used in the model 'x' as well as the variable name of 'z' if specified. If missing, the quadrature points of the model will be used.}
 
 \item{residual.type}{an optional character string for residual type if z == 'residual'}
 

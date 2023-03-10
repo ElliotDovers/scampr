@@ -2,8 +2,9 @@
 #'
 #' @description An image plotting function that uses fields::image.plot() to display the specified variable as a field over the quadrature.
 #'
-#' @param x A scampr model object
+#' @param x a scampr model object
 #' @param z Either a single characater string of the variable name (in the model data) or one of 'fitted', 'residuals'. Alternatively, a vector of numeric values to be plotted
+#' @param domain.data a data frame containing (at least) the horizontal and vertical coordinates as used in the model 'x' as well as the variable name of 'z' if specified. If missing, the quadrature points of the model will be used.
 #' @param residual.type an optional character string for residual type if z == 'residual'
 #' @param residual.smoothing an optional numeric for the scale of residual smoothing (theta in fields::image.smooth())
 #' @param ... additional plotting arguments
@@ -32,19 +33,31 @@
 #' image(m.comb, "MNT")
 #' image(m.comb, "residuals")
 #' }
-image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
+image.scampr <- function(x, z, domain.data, residual.type, residual.smoothing = 0.5, ...) {
   xtrargs <- list(...)
 
   if (!is(x, "scampr")) {
     stop("x must be a fitted scampr model")
+  }
+  use.quad.flag <- FALSE # indicator that the quadrature is being used as domain data
+  if (missing(domain.data)) {
+    if (x$model.type == "PA") {
+      domain.data <- x$data
+    } else {
+      domain.data <- x$data[x$pt.quad.id == 0, ]
+      use.quad.flag <- TRUE # indicator that the quadrature is being used as domain data
+    }
+  }
+  if (!all(x$coord.names %in% colnames(domain.data))) {
+    stop("model coordinate names are not found in the domain data")
   }
 
   # set a residual plot identifier
   is.resid <- F
   # check if model is from PA data - no image available so just plot the data
   if (x$model.type == "PA") {
-    quad <- x$data
-    resp <- quad[ , all.vars(x$formula[[2L]])] > 0
+    # quad <- domain.data
+    resp <- domain.data[ , all.vars(x$formula[[2L]])] > 0
     pa.col <- resp
     pa.col[resp == 0] <- "lightblue"
     pa.col[resp == 1] <- "darkblue"
@@ -70,95 +83,99 @@ image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
     if (!"asp" %in% names(xtrargs)) {
       xtrargs$asp <- 1
     }
-    xtrargs$x <- quad[ , x$coord.names[1]]
-    xtrargs$y <- quad[ , x$coord.names[2]]
-    # graphics::plot.default(quad[ , x$coord.names[1]], quad[ , x$coord.names[2]],
-    #      col = pa.col, pch = pa.pch, asp = 1, xlab = x$coord.names[1],
-    #      ylab = x$coord.names[2], main = "Presence/Absence Sites"
-    # )
+    xtrargs$x <- domain.data[ , x$coord.names[1]]
+    xtrargs$y <- domain.data[ , x$coord.names[2]]
     do.call(graphics::plot.default, xtrargs)
-    # warning("Only presence/absence survey sites are shown for this model's image")
   } else {
     # checks
     if (length(z) == 1) {
       if (typeof(z) == "character") {
-        if (!(z %in% c(colnames(x$data), 'fitted', 'residuals'))) {
-          stop(paste0(z, " must be one of 'fitted', 'residuals' or one of the columns of the model data frame.\nAlternatively supply a vector of z values directly"))
+        if (!(z %in% c(colnames(domain.data), 'fitted', 'residuals'))) {
+          stop(paste0(z, " must be one of 'fitted', 'residuals' or one of the columns of the model data frame/domain data.\nAlternatively supply a vector of z values directly"))
         } else {
-          if (z %in% colnames(x$data)) {
+          if (z %in% colnames(domain.data)) {
             z.name <- z
-            z <- x$data[x$pt.quad.id == 0, z.name]
+            z <- domain.data[ , z.name]
           } else if (z == "fitted") {
             z.name <- "Fitted log-Intensity"
-            z <- x$fitted.values[x$pt.quad.id == 0]
-          } else {
-            if (missing(residual.type)) {
-              z.name <- "Residuals (raw)"
-              tmp.z <- residuals.scampr(x, type = "raw")
-              # z <- tmp.z[x$pt.quad.id ==0]
-              # need to count the presence points in each quadrat for plotting
-              pres <- x$data[x$pt.quad.id == 1, x$coord.names]
-              quad <- x$data[x$pt.quad.id == 0, x$coord.names]
-              dists <- fields::rdist(pres, quad)
-              is.min <- matrix(data = F, nrow = nrow(dists), ncol = ncol(dists))
-              for (i in 1:nrow(dists)) {
-                is.min[i, which.min(dists[i, ])] <- T
-              }
-              pp.resid.in.quad <- apply(is.min, 2, sum)
-              # add these into the residuals at the quadrature points
-              z <- tmp.z[x$pt.quad.id ==0] + pp.resid.in.quad
-              is.resid <- T
+            if (use.quad.flag) {
+              z <- x$fitted.values[x$pt.quad.id == 0]
             } else {
-              if (!residual.type %in% c("raw", "inverse", "pearson")) {
-                stop("residual.type must be one of 'raw', 'inverse' or 'pearson'")
-              } else {
-                res.name <- residual.type
-                substr(res.name, 1, 1) <- toupper(substr(res.name, 1, 1))
-                z.name <- paste0("Residuals (", res.name, ")")
-                tmp.z <- residuals.scampr(x, residual.type)
-                # z <- tmp.z[x$pt.quad.id ==0]
-                # need to count the presence points in each quadrat for plotting
-                pres <- x$data[x$pt.quad.id == 1, x$coord.names]
-                quad <- x$data[x$pt.quad.id == 0, x$coord.names]
-                dists <- fields::rdist(pres, quad)
-                is.min <- matrix(data = F, nrow = nrow(dists), ncol = ncol(dists))
-                for (i in 1:nrow(dists)) {
-                  is.min[i, which.min(dists[i, ])] <- T
+              z <- predict.scampr(x, newdata = domain.data)
+            }
+          } else {
+            is.resid <- T # residual flag
+            if (missing(residual.type)) { # default to raw residuals if missing
+              residual.type <- "raw"
+            }
+            if (!residual.type %in% c("raw", "inverse", "pearson")) {
+              stop("residual.type must be one of 'raw', 'inverse' or 'pearson'")
+            } else {
+              # create a nice name for the residual image
+              res.name <- residual.type
+              substr(res.name, 1, 1) <- toupper(substr(res.name, 1, 1))
+              z.name <- paste0("Residuals (", res.name, ")")
+              tmp.z <- residuals.scampr(x, residual.type)
+
+              # adjust approach according to whether domain.data was supplied
+              if (!use.quad.flag) {
+                # set up spatstat ppp object for fast nearest neighbour alogrithm
+                domain.pp <- spatstat.geom::ppp(domain.data[, x$coord.names[1]], domain.data[, x$coord.names[2]],
+                                                window = spatstat.geom::owin(xrange = range(domain.data[, x$coord.names[1]]), yrange = range(domain.data[, x$coord.names[2]])))
+                # predict lambda across the new domain
+                lambda.domain <- exp(predict(x, newdata = domain.data))
+                # get the weights for the domain data
+                if (!x$quad.weights.name %in% colnames(domain.data)) {
+                  warning(paste0("Quadrature weight column used in model (", x$quad.weights.name, ") is not found in the domain data.\nAssuming domain data weights are all 1..."))
+                  w <- rep(1, nrow(domain.data))
+                } else {
+                  w <- domain.data[ , x$quad.weights.name]
                 }
-                # FOR NOW SEE IF THESE ARE NOT NEEDED #
-                # # adjust for non-raw residuals
-                # pp.resids <- matrix(0, nrow = nrow(dists), ncol = ncol(dists))
-                # pp.resids[is.min] <- switch(residual.type,
-                #        raw = 1,
-                #        inverse = 1 / exp(x$fitted.values[x$pt.quad.id == 1]),
-                #        pearson = 1 / sqrt(exp(x$fitted.values[x$pt.quad.id == 1]))
-                # )
-                # add.pp.resid.in.quad <- apply(pp.resids, 2, sum)
-                add.pp.resid.in.quad <- apply(is.min, 2, sum)
-                quad.resid.lambda <- switch(residual.type,
-                                             raw = rep(1, sum(x$pt.quad.id == 0)),
-                                             inverse = exp(x$fitted.values[x$pt.quad.id == 0]),
-                                             pearson = sqrt(exp(x$fitted.values[x$pt.quad.id == 0]))
-                                      )
-                # add these into the residuals at the quadrature points
-                z <- tmp.z[x$pt.quad.id ==0] + (add.pp.resid.in.quad / quad.resid.lambda)
-                is.resid <- T
+              } else {
+                # otherwise, just use the quadrature as the domain data
+                domain.pp <- spatstat.geom::ppp(x$data[x$pt.quad.id == 0, x$coord.names[1]], x$data[x$pt.quad.id == 0, x$coord.names[2]],
+                                                window = spatstat.geom::owin(xrange = range(x$data[x$pt.quad.id == 0, x$coord.names[1]], na.rm = T),
+                                                                             yrange = range(x$data[x$pt.quad.id == 0, x$coord.names[2]], na.rm = T)
+                                                )
+                )
+                # get lambda over the quadrature points
+                lambda.domain <- exp(x$fitted.values[x$pt.quad.id == 0])
+                # get the weights for the domain data
+                w <- x$data[x$pt.quad.id == 0, x$quad.weights.name]
               }
+              # calculate the residuals over the domain
+              z <- switch(residual.type,
+                          raw = - (w * lambda.domain),
+                          inverse = - w,
+                          pearson = - (w * sqrt(lambda.domain)),
+              )
+              # set presence points up as ppp object
+              pres.pp <- spatstat.geom::ppp(x$data[x$pt.quad.id == 1, x$coord.names[1]], x$data[x$pt.quad.id == 1, x$coord.names[2]], window = domain.pp$window)
+              # find the nearest neighbours of domain data to presence points
+              pres.to.quad <- spatstat.geom::nncross(pres.pp, domain.pp)
+              # get counts of presence points within each domain cell (that are > 0)
+              quad.counts <- table(pres.to.quad$which)
+              # get the index of domain points for added the presence point residuals (these are all 1)
+              quad.idx <- as.numeric(attr(quad.counts , "dimnames")[[1]])
+              # calculate the amounts to add to quad residuals in the denominator
+              quad.add.denominator <- switch(residual.type,
+                                             raw = rep(1, nrow(domain.data)),
+                                             inverse = lambda.domain,
+                                             pearson = sqrt(lambda.domain)
+              )
+              # add presence point residuals to the domain cells
+              z[quad.idx] <- z[quad.idx] + (as.vector(quad.counts) / quad.add.denominator[quad.idx])
             }
           }
         }
+      } else {
+        z.name <- quote(z) # can't seem to get this to quote the input argument
       }
-    } else {
-      z.name <- quote(z) # can't seem to get this to quote the input argument
-    }
-    if (length(z) != sum(x$pt.quad.id == 0)) {
-      stop("z vector of field values must match the number (and order) of quadrature points in the model provided")
     }
 
-    quad <- x$data[x$pt.quad.id == 0, ]
     # adjust for smoothing if plotting a residuals image
     if (is.resid) {
-      im_field <- fields::as.image(z, x = as.matrix(cbind(quad$x, quad$y)))
+      im_field <- fields::as.image(z, x = as.matrix(domain.data[ , x$coord.names]))
       smooth.z <- fields::image.smooth(im_field, theta = residual.smoothing)
       smooth.z$z[is.na(im_field$z)] <- NA
       xtrargs$x <- smooth.z$x
@@ -166,9 +183,9 @@ image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
       xtrargs$y <- smooth.z$y
       # xtrargs$residual.type <- NULL
     } else  {
-      xs <- sort(unique(quad[ , x$coord.names[1]]))
-      ys <- sort(unique(quad[ , x$coord.names[2]]))
-      zs <- vec2mat(z, quad[ , x$coord.names[1]], quad[ , x$coord.names[2]])
+      xs <- sort(unique(domain.data[ , x$coord.names[1]]))
+      ys <- sort(unique(domain.data[ , x$coord.names[2]]))
+      zs <- vec2mat(z, domain.data[ , x$coord.names[1]], domain.data[ , x$coord.names[2]])
       # Enforce certain plotting elements
       xtrargs$x <- xs
       xtrargs$y <- ys
@@ -192,7 +209,6 @@ image.scampr <- function(x, z, residual.type, residual.smoothing = 0.5, ...) {
       xtrargs$asp <- 1
     }
     xtrargs$bty <- 'n'
-    # fields::image.plot(x = xs, y = ys, z = zs, col = grDevices::topo.colors(100), asp = 1, xlab = x$coord.names[1], ylab = x$coord.names[2], main = z.name, bty = 'n')
     do.call(fields::image.plot, xtrargs)
   }
 }
