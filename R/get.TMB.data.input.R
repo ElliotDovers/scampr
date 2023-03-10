@@ -61,8 +61,6 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix
-    # des.mat_pres <- get.design.matrix(formula, data_pres) # splitting here can result in different factor levels being present!
-    # des.mat_quad <- get.design.matrix(formula, data_quad)
     des.mat <- get.design.matrix(formula, data)
     des.mat_pres <- des.mat[pt.quad.id == 1, ]
     des.mat_quad <- des.mat[pt.quad.id == 0, ]
@@ -71,8 +69,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     if (missing(bias.formula)) {
       fixed.bias.type <- "missing"
     } else if (is(bias.formula, "formula")) {
-      bias.des.mat_pres <- get.design.matrix(bias.formula, data_pres)
-      bias.des.mat_quad <- get.design.matrix(bias.formula, data_quad)
+      bias.des.mat <- get.design.matrix(bias.formula, data)
+      bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
+      bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
       # Adjust the Intercept names if required
       if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
         colnames(bias.des.mat_pres)[grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T)] <- "(Bias Intercept)"
@@ -349,8 +348,6 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     ## Fixed Effects ###########################################################
 
     # get the fixed effect design matrix on the presence-only data
-    # po.des.mat_pres <- get.design.matrix(formula, data_pres) # splitting here can result in different factor levels being present!
-    # po.des.mat_quad <- get.design.matrix(formula, data_quad)
     des.mat <- get.design.matrix(formula, data)
     po.des.mat_pres <- des.mat[pt.quad.id == 1, ]
     po.des.mat_quad <- des.mat[pt.quad.id == 0, ]
@@ -362,8 +359,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       fixed.bias.type <- "missing"
 
     } else if (is(bias.formula, "formula")) {
-      bias.des.mat_pres <- get.design.matrix(bias.formula, data_pres)
-      bias.des.mat_quad <- get.design.matrix(bias.formula, data_quad)
+      bias.des.mat <- get.design.matrix(bias.formula, data)
+      bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
+      bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
       # Adjust the Intercept names if required
       if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
         colnames(bias.des.mat_pres)[grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T)] <- "(Bias Intercept)"
