@@ -16,9 +16,9 @@ scampr(
   model.type = c("PO", "PA", "IDM"),
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
-  latent.po.biasing = FALSE,
+  latent.po.biasing = TRUE,
   po.biasing.basis.functions,
-  prune.bfs = TRUE,
+  prune.bfs = 4,
   se = TRUE,
   starting.pars,
   subset,
@@ -49,11 +49,11 @@ scampr(
 
 \item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 
-\item{latent.po.biasing}{a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.}
+\item{latent.po.biasing}{a logical, applying only to IDM, indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Default is true as this is the most flexible approach unless good measured PO biasing variables are available.}
 
 \item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 
-\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
+\item{prune.bfs}{an integer indicating the number of presence-only records required within a basis function's radius for it NOT to be pruned. Applies to the PO and IDM model (additionally, within the presence-only biasing basis functions in the IDM case) to assist with stability in model convergence. Default is zero, i.e. no pruning.}
 
 \item{se}{a logical indicating whether standard errors should be calculated.}
 

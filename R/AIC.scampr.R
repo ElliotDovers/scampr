@@ -1,4 +1,4 @@
-#'  Akaike's Information Criteria for objects of class 'scampr'
+#'  Akaike's Information Criteria for objects of class 'scampr'. Note that this currently calculates mAIC
 #'
 #' @param object a scampr model
 #' @param ... Optionally, additional scampr model objects

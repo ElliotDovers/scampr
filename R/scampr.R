@@ -20,9 +20,9 @@
 #' @param basis.functions an optional object of class 'Basis' created by \code{FRK::auto_basis()} or 'bf.df' created by \code{scampr::simple_basis()}. Either object describes a set of basis functions for approximating the latent Gaussian field. If NULL the model will use default \code{FRK::auto_basis()} with \code{max_basis = 0.25 * # of points}.
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
-#' @param latent.po.biasing a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.
+#' @param latent.po.biasing a logical, applying only to IDM, indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Default is true as this is the most flexible approach unless good measured PO biasing variables are available.
 #' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.
-#' @param prune.bfs a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM
+#' @param prune.bfs an integer indicating the number of presence-only records required within a basis function's radius for it NOT to be pruned. Applies to the PO and IDM model (additionally, within the presence-only biasing basis functions in the IDM case) to assist with stability in model convergence. Default is zero, i.e. no pruning.
 #' @param se a logical indicating whether standard errors should be calculated.
 #' @param starting.pars an optional named list or previously fit scampr model object that gives warm starting values for the parameters of the model.
 #' @param subset an optional vector describing a subset of the data to be used. Not applicable to integrated data models.
@@ -74,7 +74,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs)
 #' }
-scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = TRUE, se = TRUE, starting.pars, subset, maxit = 100, ...) {
+scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
   ## checks ####################################################################
 
@@ -124,13 +124,17 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     latent.po.biasing <- FALSE
   }
   if (model.type == "PO" & latent.po.biasing) {
-    if (include.sre) {
-      warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
-    } else {
-      stop(paste0("Please use 'include.sre' = TRUE instead of 'latent.po.biasing' for an Inhomogeneous Poisson Process model"))
-    }
+    warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
     latent.po.biasing <- FALSE
   }
+  # if (model.type == "PO" & latent.po.biasing) {
+  #   if (include.sre) {
+  #     warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
+  #   } else {
+  #     stop(paste0("Please use 'include.sre' = TRUE instead of 'latent.po.biasing' for an Inhomogeneous Poisson Process model"))
+  #   }
+  #   latent.po.biasing <- FALSE
+  # }
   if (model.type == "IDM") {
     if (missing(IDM.presence.absence.df)) {
       stop("Please provide presence/absence data as 'IDM.presence.absence.df' for the Integrated Data Model")

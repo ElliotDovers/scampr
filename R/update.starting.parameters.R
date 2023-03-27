@@ -40,9 +40,10 @@ update.starting.parameters <- function(new.start.pars, old.start.pars, target.ap
     if (n %in% names(old.start.pars)) {
       # check that the lengths are correct
       if (length(new.start.pars[[n]]) != length(old.start.pars[[n]])) {
-        stop(paste0("The number of '", n, "' starting parameters provided does not match the proposed model"))
+        warning(paste0("'", n, "' starting parameters not used - the number provided does not match the proposed model."))
+      } else {
+        old.start.pars[[n]] <- new.start.pars[[n]]
       }
-      old.start.pars[[n]] <- new.start.pars[[n]]
     }
   }
 

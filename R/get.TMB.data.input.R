@@ -13,7 +13,7 @@
 #' @param starting.pars an optional named list or scampr model object that gives warm starting values for the parameters of the model.
 #' @param latent.po.biasing a logical indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Applies to IDM only.
 #' @param po.biasing.basis.functions an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.
-#' @param prune.bfs a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM
+#' @param prune.bfs an integer indicating the number of presence-only records required within a basis function's radius for it NOT to be pruned. Applies to the PO and IDM model (additionally, within the presence-only biasing basis functions in the IDM case) to assist with stability in model convergence. Default is zero, i.e. no pruning.
 #'
 #' @return list of elements required for TMB::MakeADFun
 #' @export
@@ -30,7 +30,7 @@
 #' # Get the TMB data lists for a combined data model without latent field
 #' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
 #' str(tmb.input)
-get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = TRUE) {
+get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = 4) {
 
   # checks for parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -118,10 +118,10 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       # store the basis function information
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
 
-      # prune the basis function if required
-      if (prune.bfs) {
+      # prune the basis functions if required
+      if (prune.bfs != 0) {
         # determine basis functions that do not intersect any presence points
-        prune.id <- colSums(as.matrix(po.bf.matrix_pres)) == 0
+        prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
         # prune from both basis function matrices
         po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
         po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
@@ -443,9 +443,10 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
 
       # prune the basis function if required
-      if (prune.bfs) {
-        # determine basis functions that do not intersect any presence points or presence/absence data
-        prune.id <- colSums(as.matrix(po.bf.matrix_pres)) == 0 & colSums(as.matrix(pa.bf.matrix)) == 0
+      if (FALSE) { # TRIALLING THIS AS THE PA DATA MAY STABLISE THE FIT
+      # if (prune.bfs != 0) {
+        # determine basis functions that do not intersect any presence points
+        prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
         # prune from both basis function matrices
         po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
         po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
@@ -480,9 +481,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       bias.bf.info <- attr(po.bias.bf.matrix_pres, "bf.df")
 
       # prune the basis functions if required
-      if (prune.bfs) {
+      if (prune.bfs != 0) {
         # determine basis functions that do not intersect any presence points
-        bias.prune.id <- colSums(as.matrix(po.bias.bf.matrix_pres)) == 0
+        bias.prune.id <- do.call("apply", list(po.bias.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
         # prune from both basis function matrices
         po.bias.bf.matrix_pres <- po.bias.bf.matrix_pres[ , !bias.prune.id]
         po.bias.bf.matrix_quad <- po.bias.bf.matrix_quad[ , !bias.prune.id]

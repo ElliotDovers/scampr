@@ -18,7 +18,7 @@ get.TMB.data.input(
   starting.pars,
   latent.po.biasing = FALSE,
   po.biasing.basis.functions,
-  prune.bfs = TRUE
+  prune.bfs = 4
 )
 }
 \arguments{
@@ -48,7 +48,7 @@ get.TMB.data.input(
 
 \item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 
-\item{prune.bfs}{a logical indicating whether the basis functions (and presence-only biasing basis functions in the IDM case) that do not intersect data should be pruned. Improves stability of the PPM}
+\item{prune.bfs}{an integer indicating the number of presence-only records required within a basis function's radius for it NOT to be pruned. Applies to the PO and IDM model (additionally, within the presence-only biasing basis functions in the IDM case) to assist with stability in model convergence. Default is zero, i.e. no pruning.}
 }
 \value{
 list of elements required for TMB::MakeADFun

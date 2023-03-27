@@ -27,7 +27,7 @@ get.single.model.aic <- function(object, k = 2) {
   add.coef <- switch(object$approx.type,
                      not_sre = 0,
                      variational = length(object$basis.per.res) -2 * sum(object$basis.per.res), # adjusts for posterior pars included in $coefficients
-                     laplace = length(object$basis.per.res)
+                     laplace = 0#sum(object$basis.per.res)
   )
   aic <- -2*logLik.scampr(object) + k*length(object$coefficients) + k*add.coef
   return(aic)

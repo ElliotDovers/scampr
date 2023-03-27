@@ -29,7 +29,7 @@ spatial.kfold.cv <- function(object, po.fold.id, pa.fold.id, trunc.pa.prob = 1e-
       stop(paste0("'po.fold.id' and 'pa.fold.id' must be supplied for a model of type = ", object$model.type))
     }
 
-    # Convert CV folds to numerics in case factor is provided
+    # Convert CV folds to numeric in case factor is provided
     po.fold.id <- as.numeric(po.fold.id)
     pa.fold.id <- as.numeric(pa.fold.id)
 
