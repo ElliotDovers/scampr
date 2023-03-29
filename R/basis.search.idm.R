@@ -51,12 +51,17 @@ basis.search.idm <- function(object, search.rate = 1, return.model = FALSE, max.
 
   # extract the last two basis configurations
   bf.list <- attr(res_pa, "bfs")
-  bf1 <- bf.list[[length(bf.list) - 1]]
-  bf2 <- bf.list[[length(bf.list)]]
+  if (length(bf.list) - 1 > 1) {
+    bf1 <- bf.list[[length(bf.list) - 1]]
+    bf2 <- bf.list[[length(bf.list)]]
+  } else { # this covers the case where the PA model does not require ANY SRE - could change this once I update the IDM to handle no SRE of the joint model but allow for biasing SRE
+    bf1 <- bf.list[[length(bf.list)]]
+    bf2 <- bf.list[[length(bf.list)]]
+  }
 
   # update the supplied model
-  mA <- do.call("update", list(object, include.sre = T, model.type = "IDM", basis.functions = bf1, latent.po.biasing = T, po.biasing.basis.functions = bf2, starting.pars = object))
-  mB <- do.call("update", list(object, include.sre = T, model.type = "IDM", basis.functions = bf1, latent.po.biasing = T, po.biasing.basis.functions = bf1, starting.pars = object))
+  mA <- do.call("update", list(object, include.sre = T, model.type = "IDM", basis.functions = bf1, latent.po.biasing = T, po.biasing.basis.functions = bf2))
+  mB <- do.call("update", list(object, include.sre = T, model.type = "IDM", basis.functions = bf1, latent.po.biasing = T, po.biasing.basis.functions = bf1))
 
   # compare the models
   direction <- c("denser", "coarser")[which.max(logLik(mA, mB)$logLik)]
@@ -80,7 +85,7 @@ basis.search.idm <- function(object, search.rate = 1, return.model = FALSE, max.
     # simple basis function configuration
     tmp.bfs <- simple_basis(tmp.nodes[counter + 1], data = domain.data, radius.type = radius.type)
     basis.functions.list[[counter + 1]] <- tmp.bfs
-    m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs, starting.pars = m1))
+    m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs))
 
     # store info
     tmp.k <- c(tmp.k, nrow(m2$random.bias.effects))
@@ -98,7 +103,7 @@ basis.search.idm <- function(object, search.rate = 1, return.model = FALSE, max.
       tmp.nodes <- c(tmp.nodes, tmp.nodes[[counter]] + search.rate)
       tmp.bfs <- simple_basis(tmp.nodes[counter + 1], data = domain.data, radius.type = radius.type)
       # update the model
-      m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs, starting.pars = m1))
+      m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs))
       # store in basis function list
       basis.functions.list[[counter + 1]] <- tmp.bfs
       # record the number of basis functions, log-likelihood and BIC, etc.
@@ -130,7 +135,7 @@ basis.search.idm <- function(object, search.rate = 1, return.model = FALSE, max.
       # simple basis function configuration
       tmp.bfs <- simple_basis(tmp.nodes[counter + 1], data = domain.data, radius.type = radius.type)
       basis.functions.list[[counter + 1]] <- tmp.bfs
-      m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs, starting.pars = m1))
+      m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs))
 
       # store info
       tmp.k <- c(tmp.k, nrow(m2$random.bias.effects))
@@ -148,7 +153,7 @@ basis.search.idm <- function(object, search.rate = 1, return.model = FALSE, max.
         tmp.nodes <- c(tmp.nodes, tmp.nodes[[counter]] - search.rate)
         tmp.bfs <- simple_basis(tmp.nodes[counter + 1], data = domain.data, radius.type = radius.type)
         # update the model
-        m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs, starting.pars = m1))
+        m2 <- do.call("update", list(m1, po.biasing.basis.functions = tmp.bfs))
         # store in basis function list
         basis.functions.list[[counter + 1]] <- tmp.bfs
         # record the number of basis functions, log-likelihood and BIC, etc.
