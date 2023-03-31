@@ -454,11 +454,12 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
           }
           Z2mu2 <- as.vector(oldZ %*% res$random.bias.effects[, 1L])
         } else {
-          if (ncol(inputs$tmb.data$Z2_PO_pres) == 1) { # when there is only one variable
-            oldZ2 <- matrix(c(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id], ncol = 1)
-          } else {
-            oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id, ]
-          }
+          # if (ncol(inputs$tmb.data$Z2_PO_pres) == 1) { # when there is only one variable
+          #   oldZ2 <- matrix(c(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id], ncol = 1)
+          # } else {
+          #   oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id, ]
+          # } # THIS SHOULD BE REDUNDANT SINCE WE ALREADY MAKE THE INPUT A SINGLE COLUMN MATRIX!
+          oldZ2 <- rbind(inputs$tmb.data$Z2_PO_pres, inputs$tmb.data$Z2_PO_quad)[inputs$row.id, ]
           Z2mu2 <- as.vector(oldZ2 %*% res$random.bias.effects[, 1L])
         }
       } else {

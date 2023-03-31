@@ -122,9 +122,27 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       if (prune.bfs != 0) {
         # determine basis functions that do not intersect any presence points
         prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
-        # prune from both basis function matrices
-        po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
-        po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+        # check that the pruning doesn't remove all basis functions
+        while (all(prune.id)) {
+          prune.bfs <- prune.bfs - 1
+          prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
+          warning(paste0("'prune.bfs' = ", prune.bfs + 1, " results in no valid basis functions. Trying 'prune.bfs' = ", prune.bfs, ". Otherwise fit a model without SRE."))
+        }
+        # prune from both basis function matrices - adjusting for the case when only 1 bf remains
+        if (sum(!prune.id) == 1) {
+          po.bf.matrix_pres <- as.matrix(data.frame(po.bf.matrix_pres[ , !prune.id]))
+          po.bf.matrix_quad <- as.matrix(data.frame(po.bf.matrix_quad[ , !prune.id]))
+          colnames(po.bf.matrix_pres) <- NULL
+          colnames(po.bf.matrix_quad) <- NULL
+          # re-adjust to sparse matrix if required
+          if (bf.matrix.type == "sparse") {
+            po.bias.bf.matrix_pres <- methods::as(po.bias.bf.matrix_pres, "sparseMatrix")
+            po.bias.bf.matrix_quad <- methods::as(po.bias.bf.matrix_quad, "sparseMatrix")
+          }
+        } else {
+          po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
+          po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+        }
         # adjust the basis function information
         tmp <- bf.info
         bf.info <- tmp[!prune.id, ]
@@ -443,14 +461,29 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
 
       # prune the basis function if required
-      if (FALSE) { # TRIALLING THIS AS THE PA DATA MAY STABLISE THE FIT
+      if (FALSE) { # THIS IS NOT NEEDED SINCE PA DATA APPEARS TO STABLISE THE FIT
       # if (prune.bfs != 0) {
         # determine basis functions that do not intersect any presence points
         prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
-        # prune from both basis function matrices
-        po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
-        po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
-        pa.bf.matrix <- pa.bf.matrix[ , !prune.id]
+        # check that the pruning doesn't remove all basis functions
+        while (all(prune.id)) {
+          prune.bfs <- prune.bfs - 1
+          prune.id <- do.call("apply", list(po.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
+          warning(paste0("'prune.bfs' = ", prune.bfs + 1, " results in no valid basis functions. Trying 'prune.bfs' = ", prune.bfs, ". Otherwise fit a model without SRE."))
+        }
+        # prune from both basis function matrices - adjusting for the case when only 1 bf remains
+        if (sum(!prune.id) == 1) {
+          po.bf.matrix_pres <- as.matrix(data.frame(po.bf.matrix_pres[ , !prune.id]))
+          po.bf.matrix_quad <- as.matrix(data.frame(po.bf.matrix_quad[ , !prune.id]))
+          pa.bf.matrix <- as.matrix(data.frame(pa.bf.matrix[ , !prune.id]))
+          colnames(po.bf.matrix_pres) <- NULL
+          colnames(po.bf.matrix_quad) <- NULL
+          colnames(pa.bf.matrix) <- NULL
+        } else {
+          po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
+          po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+          pa.bf.matrix <- pa.bf.matrix[ , !prune.id]
+        }
         # adjust the basis function information
         tmp <- bf.info
         bf.info <- tmp[!prune.id, ]
@@ -484,9 +517,27 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       if (prune.bfs != 0) {
         # determine basis functions that do not intersect any presence points
         bias.prune.id <- do.call("apply", list(po.bias.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
-        # prune from both basis function matrices
-        po.bias.bf.matrix_pres <- po.bias.bf.matrix_pres[ , !bias.prune.id]
-        po.bias.bf.matrix_quad <- po.bias.bf.matrix_quad[ , !bias.prune.id]
+        # check that the pruning doesn't remove all basis functions
+        while (all(bias.prune.id)) {
+          prune.bfs <- prune.bfs - 1
+          bias.prune.id <- do.call("apply", list(po.bias.bf.matrix_pres, MARGIN = 2, FUN = function(x){sum(x>0)})) < prune.bfs
+          warning(paste0("'prune.bfs' = ", prune.bfs + 1, " results in no valid basis functions. Trying 'prune.bfs' = ", prune.bfs, ". Otherwise fit a model without SRE."))
+        }
+        # prune from both basis function matrices - adjusting for the case when only 1 bf remains
+        if (sum(!bias.prune.id) == 1) {
+          po.bias.bf.matrix_pres <- as.matrix(data.frame(po.bias.bf.matrix_pres[ , !bias.prune.id]))
+          po.bias.bf.matrix_quad <- as.matrix(data.frame(po.bias.bf.matrix_quad[ , !bias.prune.id]))
+          colnames(po.bias.bf.matrix_pres) <- NULL
+          colnames(po.bias.bf.matrix_quad) <- NULL
+          # re-adjust to sparse matrix if required
+          if (bf.matrix.type == "sparse") {
+            po.bias.bf.matrix_pres <- methods::as(po.bias.bf.matrix_pres, "sparseMatrix")
+            po.bias.bf.matrix_quad <- methods::as(po.bias.bf.matrix_quad, "sparseMatrix")
+          }
+        } else {
+          po.bias.bf.matrix_pres <- po.bias.bf.matrix_pres[ , !bias.prune.id]
+          po.bias.bf.matrix_quad <- po.bias.bf.matrix_quad[ , !bias.prune.id]
+        }
         # adjust the basis function information
         tmp <- bias.bf.info
         bias.bf.info <- tmp[!bias.prune.id, ]
