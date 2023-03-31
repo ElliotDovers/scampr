@@ -136,8 +136,8 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
           colnames(po.bf.matrix_quad) <- NULL
           # re-adjust to sparse matrix if required
           if (bf.matrix.type == "sparse") {
-            po.bias.bf.matrix_pres <- methods::as(po.bias.bf.matrix_pres, "sparseMatrix")
-            po.bias.bf.matrix_quad <- methods::as(po.bias.bf.matrix_quad, "sparseMatrix")
+            po.bf.matrix_pres <- methods::as(po.bf.matrix_pres, "sparseMatrix")
+            po.bf.matrix_quad <- methods::as(po.bf.matrix_quad, "sparseMatrix")
           }
         } else {
           po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
