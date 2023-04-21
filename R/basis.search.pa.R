@@ -3,13 +3,15 @@
 #' @description This function takes in a scampr model and calculates likelihoods and AIC for the list of basis functions supplied. If none are supplied then the algorithm fits increasingly dense regular grids of basis functions (of the type created by scampr::simple_basis). The algorithm starts with an IPP (i.e. zero basis functions) and increases to <= 'max.basis.functions'. If 'po.fold.id' and/or 'pa.fold.id' are supplied then the function will perform a k-fold hold-one-out cross validation to calculate out-of-sample likelihoods (conditional on the latent field).
 #'
 #' @param object a scampr model: object of class 'scampr' that provides the framework for the search algorithm. Recommended that an IPP model of the appropriate type is used.
-#' @param search.rate an integer determining the rate of increasingly dense basis function configurations trialled. Default is \code{search.rate = 1}, however this can be increased to reduce computation time (at the expense of how fine-scale the search will be).
+#' @param metric a character string describing the metric upon which to choose the optimal basis function configuration. One of 'll' (log-Likelihood), 'aic' (Akaike Information Criterion), 'bic' (Bayesian Information Criterion).
 #' @param return.model a logical indicating whether to return the model with the lowest BIC found through the search. Default is \code{FALSE}, meaning the full search results are returned.
 #' @param max.basis.functions Optional. An integer describing a rough upper limit to the number of basis functions to search. Defaults to half the number of presences in the data sets.
 #' @param radius.type a character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #' @param domain.data Optional. A data frame of columns 'coord.names' that contains at least the extremities of the domain of interest. Useful to ensure the same basis function configurations are created by 'simple_basis' if comparing to various searches.
 #' @param start.nodes an integer determining the effective number of basis functions to start the search from (\code{k = start.nodes^2} on a square domain). Default is \code{start.nodes = 4}, however this can be increased so that the search is started from a denser basis function configuration (and will likely increase computation time).
+#' @param search.rate an integer determining the rate of increasingly dense basis function configurations trialled. Default is \code{search.rate = 1}, however this can be increased to reduce computation time (at the expense of how fine-scale the search will be).
+#' @param metric.tol a numeric describing the tolerance level to indicate the basis search should stop. Specifically, the proportion of the metric below which the search falls.
 #'
 #' @return a data.frame with columns including- 'nodes': number used in scampr::simple_basis to create basis configuration. 'k': the number of basis functions. 'radius': the radius of the basis function configuration. 'll': the fitting marginal log-likelihood. 'BIC': the corresponding Bayesian Info. Crit. 'cpu': the computation time for the model fits. 'convergence': indicator for whether the model converged properly (0 = convergence).
 #' @export
@@ -27,13 +29,14 @@
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- simple_basis_search(m.ipp)
 #' }
-basis.search.pa <- function(object, search.rate = 1, return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, start.nodes = 4) {
+basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, start.nodes = 4, search.rate = 1, metric.tol = 0.005) {
 
   if (object$model.type == "PO") {
     stop("Model provided must be of type 'PA' or 'IDM'")
   }
 
   # checks not covered by model fitting
+  metric <- match.arg(metric)
   radius.type <- match.arg(radius.type)
   bf.matrix.type <- match.arg(bf.matrix.type)
 
@@ -61,31 +64,56 @@ basis.search.pa <- function(object, search.rate = 1, return.model = FALSE, max.b
   ## Set up initial model comparison to initialise while loop ##
 
   # initialise storage objects
+  mod.list <- list()
+  basis.functions.list <- list()
   tmp.nodes <- 0
   tmp.k <- 0
   tmp.radius <- NA
   tmp.ll <- logLik(base.m)
+  tmp.aic <- AIC(base.m)
   tmp.bic <- BIC(base.m)
   tmp.time <- base.m$cpu[1]
   tmp.conv <- base.m$convergence
-  basis.functions.list <- list()
+  basis.functions.list[[1]] <- NA
+
   # first iteration
   m1 <- base.m
+  # store model in list
+  mod.list[[1]] <- m1
   tmp.nodes <- c(tmp.nodes, start.nodes)
   # simple basis function configuration
   tmp.bfs <- simple_basis(tmp.nodes[2], data = domain.data, radius.type = radius.type)
-  basis.functions.list[[1]] <- tmp.bfs
+  basis.functions.list[[2]] <- tmp.bfs
   m2 <- do.call("update", list(base.m, include.sre = T, basis.functions = tmp.bfs, starting.pars = base.m))
-
+  # store model in list
+  mod.list[[2]] <- m2
   # store info
   tmp.k <- c(tmp.k, sum(m2$basis.per.res))
   tmp.radius <- c(tmp.radius, tmp.bfs$scale[1])
   tmp.ll <- c(tmp.ll, logLik(m2))
+  tmp.aic <- c(tmp.aic, AIC(m2))
   tmp.bic <- c(tmp.bic, BIC(m2))
   tmp.time <- c(tmp.time, m2$cpu[1])
   tmp.conv <- c(tmp.conv, m2$convergence)
   counter <- 2
-  while (BIC(m2) < BIC(m1) & nrow(tmp.bfs) < max.basis.functions) {
+  # determine the metrics for algorithm stopping
+  met1 <- switch(metric,
+                 ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                 aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
+                 bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
+  )
+  met2 <- switch(metric,
+                 ll = tmp.ll[length(tmp.ll)],
+                 aic = tmp.aic[length(tmp.aic)],
+                 bic = tmp.bic[length(tmp.bic)]
+  )
+  # create the stopping condition
+  continue.if <- switch(metric,
+                    ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                    aic = met2 < met1 + (metric.tol * met1),
+                    bic = met2 < met1 + (metric.tol * met1)
+  )
+  while (continue.if & nrow(tmp.bfs) < max.basis.functions) {
     # set the current model as the base
     m1 <- m2
     rm(m2)
@@ -94,33 +122,64 @@ basis.search.pa <- function(object, search.rate = 1, return.model = FALSE, max.b
     tmp.bfs <- simple_basis(tmp.nodes[counter + 1], data = domain.data, radius.type = radius.type)
     # update the model
     m2 <- do.call("update", list(base.m, include.sre = T, basis.functions = tmp.bfs, starting.pars = base.m))
+    # store model in list
+    mod.list[[counter + 1]] <- m2
     # store in basis function list
-    basis.functions.list[[counter]] <- tmp.bfs
+    basis.functions.list[[counter + 1]] <- tmp.bfs
     # record the number of basis functions, log-likelihood and BIC, etc.
     tmp.k <- c(tmp.k, sum(m2$basis.per.res))
     tmp.radius <- c(tmp.radius, tmp.bfs$scale[1])
     tmp.ll <- c(tmp.ll, logLik(m2))
+    tmp.aic <- c(tmp.aic, AIC(m2))
     tmp.bic <- c(tmp.bic, BIC(m2))
     tmp.time <- c(tmp.time, m2$cpu[1])
     tmp.conv <- c(tmp.conv, m2$convergence)
+    # determine the metrics for algorithm stopping
+    met1 <- switch(metric,
+                   ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                   aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
+                   bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
+    )
+    met2 <- switch(metric,
+                   ll = tmp.ll[length(tmp.ll)],
+                   aic = tmp.aic[length(tmp.aic)],
+                   bic = tmp.bic[length(tmp.bic)]
+    )
+    # create the stopping condition
+    continue.if <- switch(metric,
+                          ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                          aic = met2 < (1 + metric.tol) * met1,
+                          bic = met2 < (1  + metric.tol) * met1
+    )
     # increase the counter (loop control variable)
     counter <- counter + 1
   }
+
+  # get the optimised model
+  opt.mod.id <- switch(metric,
+                       ll = which.max(tmp.ll),
+                       aic = which.min(tmp.aic),
+                       bic = which.min(tmp.bic)
+  )
 
   res <- data.frame(nodes = tmp.nodes,
                     k = tmp.k,
                     radius = tmp.radius,
                     ll = tmp.ll,
+                    AIC = tmp.aic,
                     BIC = tmp.bic,
                     cpu = tmp.time,
                     convergence = tmp.conv
   )
 
+  # add in the model selected
+  res$opt <- (1:nrow(res)) == opt.mod.id
+
   # determine which object is to be returned
   if (return.model) {
+    ret.obj <- mod.list[[opt.mod.id]]
     # add in the basis search computation time
-    m1$cpu["basis.search"] <- sum(res$cpu)
-    ret.obj <- m1
+    ret.obj$cpu["basis.search"] <- sum(res$cpu)
     attr(ret.obj, "search.res") <- res
   } else {
     ret.obj <- res
