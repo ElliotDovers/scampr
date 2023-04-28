@@ -69,8 +69,17 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       colnames(des.mat_pres) <- colnames(des.mat)
       colnames(des.mat_quad) <- colnames(des.mat)
     } else {
-      des.mat_pres <- des.mat[pt.quad.id == 1, ]
-      des.mat_quad <- des.mat[pt.quad.id == 0, ]
+      # need to adjust for a single row design matrix
+      if (sum(pt.quad.id == 1) == 1) {
+        des.mat_pres <- as.matrix(as.data.frame(t(des.mat[pt.quad.id == 1, ])))
+      } else {
+        des.mat_pres <- des.mat[pt.quad.id == 1, ]
+      }
+      if (sum(pt.quad.id == 0) == 1) {
+        des.mat_quad <- as.matrix(as.data.frame(t(des.mat[pt.quad.id == 0, ])))
+      } else {
+        des.mat_quad <- des.mat[pt.quad.id == 0, ]
+      }
     }
 
     # get the bias predictor design matrix
@@ -85,8 +94,17 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         colnames(bias.des.mat_pres) <- colnames(bias.des.mat)
         colnames(bias.des.mat_quad) <- colnames(bias.des.mat)
       } else {
-        bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
-        bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
+        # need to adjust for a single row design matrix
+        if (sum(pt.quad.id == 1) == 1) {
+          bias.des.mat_pres <- as.matrix(as.data.frame(t(bias.des.mat[pt.quad.id == 1, ])))
+        } else {
+          bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
+        }
+        if (sum(pt.quad.id == 0) == 1) {
+          bias.des.mat_quad <- as.matrix(as.data.frame(t(bias.des.mat[pt.quad.id == 0, ])))
+        } else {
+          bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
+        }
       }
       # Adjust the Intercept names if required
       if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
@@ -390,8 +408,17 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       colnames(po.des.mat_pres) <- colnames(des.mat)
       colnames(po.des.mat_quad) <- colnames(des.mat)
     } else {
-      po.des.mat_pres <- des.mat[pt.quad.id == 1, ]
-      po.des.mat_quad <- des.mat[pt.quad.id == 0, ]
+      # need to adjust for a single row design matrix
+      if (sum(pt.quad.id == 1) == 1) {
+        po.des.mat_pres <- as.matrix(as.data.frame(t(des.mat[pt.quad.id == 1, ])))
+      } else {
+        po.des.mat_pres <- des.mat[pt.quad.id == 1, ]
+      }
+      if (sum(pt.quad.id == 0) == 1) {
+        po.des.mat_quad <- as.matrix(as.data.frame(t(des.mat[pt.quad.id == 0, ])))
+      } else {
+        po.des.mat_quad <- des.mat[pt.quad.id == 0, ]
+      }
     }
     pa.des.mat <- get.design.matrix(formula, IDM.presence.absence.df)
 
@@ -409,8 +436,17 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         colnames(bias.des.mat_pres) <- colnames(bias.des.mat)
         colnames(bias.des.mat_quad) <- colnames(bias.des.mat)
       } else {
-        bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
-        bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
+        # need to adjust for a single row design matrix
+        if (sum(pt.quad.id == 1) == 1) {
+          bias.des.mat_pres <- as.matrix(as.data.frame(t(bias.des.mat[pt.quad.id == 1, ])))
+        } else {
+          bias.des.mat_pres <- bias.des.mat[pt.quad.id == 1, ]
+        }
+        if (sum(pt.quad.id == 0) == 1) {
+          bias.des.mat_quad <- as.matrix(as.data.frame(t(bias.des.mat[pt.quad.id == 0, ])))
+        } else {
+          bias.des.mat_quad <- bias.des.mat[pt.quad.id == 0, ]
+        }
       }
       # Adjust the Intercept names if required
       if (any(grepl("(Intercept)", colnames(bias.des.mat_pres), fixed = T))) {
