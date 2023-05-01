@@ -158,8 +158,23 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
             po.bf.matrix_quad <- methods::as(po.bf.matrix_quad, "sparseMatrix")
           }
         } else {
-          po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
-          po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+          # adjusting for the case of a single presence or quad point:
+          if (nrow(po.bf.matrix_pres) == 1) {
+            po.bf.matrix_pres <- matrix(po.bf.matrix_pres[ , !prune.id], 1)
+            if (bf.matrix.type == "sparse") {
+              po.bf.matrix_pres <- methods::as(po.bf.matrix_pres, "sparseMatrix")
+            }
+          } else {
+            po.bf.matrix_pres <- po.bf.matrix_pres[ , !prune.id]
+          }
+          if (nrow(po.bf.matrix_quad) == 1) {
+            po.bf.matrix_quad <- matrix(po.bf.matrix_quad[ , !prune.id], 1)
+            if (bf.matrix.type == "sparse") {
+              po.bf.matrix_quad <- methods::as(po.bf.matrix_quad, "sparseMatrix")
+            }
+          } else {
+            po.bf.matrix_quad <- po.bf.matrix_quad[ , !prune.id]
+          }
         }
         # adjust the basis function information
         tmp <- bf.info
