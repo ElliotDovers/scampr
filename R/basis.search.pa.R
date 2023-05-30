@@ -29,7 +29,7 @@
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- simple_basis_search(m.ipp)
 #' }
-basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, start.nodes = 4, search.rate = 1, metric.tol = 0.005) {
+basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, start.nodes = 4, search.rate = 1, metric.tol = 0.005, lag = 3) {
 
   if (object$model.type == "PO") {
     stop("Model provided must be of type 'PA' or 'IDM'")
@@ -98,7 +98,8 @@ basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model
   counter <- 2
   # determine the metrics for algorithm stopping
   met1 <- switch(metric,
-                 ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                 # ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                 ll = tmp.ll[1:(length(tmp.ll) - 1)],
                  aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
                  bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
   )
@@ -109,7 +110,8 @@ basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model
   )
   # create the stopping condition
   continue.if <- switch(metric,
-                    ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                    # ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                    ll = if (length(met1) < lag) {met2 > met1[length(met1)] | met2 > mean(met1)} else {met2 > met1[length(met1)] | met2 > mean(met1[length(met1):(length(met1) - (lag - 1))])},
                     aic = met2 < met1 + (metric.tol * met1),
                     bic = met2 < met1 + (metric.tol * met1)
   )
@@ -136,7 +138,8 @@ basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model
     tmp.conv <- c(tmp.conv, m2$convergence)
     # determine the metrics for algorithm stopping
     met1 <- switch(metric,
-                   ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                   # ll = max(tmp.ll[1:(length(tmp.ll) - 1)]),
+                   ll = tmp.ll[1:(length(tmp.ll) - 1)],
                    aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
                    bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
     )
@@ -147,7 +150,8 @@ basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model
     )
     # create the stopping condition
     continue.if <- switch(metric,
-                          ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                          # ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                          ll = if (length(met1) < lag) {met2 > met1[length(met1)] | met2 > mean(met1)} else {met2 > met1[length(met1)] | met2 > mean(met1[length(met1):(length(met1) - (lag - 1))])},
                           aic = met2 < (1 + metric.tol) * met1,
                           bic = met2 < (1  + metric.tol) * met1
     )
@@ -156,11 +160,12 @@ basis.search.pa <- function(object, metric = c("ll", "aic", "bic"), return.model
   }
 
   # get the optimised model
-  opt.mod.id <- switch(metric,
-                       ll = which.max(tmp.ll),
-                       aic = which.min(tmp.aic),
-                       bic = which.min(tmp.bic)
-  )
+  # opt.mod.id <- switch(metric,
+  #                      ll = which.max(tmp.ll),
+  #                      aic = which.min(tmp.aic),
+  #                      bic = which.min(tmp.bic)
+  # )
+  opt.mod.id <- length(tmp.ll) - 1
 
   res <- data.frame(nodes = tmp.nodes,
                     k = tmp.k,
