@@ -119,14 +119,14 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     warning(paste0("'model.type' = ", model.type, " is not compatible with a variational approx. Will instead use a Laplace approx."))
     sre.approx <- "laplace"
   }
-  if (model.type == "PA" & latent.po.biasing) {
-    warning(paste0("'model.type' = ", model.type, " is not compatible with 'latent.po.biasing' - will be ignored"))
-    latent.po.biasing <- FALSE
-  }
-  if (model.type == "PO" & latent.po.biasing) {
-    warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
-    latent.po.biasing <- FALSE
-  }
+  # if (model.type == "PA" & latent.po.biasing) {
+  #   warning(paste0("'model.type' = ", model.type, " is not compatible with 'latent.po.biasing' - will be ignored"))
+  #   latent.po.biasing <- FALSE
+  # }
+  # if (model.type == "PO" & latent.po.biasing) {
+  #   warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))
+  #   latent.po.biasing <- FALSE
+  # }
   # if (model.type == "PO" & latent.po.biasing) {
   #   if (include.sre) {
   #     warning(paste0("'latent.po.biasing' is not identifiable for 'model.type' = ", model.type, " using spatial random effects - will be ignored"))

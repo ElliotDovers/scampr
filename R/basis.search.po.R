@@ -13,6 +13,7 @@
 #' @param start.nodes an integer determining the effective number of basis functions to start the search from (\code{k = start.nodes^2} on a square domain). Default is \code{start.nodes = 4}, however this can be increased so that the search is started from a denser basis function configuration (and will likely increase computation time).
 #' @param search.rate an integer determining the rate of increasingly dense basis function configurations trialled. Default is \code{search.rate = 1}, however this can be increased to reduce computation time (at the expense of how fine-scale the search will be).
 #' @param metric.tol a numeric describing the tolerance level to indicate the basis search should stop. Specifically, the proportion of the metric below which the search falls.
+#' @param lag an integer determining the lag/window length for the moving average of the selection metric. Default is 3.
 #'
 #' @return a data.frame with columns including- 'nodes': number used in scampr::simple_basis to create basis configuration. 'k': the number of basis functions. 'radius': the radius of the basis function configuration. 'll': the fitting marginal log-likelihood. 'BIC': the corresponding Bayesian Info. Crit. 'cpu': the computation time for the model fits. 'convergence': indicator for whether the model converged properly (0 = convergence).#' @export
 #' @export
@@ -30,7 +31,7 @@
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- simple_basis_search(m.ipp)
 #' }
-basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, which.approx = c("variational", "laplace"), start.nodes = 4, search.rate = 1, metric.tol = 0.005) {
+basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model = FALSE, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, which.approx = c("variational", "laplace"), start.nodes = 4, search.rate = 1, metric.tol = 0.005, lag = 3) {
 
   if (object$model.type == "PA") {
     stop("Model provided must be of type 'PO' or 'IDM'")
@@ -96,16 +97,30 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
   counter <- 2
   # determine the metrics for algorithm stopping
   met1 <- switch(metric,
-                 ll = min(-tmp.ll[1:(length(tmp.ll) - 1)]),
+                 # ll = min(-tmp.ll[1:(length(tmp.ll) - 1)]),
+                 ll = tmp.ll[1:(length(tmp.ll) - 1)],
                  aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
                  bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
   )
   met2 <- switch(metric,
-                 ll = -tmp.ll[length(tmp.ll)],
+                 ll = tmp.ll[length(tmp.ll)],
                  aic = tmp.aic[length(tmp.aic)],
                  bic = tmp.bic[length(tmp.bic)]
   )
-  while (met2 < met1 + (metric.tol * met1) & nrow(tmp.bfs) < max.basis.functions) {
+  # create the stopping condition
+  continue.if <- switch(metric,
+                        # ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                        ll = if (length(met1) < lag) {met2 > met1[length(met1)] | met2 > mean(met1)} else {met2 > met1[length(met1)] | met2 > mean(met1[length(met1):(length(met1) - (lag - 1))])},
+                        aic = met2 < met1 + (metric.tol * met1),
+                        bic = met2 < met1 + (metric.tol * met1)
+  )
+  # for PO data we additionally need a stopping rule related to the number of pruned basis functions (otherwise individual basis fns will just be centered on clusters)
+  met1_k <- tmp.k[1:(length(tmp.k) - 1)]
+  met2_k <- tmp.k[length(tmp.k)]
+  # continue.if_k <- if (length(met1_k) < lag) {met2_k >= met1_k[length(met1_k)] | met2_k >= mean(met1_k)} else {met2_k >= met1_k[length(met1_k)] | met2_k >= mean(met1_k[length(met1_k):(length(met1_k) - (lag - 1))])}
+  continue.if_k <- met2_k >= met1_k[length(met1_k)]
+
+  while (continue.if & continue.if_k & nrow(tmp.bfs) < max.basis.functions) {
     # set the current model as the base
     m1 <- m2
     rm(m2)
@@ -128,25 +143,39 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
     tmp.conv <- c(tmp.conv, m2$convergence)
     # determine the metrics for algorithm stopping
     met1 <- switch(metric,
-                   ll = min(-tmp.ll[1:(length(tmp.ll) - 1)]),
+                   # ll = min(-tmp.ll[1:(length(tmp.ll) - 1)]),
+                   ll = tmp.ll[1:(length(tmp.ll) - 1)],
                    aic = min(tmp.aic[1:(length(tmp.aic) - 1)]),
                    bic = min(tmp.bic[1:(length(tmp.bic) - 1)])
     )
     met2 <- switch(metric,
-                   ll = -tmp.ll[length(tmp.ll)],
+                   ll = tmp.ll[length(tmp.ll)],
                    aic = tmp.aic[length(tmp.aic)],
                    bic = tmp.bic[length(tmp.bic)]
     )
+    # create the stopping condition
+    continue.if <- switch(metric,
+                          # ll = if (met1 < 0) {met2 > (1 + metric.tol) * met1} else {met2 > (1 - metric.tol) * met1},
+                          ll = if (length(met1) < lag) {met2 > met1[length(met1)] | met2 > mean(met1)} else {met2 > met1[length(met1)] | met2 > mean(met1[length(met1):(length(met1) - (lag - 1))])},
+                          aic = met2 < met1 + (metric.tol * met1),
+                          bic = met2 < met1 + (metric.tol * met1)
+    )
+    # for PO data we additionally need a stopping rule related to the number of pruned basis functions (otherwise individual basis fns will just be centered on clusters)
+    met1_k <- tmp.k[1:(length(tmp.k) - 1)]
+    met2_k <- tmp.k[length(tmp.k)]
+    # continue.if_k <- if (length(met1_k) < lag) {met2_k > met1_k[length(met1_k)] | met2_k > mean(met1_k)} else {met2_k > met1_k[length(met1_k)] | met2_k > mean(met1_k[length(met1_k):(length(met1_k) - (lag - 1))])}
+    continue.if_k <- met2_k >= met1_k[length(met1_k)]
     # increase the counter (loop control variable)
     counter <- counter + 1
   }
 
   # get the optimised model
-  opt.mod.id <- switch(metric,
-                       ll = which.max(tmp.ll),
-                       aic = which.min(tmp.aic),
-                       bic = which.min(tmp.bic)
-  )
+  # opt.mod.id <- switch(metric,
+  #                      ll = which.max(tmp.ll),
+  #                      aic = which.min(tmp.aic),
+  #                      bic = which.min(tmp.bic)
+  # )
+  opt.mod.id <- length(tmp.ll) - 1
 
   res <- data.frame(nodes = tmp.nodes,
                     k = tmp.k,
