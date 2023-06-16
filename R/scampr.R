@@ -545,6 +545,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   res$bf.matrix.type <- inputs$args$bf.matrix.type
   res$fixed.bias.type <- inputs$args$fixed.bias.type
   res$random.bias.type <- inputs$args$random.bias.type
+  res$tmb.data <- inputs$tmb.data
   res$ll.components <- obj$report()
   res$call <- mod.call
   res$tmb.call.list <- call.list

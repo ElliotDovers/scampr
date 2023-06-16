@@ -383,7 +383,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
 
     # adjust the bias formula if mistakenly provided:
     if (!missing(bias.formula)) {
-      warning(paste0("'bias.formula' will be ignored since it is not compatible with model.type = 'PA'."))
+      # warning(paste0("'bias.formula' will be ignored since it is not compatible with model.type = 'PA'."))
       arg.info$bias.formula <- NULL
     }
 
