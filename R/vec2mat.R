@@ -5,7 +5,7 @@
 #' @param y.loc A vector of vertical locations in 2D
 #'
 #' @return a matrix representing the locations of a regular spatial domain
-#' @noRd
+#' @export
 #'
 #' @examples
 #' # Get the quadrature from the gorillas data

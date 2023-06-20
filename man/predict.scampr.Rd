@@ -10,7 +10,7 @@
   newdata,
   type = c("link", "response"),
   dens = c("posterior", "prior"),
-  process = c("intensity", "abundance")
+  include.bias.accounting = FALSE
 )
 }
 \arguments{
@@ -20,17 +20,17 @@
 
 \item{newdata}{a data frame of point locations to predict over as well as predictors involved in the model}
 
-\item{type}{a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Eitehr log-intensity or intensity respectively.}
+\item{type}{a character string , one of 'link' or 'response', indicating the type of prediction to be returned. Either log-intensity or intensity respectively.}
 
 \item{dens}{a character string, one of 'posterior' or 'prior', indicating the probability density of the random effects to take the expectation from.}
 
-\item{process}{a character string, one of 'intensity' or 'abundance', indictating the process to be estimated. Only available for combined data models.}
+\item{include.bias.accounting}{a logical indicating if biasing effects (random or fixed) should be included in the predictions. Default is FALSE.}
 }
 \value{
 a numeric vector of length newdata (or length of fitted data) containing the predictions.
 }
 \description{
-Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models (popa) the user can specify whether to return the rate at which presence records occur (process = intensity) or the abundance rate (process = abundance).
+Functions the same as predict.glm with additional functionality. Can select whether predictions come from the realised latent field (dens = "posterior") or unrealised (dens = "prior") - depending on whether a user wants to make data specific predictions or be more broad. Particular to combined data models the user can specify whether to return the rate at which presence records occur (use.formula = "presence-only") or the underlying abundance rate (use.formula = "presence-absence").
 }
 \examples{
 # Get the flora data for one of the species
@@ -64,8 +64,8 @@ m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
 m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po, simple.basis = bfs)
 
 predict(m.ipp, test_po)
-predict(m.comb, test_po, process = "intensity")
-predict(m.comb, test_pa, process = "abundance")
+predict(m.comb, test_po, use.formula = "presence-only")
+predict(m.comb, test_pa, use.formula = "presence-absence")
 predict(m.pa, test_pa)
 predict(m.lgcp_va, test_po)
 predict(m.lgcp_va, test_po, dens = "prior")

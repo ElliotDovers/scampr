@@ -2,13 +2,13 @@
 % Please edit documentation in R/residuals.scampr.R
 \name{residuals.scampr}
 \alias{residuals.scampr}
-\title{Extract Model Residuals for objects of class 'scampr'}
+\title{Extract Model Residuals for objects of class 'scampr' ### WIP ###}
 \usage{
 \method{residuals}{scampr}(
   object,
   ...,
   type = c("raw", "inverse", "pearson"),
-  data.type = c("po", "pa")
+  which.data = c("PO", "PA")
 )
 }
 \arguments{
@@ -18,13 +18,13 @@
 
 \item{type}{As in residuals.ppm: A string indicating the type of residuals or weights to be used. Current options are "raw" for the raw residuals, "inverse" for the inverse-lambda residuals, and "pearson" for the Pearson residuals.}
 
-\item{data.type}{a character string indicating which data type to produce residuals from.}
+\item{which.data}{Optionally, a character string indicating which data to calculate residuals on. Only relevant to integrated data models, one of "PO" or "PA".}
 }
 \value{
 a numeric vector, of length of the model data, containing the extracted residuals.
 }
 \description{
-Extract Model Residuals for objects of class 'scampr'
+Extract Model Residuals for objects of class 'scampr' ### WIP ###
 }
 \examples{
 # Get the flora data for one of the species
@@ -57,8 +57,8 @@ approx.with = "laplace", simple.basis = bfs)
 }
 residuals(m.ipp)
 residuals(m.comb)
-residuals(m.comb, data.type = "pa")
-residuals(m.pa, data.type = "pa")
+residuals(m.comb, which.data = "PA")
+residuals(m.pa, which.data = "PO")
 \dontrun{
 residuals(m.lgcp_va)
 residuals(m.lgcp_lp, type = "pearson")

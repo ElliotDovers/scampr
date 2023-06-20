@@ -4,12 +4,14 @@
 \alias{vcov.scampr}
 \title{vcov for objects of class 'scampr'}
 \usage{
-\method{vcov}{scampr}(object, ...)
+\method{vcov}{scampr}(object, ..., getJointPrecision = T)
 }
 \arguments{
-\item{object}{A scampr model object}
+\item{object}{a scampr model object}
 
 \item{...}{NA}
+
+\item{getJointPrecision}{a logical indicating whether to calculate the full joint precision matrix, including random effects (TRUE) or just the fixed effects (FALSE).}
 }
 \value{
 A matrix of the estimated covariances between the parameter estimates in the linear or non-linear predictor of the model. This should have row and column names corresponding to the parameter names given by the coef method.

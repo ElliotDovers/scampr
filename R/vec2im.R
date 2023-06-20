@@ -5,7 +5,7 @@
 #' @param y.loc A vector of vertical locations in 2D
 #'
 #' @return a spatstat image (im) object
-#' @noRd
+#' @export
 #'
 #' @importFrom spatstat.geom im
 #'

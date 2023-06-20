@@ -30,11 +30,11 @@
 
 \item{rcoef.density}{a character string indicating the probability density of the random effects to draw from.}
 
-\item{which.intensity}{a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.}
+\item{which.intensity}{a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjunction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validating a model while 'sample' may be useful for making predictions.}
 
 \item{return.type}{a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat.core::envelope} e.g.}
 
-\item{nsurv}{an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.}
+\item{nsurv}{an optional integer describing the number of survey sites to be included in the simulated presence/absence data. Only applies to combined data models (popa), if null the survey sites of the original model are used.}
 
 \item{log.expected}{a logical indicating whether to take the expectation of the log-intensity (ignores the variance correction). Only relevant to LGCP models for which \code{which.intensity} is 'expected'.}
 }

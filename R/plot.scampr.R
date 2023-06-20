@@ -1,4 +1,4 @@
-#' Plot diagnositcs for objects of class 'scampr'
+#' Plot diagnositcs for objects of class 'scampr' ### WIP ###
 #'
 #' @description Currently plots residuals as in 'spatstat', as well as the fitted intensity, over the quadrature used to model the point pattern. In the case of presence/absence data fitted vs. residuals is plotted.
 #'
@@ -36,9 +36,9 @@
 plot.scampr <- function(x, ..., which = c("residuals", "fitted"), add.points = F) {
   xtrargs <- list(...)
   which <- match.arg(which, several.ok = T)
-  if (x$data.model.type == "pa") {
+  if (x$model.type == "PA") {
     if ("residuals" %in% which) {
-      graphics::plot.default(1 - exp(-exp(x$fitted.values)), residuals.scampr(x, type = "raw", data.type = "pa"),
+      graphics::plot.default(1 - exp(-exp(x$fitted.values)), residuals.scampr(x, type = "raw", which.data = "PA"),
                              xlab = "fitted values", ylab = "raw residuals")
     }
     # readline(prompt="Hit <Return> to see next plot:")
@@ -59,9 +59,9 @@ plot.scampr <- function(x, ..., which = c("residuals", "fitted"), add.points = F
       }
     }
 
-    # if (x$data.model.type == "popa") {
+    # if (x$model.type == "IDM") {
     #   readline(prompt="Hit <Return> to see next plot:")
-    #   resids <- residuals.scampr(x, type = "raw", data.type = "pa")
+    #   resids <- residuals.scampr(x, type = "raw", which.data = "PA")
     #   fits <- 1 - exp(-exp(attr(x$fitted.values, "abundance")))
     #   graphics::plot.default(fits, resids, xlab = "fitted values", ylab = "raw residuals",
     #        main = "Presence/Absence Residuals")

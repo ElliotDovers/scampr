@@ -1,17 +1,17 @@
 #' Inhomogeneous K function for scampr models (is a wrapper of \code{spatstat}'s version). Or calculate the K function from point pattern (and intensity) provided.
 #'
 #' @param model a scampr model object
-#' @param correction a character string describing the correction type to be used. See \code{spatstat.core::Kinhom()} for details.
+#' @param correction a character string describing the correction type to be used. See \code{spatstat.explore::Kinhom()} for details.
 #' @param point.pattern Optionally, a data frame, the first two columns of which describe the horizontal and vertical coordinates of point locations respectively.
 #' @param intensity.at.pp Optionally, a vector of length \code{nrow(point.pattern)} that describes the intensity at each point.
 #' @param spatstat.win Optionally, a spatstat window object.
-#' @param intensity.at Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat.core::Kinhom()} is an image object or just provided at the presence points.
+#' @param intensity.at Optionally, a character string, one of either 'im' or 'pts'. Describes whether the intensity used in \code{spatstat.explore::Kinhom()} is an image object or just provided at the presence points.
 #' @param dists a vector of values for the distances at which the inhomogeneous K function should be evaluated. Not normally given by the user; \code{spatstat} provides a sensible default.
 #'
 #' @return a data.frame of two columns - distance (dist) and corresponding K function values (Kfn).
 #' @export
 #'
-#' @importFrom spatstat.core Kinhom
+#' @importFrom spatstat.explore Kinhom
 #' @importFrom spatstat.geom ppp owin interp.im
 #'
 #' @examples
@@ -103,8 +103,8 @@ kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "tr
   # }
 
   res <- switch(intensity.at,
-                im = spatstat.core::Kinhom(pres.pp, lambda = inten.im, correction = correction, r = dists),
-                pts = spatstat.core::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction, r = dists)
+                im = spatstat.explore::Kinhom(pres.pp, lambda = inten.im, correction = correction, r = dists),
+                pts = spatstat.explore::Kinhom(pres.pp, lambda = lambda.at.pts, correction = correction, r = dists)
                 )
 
   fn <- switch(correction,

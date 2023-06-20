@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.scampr.R
 \name{plot.scampr}
 \alias{plot.scampr}
-\title{Plot diagnositcs for objects of class 'scampr'}
+\title{Plot diagnositcs for objects of class 'scampr' ### WIP ###}
 \usage{
 \method{plot}{scampr}(x, ..., which = c("residuals", "fitted"), add.points = F)
 }

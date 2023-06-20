@@ -8,9 +8,9 @@
 #' @param ... NA
 #' @param domain.data optionally, a data frame of point locations that adequately cover the domain of interest, as well as, predictors involved in the model. If missing model quadrature is used. NOTE: if model quadrature is used and is an inadequate cover of the domain, simulation may be effected as interpolated variables will contain  many NA values.
 #' @param rcoef.density a character string indicating the probability density of the random effects to draw from.
-#' @param which.intensity a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjuction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validiating a model while 'sample' may be usefu for making predictions.
+#' @param which.intensity a character string, one of 'expected' or 'sample', indicating whether to simulate from the expected intensity (with respect to 'type' and 'rcoef.density') or from a randomly sampled intensity (with respect to 'rcoef.density') respectively. This will work in conjunction with 'type' (changes expectation) and 'rcoef.density' (N(0,prior_var) or N(posterior_mean, posterior_var)). Toggling this depends on the use of simulation, e.g. 'expected' may be useful in validating a model while 'sample' may be useful for making predictions.
 #' @param return.type a character string, one of 'data.frame' or 'ppp', indicating the object type of the simulation to be returned. Default is data frame for use in scampr models. \code{ppp} object is useful for interfacing with \code{spatstat.core::envelope} e.g.
-#' @param nsurv an optional integer describing the number of survey sites to be included in the simulated presence/absenece data. Only applies to combined data models (popa), if null the survey sites of the original model are used.
+#' @param nsurv an optional integer describing the number of survey sites to be included in the simulated presence/absence data. Only applies to combined data models (popa), if null the survey sites of the original model are used.
 #' @param log.expected a logical indicating whether to take the expectation of the log-intensity (ignores the variance correction). Only relevant to LGCP models for which \code{which.intensity} is 'expected'.
 #'
 #' @return Depends on return.type. Default is a point pattern object of class 'ppp' from spatstat. Otherwise can be set to return a data.frame describing the point pattern (with corresponding quadrature as an attribute). If nsim > 1 then returned as a list of either 'return.type'.
@@ -40,7 +40,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
   return.type <- match.arg(return.type)
   nsim <- as.integer(nsim)
 
-  if (object$data.model.type == "pa") {
+  if (object$model.type == "PA") {
     stop("No functionality to simulate from a presence/absence data model... yet")
   }
   if (nsim < 1) {
@@ -64,15 +64,15 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     set.seed(seed)
   }
   # For IPP models
-  if (is.na(object$approx.type)) {
-    intens <- predict.scampr(object = object, newdata = domain.data, type = "response")
+  if (object$approx.type == "not_sre") {
+    intens <- predict.scampr(object = object, newdata = domain.data, type = "response", include.bias.accounting = T)
     # Convert to spatstat image
     intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
     pp <- spatstat.random::rpoispp(lambda = intens_im, nsim = nsim)
   } else { # For LGCP models
     if (which.intensity == "expected") { # predict() handles the various posterior, prior, resposne and link cases
       # can use predict here. 'type' == "link" allows us to ignore the expectation correction
-      intens <- predict.scampr(object = object, newdata = domain.data, type = type, dens = rcoef.density)
+      intens <- predict.scampr(object = object, newdata = domain.data, type = type, dens = rcoef.density, include.bias.accounting = T)
       # but we need to exponentiate intensity if using "link"
       if (type == "link") {
         intens <- exp(intens)
@@ -81,7 +81,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       intens_im <- vec2im(intens, domain.data[ , object$coord.names[1]], domain.data[ , object$coord.names[2]])
       pp <- spatstat.random::rpoispp(lambda = intens_im, nsim = nsim)
     } else { # FOR SAMPLING # Need to construct the log-intensity from scratch using random coefficients
-
+      ## THIS SECTION WILL NOT WORK AND NEEDS UPDATE POST-OVERHAUL ##
       # can cheat to get the fixed effects component by exploiting predict function
       Xb <- predict.scampr(object = object, newdata = domain.data, type = "link", dens = "prior")
 
@@ -140,19 +140,19 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     }
   }
 
-  # Additionally simulate presence/absence data if using a combined data model (popa)
-  if (object$data.model.type == "popa") {
+  # Additionally simulate presence/absence data if using a combined data model (IDM)
+  if (object$model.type == "IDM") {
     # Collect the relevant info
-
+    ## THIS SECTION WILL NOT WORK AND NEEDS UPDATE POST-OVERHAUL ##
     survey.form <- attr(object$formula, "pa")
     coord.names <- object$coord.names
     survey.resp <- all.vars(survey.form[[2]])
     survey.preds <- all.vars(survey.form[[3]])
     if (missing(nsurv)) {
       # get model's survey data
-      survey.data <- attr(object$data, "pa")[ , c(coord.names, survey.resp, survey.preds)]
+      survey.data <- attr(object$data, "PA")
       # can cheat to get the fixed effects component over the survey sites by exploiting predict function
-      Xb.surv <- predict.scampr(object = object, newdata = survey.data, type = "link", dens = "prior", process = "abund")
+      Xb.surv <- predict.scampr(object = object, newdata = attr(object$data, "PA"), type = "link", dens = "prior", data.component = "presence-absence")
       if (nsim == 1) {
         # Set the latent field depending on if it was explicitly calculated previously
         if (which.intensity == "sample" & !is.na(object$approx.type)) {
@@ -218,16 +218,17 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     # set the quadrature data frame
     quad <- domain.data[ , c(coord.names, resp.name, quad.wts.name, pred.names)]
     # get the predictors frame for looping through
-    preds.frame <- quad[ , !colnames(quad) %in% c(coord.names, resp.name, quad.wts.name)]
+    preds.frame <- get.design.matrix(object$formula, quad)
+    # preds.frame <- quad[ , !colnames(quad) %in% c(coord.names, resp.name, quad.wts.name)] # THIS FAILS WHEN MODEL IS INTERCEPT ONLY
     # Act according to number of simulations
     if (nsim == 1) {
       # set the quadrature intensity
       quad$process.intensity <- intens
       # Set the latent field depending on if it was explicitly calculated previously
-      if (which.intensity == "sample" & !is.na(object$approx.type)) {
+      if (which.intensity == "sample" & object$approx.type != "not_sre") {
         quad$latent.field <- Zu
       } else {
-        quad$latent.field <- log(intens) -  predict.scampr(object = object, newdata = domain.data, type = "link", dens = "prior")
+        quad$latent.field <- log(intens) -  attr(predict(object = object, newdata = domain.data), "Xbeta")
       }
       pres <- cbind(data.frame(pp), 0, 1) # make df
       for (p in 1:ncol(preds.frame)) {
@@ -250,12 +251,12 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       for (i in 1:nsim) {
         tmp.quad <- quad
         # Set the intensity and latent field depending on if it was explicitly calculated previously
-        if (which.intensity == "sample" & !is.na(object$approx.type)) {
+        if (which.intensity == "sample" & object$approx.type != "not_sre") {
           tmp.quad$process.intensity <- intens[[i]]
           tmp.quad$latent.field <- Zu[[i]]
         } else {
           tmp.quad$process.intensity <- intens
-          tmp.quad$latent.field <- log(intens) -  predict.scampr(object = object, newdata = domain.data, type = "link", dens = "prior")
+          tmp.quad$latent.field <- log(intens) - attr(predict(object = object, newdata = domain.data), "Xbeta")
         }
         # set up the point pattern frame
         pres <- cbind(data.frame(pp[[i]]), 0, 1) # make df
@@ -281,7 +282,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     }
   }
   # Include the survey data if necessary
-  if (object$data.model.type == "popa") {
+  if (object$model.type == "IDM") {
     attr(pp, "survey") <- survey.data
   }
   return(pp)
