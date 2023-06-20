@@ -34,27 +34,27 @@ print.scampr <- function(x, ...) {
 
   # get an identifier for the model type
   mod.id <- NULL
-  if (is.na(x$approx.type)) {
-    mod.id <- "ipp"
+  if (x$approx.type == "not_sre" & !is.null(x$random.bias.effects)) {
+    mod.id <- "laplace"
   } else {
     mod.id <- x$approx.type
   }
   # Set the model description
   if (x$model.type == "IDM") {
     Model.Desc <- switch(mod.id,
-                        ipp = "Integrated Data Model without spatial random effects",
-                        variational = "Integrated Data Model with spatially correlated errors - Variational Approx.",
-                        laplace = "Integrated Data Model with spatially correlated errors - Laplace approx.")
+                         not_sre = "Integrated Data Model without spatial random effects",
+                         variational = "Integrated Data Model with spatial random effects - Variational approx.",
+                         laplace = "Integrated Data Model with spatial random effects - Laplace approx.")
   } else if (x$model.type == "PO") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Inhomogeneous Poisson process",
+                         not_sre = "Inhomogeneous Poisson process",
                          variational = "Log-Gaussian Cox process - Variational Approx.",
                          laplace = "Log-Gaussian Cox process - Laplace Approx.")
   } else if (x$model.type == "PA") {
     Model.Desc <- switch(mod.id,
-                         ipp = "Binary regression model w. complimentary log-log link function (without spatial random effects)",
-                         variational = "Spatially correlated, binary regression model w. complimentary log-log link function - Variational approx.",
-                         laplace = "Spatially correlated, binary regression model w. complimentary log-log link function - Laplace approx.")
+                         not_sre = "Binary regression model\nw. complimentary log-log link function (without spatial random effects)",
+                         variational = "Binary regression model with spatial random effects\nw. complimentary log-log link function - Variational approx.",
+                         laplace = "Binary regression model with spatial random effects\nw. complimentary log-log link function - Laplace approx.")
   } else (
     stop("unknown 'model.type' in scampr model")
   )

@@ -110,13 +110,10 @@ predict.scampr <- function(object, ..., newdata, type = c("link", "response"), d
       Btau <- NULL
     }
     # random biasing effects:
-    if (!is.null(object$random.bias.effects)) {
-      # Obtain the random biasing effect basis function matrix (based on the shared basis.functions or basis functions specifically supplied)
-      if (is.null(object$po.biasing.basis.functions)) {
-        Z2 <- get.bf.matrix(object$basis.functions, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
-      } else {
-        Z2 <- get.bf.matrix(object$po.biasing.basis.functions, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
-      }
+    if (!is.null(object$po.biasing.basis.functions) & dens == "posterior") {
+      # Obtain the random biasing effect basis function matrix
+      Z2 <- get.bf.matrix(object$po.biasing.basis.functions, newdata[ , object$coord.names], bf.matrix.type = object$bf.matrix.type)
+      # check the dimensions
       if (ncol(Z2) != nrow(object$random.bias.effects)) {
         stop("dimension of 'newdata' random biasing effect basis function matrix does not match the corresponding number of random biasing parameters in the model")
       }

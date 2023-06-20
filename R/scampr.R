@@ -116,7 +116,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     stop(paste0("'include.sre' must be a logcial indicating whether or not to fit a spatial random effects model (SRE)"))
   }
   if (model.type %in% c("PA", "IDM") & sre.approx == "variational" & include.sre) {
-    warning(paste0("'model.type' = ", model.type, " is not compatible with a variational approx. Will instead use a Laplace approx."))
+    # warning(paste0("'model.type' = ", model.type, " is not compatible with a variational approx. Will instead use a Laplace approx."))
     sre.approx <- "laplace"
   }
   # if (model.type == "PA" & latent.po.biasing) {
@@ -331,8 +331,8 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   # add the random effects if present
   if (any(row.names(tmp.estimates) == "random")) {
-    if (sum(rownames(tmp.estimates) == "random") == 1) { # check for a single fixed effect to adjust the resulting data frame
-      res$random.effects <- data.frame(t(tmp.estimates[rownames(tmp.estimates) == "random", ]))
+    if (sum(rownames(tmp.estimates) == "random") == 1) { # check for a single random effect to adjust the resulting data frame
+      res$random.effects <- cbind(data.frame(t(tmp.estimates[rownames(tmp.estimates) == "random", ])), inputs$bf.info)
       colnames(res$random.effects)[2] <- "Std. Error" # need to correct the white space in name
     } else {
       res$random.effects <- cbind(tmp.estimates[rownames(tmp.estimates) == "random", ], inputs$bf.info)
@@ -344,7 +344,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   # add the random biasing effects if present
   if (any(row.names(tmp.estimates) == "random_bias")) {
-    if (sum(rownames(tmp.estimates) == "random_bias") == 1) { # check for a single fixed effect to adjust the resulting data frame
+    if (sum(rownames(tmp.estimates) == "random_bias") == 1) { # check for a single random bias effect to adjust the resulting data frame
       res$random.bias.effects <- data.frame(t(tmp.estimates[rownames(tmp.estimates) == "random_bias", ]))
       colnames(res$random.bias.effects)[2] <- "Std. Error" # need to correct the white space in name
     } else {
@@ -363,7 +363,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   # add the posterior variance/sd estimates if present
   if (any(grepl("PosteriorVar", row.names(tmp.estimates), fixed = T))) {
-    if (sum(grepl("PosteriorVar", row.names(tmp.estimates), fixed = T)) == 1) { # check for a single fixed effect to adjust the resulting data frame
+    if (sum(grepl("PosteriorVar", row.names(tmp.estimates), fixed = T)) == 1) { # check for a single posterior variance to adjust the resulting data frame
       res$post.variances <- data.frame(t(tmp.estimates[grepl("PosteriorVar", row.names(tmp.estimates), fixed = T), ]))
       colnames(res$post.variances)[2] <- "Std. Error" # need to correct the white space in name
       rownames(res$post.variances) <- row.names(tmp.estimates)[grepl("PosteriorVar", row.names(tmp.estimates), fixed = T)]
@@ -521,14 +521,17 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
 
   # final additions for interfacing with other functions
   res$basis.per.res <- inputs$tmb.data$bf_per_res
+  attr(res$basis.per.res, "bias") <- inputs$tmb.data$bias_bf_per_res
   res$basis.functions <- inputs$basis.functions
-  if (!missing(po.biasing.basis.functions)) {
-    res$po.biasing.basis.functions <- inputs$po.biasing.basis.functions
+  if (inputs$args$random.bias.type == "field1") {
+    res$po.biasing.basis.functions <- inputs$basis.functions
   } else {
-    res$po.biasing.basis.functions <- NULL
+    res$po.biasing.basis.functions <- inputs$po.biasing.basis.functions
   }
   res$basis.fn.info <- inputs$bf.info
-  res$approx.type <- inputs$args$approx.type
+  # adjust the TMB call list approx type
+  call.list$approx.type <- inputs$args$approx.type
+  res$approx.type <- approx.type # set this as the original approx.type
   res$starting.pars <- inputs$start.pars
   res$data <- data
   if (inputs$args$model.type == "IDM") {

@@ -140,7 +140,7 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     }
   }
 
-  # Additionally simulate presence/absence data if using a combined data model (popa)
+  # Additionally simulate presence/absence data if using a combined data model (IDM)
   if (object$model.type == "IDM") {
     # Collect the relevant info
     ## THIS SECTION WILL NOT WORK AND NEEDS UPDATE POST-OVERHAUL ##
@@ -150,9 +150,9 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
     survey.preds <- all.vars(survey.form[[3]])
     if (missing(nsurv)) {
       # get model's survey data
-      survey.data <- attr(object$data, "pa")[ , c(coord.names, survey.resp, survey.preds)]
+      survey.data <- attr(object$data, "PA")
       # can cheat to get the fixed effects component over the survey sites by exploiting predict function
-      Xb.surv <- predict.scampr(object = object, newdata = survey.data, type = "link", dens = "prior", data.component = "presence-absence")
+      Xb.surv <- predict.scampr(object = object, newdata = attr(object$data, "PA"), type = "link", dens = "prior", data.component = "presence-absence")
       if (nsim == 1) {
         # Set the latent field depending on if it was explicitly calculated previously
         if (which.intensity == "sample" & !is.na(object$approx.type)) {

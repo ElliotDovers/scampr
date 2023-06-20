@@ -29,7 +29,7 @@
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- simple_basis_search(m.ipp)
 #' }
-basis.search <- function(object, po.fold.id, pa.fold.id, basis.functions.list, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, trunc.pa.prob = 1e-7, in.parallel = FALSE) {
+basis.search.with.cv <- function(object, po.fold.id, pa.fold.id, basis.functions.list, max.basis.functions, radius.type = c("diag", "limiting"), bf.matrix.type = c("sparse", "dense"), domain.data, trunc.pa.prob = 1e-7, in.parallel = FALSE) {
 
   # checks not covered by model fitting
   radius.type <- match.arg(radius.type)

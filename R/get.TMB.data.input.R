@@ -30,7 +30,7 @@
 #' # Get the TMB data lists for a combined data model without latent field
 #' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
 #' str(tmb.input)
-get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = FALSE, po.biasing.basis.functions, prune.bfs = 4) {
+get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4) {
 
   # checks for parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -128,7 +128,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         # get a rough guide for the number of basis functions (to be 50% of the presence points)
         sqrt_number_bfs <- sqrt(sum(pt.quad.id)*0.5)
         # set the basis function
-        basis.funtions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
+        basis.functions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
       }
       # calculate the basis function matrices
       po.bf.matrix_pres <- get.bf.matrix(basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
@@ -314,7 +314,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         # get a rough guide for the number of basis functions (to be 50% of the presence points)
         sqrt_number_bfs <- sqrt(length(Y)*0.5)
         # set the basis function
-        basis.funtions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
+        basis.functions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
       }
       # calculate the basis function matrix
       pa.bf.matrix <- get.bf.matrix(basis.functions, point.locations = data[ , coord.names], bf.matrix.type = bf.matrix.type)
@@ -441,6 +441,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     if (missing(bias.formula)) {
       # assign fixed.bias.type indicator
       fixed.bias.type <- "missing"
+      warning("No 'bias.formula' provided. It is strongly recommended that users include an intercept for the PO biasing process with 'bias.formula = ~ 1'")
 
     } else if (is(bias.formula, "formula")) {
       bias.des.mat <- get.design.matrix(bias.formula, data)
@@ -478,15 +479,11 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     }
 
     # since the model is an IDM, check whether it has spatial random effects then, account for bias using an additional latent field if needed
-    if (approx.type != "not_sre") {
-      if (latent.po.biasing) {
-        if (missing(po.biasing.basis.functions)) {
-          random.bias.type <- "field1"
-        } else {
-          random.bias.type <- "field2"
-        }
+    if (latent.po.biasing) {
+      if (missing(po.biasing.basis.functions) & !missing(basis.functions) & approx.type != "not_sre") {
+        random.bias.type <- "field1"
       } else {
-        random.bias.type <- "none"
+        random.bias.type <- "field2"
       }
     } else {
       random.bias.type <- "none"
@@ -499,10 +496,10 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     if (approx.type != "not_sre") {
       # when no basis functions are provided use a simple basis default
       if (missing(basis.functions)) {
-        # get a rough guide for the number of basis functions (to be 50% of the presence points)
-        sqrt_number_bfs <- sqrt(sum(pt.quad.id)*0.5)
+        # get a rough guide for the number of basis functions (to be 25% of the presence points)
+        sqrt_number_bfs <- sqrt(sum(pt.quad.id)*0.25)
         # set the basis function
-        basis.funtions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
+        basis.functions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
       }
       # calculate the basis function matrices
       po.bf.matrix_pres <- get.bf.matrix(basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
@@ -552,12 +549,25 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       po.bf.matrix_pres <- matrix(rep(0, nrow(po.des.mat_pres)), ncol = 1)
       po.bf.matrix_quad <- matrix(rep(0, nrow(po.des.mat_quad)), ncol = 1)
       pa.bf.matrix <- matrix(rep(0, nrow(pa.des.mat)), ncol = 1)
-      # pa.bf.matrix <- matrix(0, nrow = 1)
+      # adjust for sparsity if needed
+      if (bf.matrix.type == "sparse") {
+        po.bf.matrix_pres <- methods::as(po.bf.matrix_pres, "sparseMatrix")
+        po.bf.matrix_quad <- methods::as(po.bf.matrix_quad, "sparseMatrix")
+        pa.bf.matrix  <- methods::as(pa.bf.matrix , "sparseMatrix")
+      }
       bf.info <- cbind.data.frame(x = NA, y = NA, scale = NA, res = 1)
       basis.functions <- NULL
     }
-    # Determine the additional basis functions to be used for presence
+
+    # Determine the additional basis functions to be used for presence-only biasing
     if (random.bias.type == "field2") {
+      # when no basis functions are provided use a simple basis default
+      if (missing(po.biasing.basis.functions)) {
+        # get a rough guide for the number of basis functions (to be 25% of the presence points)
+        sqrt_number_bfs <- sqrt(sum(pt.quad.id)*0.25)
+        # set the basis functions
+        po.biasing.basis.functions <- simple_basis(sqrt_number_bfs, data, coord.names = coord.names)
+      }
       # calculate the basis function matrices
       po.bias.bf.matrix_pres <- get.bf.matrix(po.biasing.basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
       po.bias.bf.matrix_quad <- get.bf.matrix(po.biasing.basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
@@ -601,7 +611,10 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
           po.biasing.basis.functions <- FRK::remove_basis(po.biasing.basis.functions, bias.prund.idx)
         }
       }
-
+      # if the model is not a SRE, adjust the approx.type. This will fit the trivial basis functions for the shared field
+      if (approx.type == "not_sre") {
+        approx.type <- "laplace"
+      }
     } else {
       bias.bf.info <- NULL
       po.biasing.basis.functions <- NULL
@@ -825,6 +838,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     # add bias types to arg list
     arg.info$fixed.bias.type <- fixed.bias.type
     arg.info$random.bias.type <- random.bias.type
+
+    # adjust the approx.type within the arg.info list (in case this has been changed in the instance where there are no shared SRE but PO biasing SRE)
+    arg.info$approx.type <- approx.type
 
     # collate info to be returned
     return.info <- list(tmb.data = dat.list, tmb.pars = start.pars, pt.quad.id = pt.quad.id, row.id = order(c(pres.rows, quad.rows)), fixed.names = fixed.names, bias.names = bias.names, random.names = random.names, random.bias.names = random.bias.names, bf.info = bf.info, bias.bf.info = bias.bf.info, basis.functions = basis.functions, po.biasing.basis.functions = po.biasing.basis.functions, args = arg.info)
