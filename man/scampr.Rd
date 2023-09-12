@@ -16,7 +16,7 @@ scampr(
   model.type = c("PO", "PA", "IDM"),
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
-  latent.po.biasing = TRUE,
+  latent.po.biasing = include.sre,
   po.biasing.basis.functions,
   prune.bfs = 4,
   se = TRUE,
@@ -49,7 +49,7 @@ scampr(
 
 \item{bf.matrix.type}{a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.}
 
-\item{latent.po.biasing}{a logical, applying only to IDM, indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Default is true as this is the most flexible approach unless good measured PO biasing variables are available.}
+\item{latent.po.biasing}{a logical, applying only to IDM, indicating whether biasing in the presence-only data should be accounted for via an additional latent field. Default is \code{include.sre} to allow easy fitting of models excluding spatial random effects however, \code{TRUE} is recommended as this is the most flexible approach unless good measured PO biasing variables are available.}
 
 \item{po.biasing.basis.functions}{an optional extra set of basis functions that can be used when \code{latent.po.biasing = TRUE}, otherwise \code{basis.functions} are used.}
 
