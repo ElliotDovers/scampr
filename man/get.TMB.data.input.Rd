@@ -16,7 +16,7 @@ get.TMB.data.input(
   basis.functions,
   bf.matrix.type = c("sparse", "dense"),
   starting.pars,
-  latent.po.biasing = FALSE,
+  latent.po.biasing = TRUE,
   po.biasing.basis.functions,
   prune.bfs = 4
 )
