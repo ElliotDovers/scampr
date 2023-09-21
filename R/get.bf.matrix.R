@@ -66,6 +66,11 @@ get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", 
       radius <- object$scale[object$res == res][1]
       # calculate the distances from points to basis function nodes
       dist.mat <- fields::rdist(point.locations, object[,1:2][object$res == res, ])
+
+      # We want to get these matrices into sparse format ASAP to save memory and computation times
+
+      # record instances of any point exactly on the nodes of the basis functions
+      pts.on.nodes <- methods::as(dist.mat == 0, "sparseMatrix")
       # set distances beyond the radius to zero
       dist.mat[dist.mat > radius] <- 0
       # if sparse we can save computation time here
@@ -73,7 +78,7 @@ get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", 
         dist.mat <- methods::as(dist.mat, "sparseMatrix")
       }
       # calculate the bi-square basis function matrix
-      Z <- ((dist.mat != 0) - (dist.mat / radius)^2)^2
+      Z <- ((dist.mat != 0 | pts.on.nodes) - (dist.mat / radius)^2)^2
       # add resolution to matrix via columns
       bf.mat <- cbind(bf.mat, Z)
     }
