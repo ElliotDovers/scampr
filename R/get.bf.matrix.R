@@ -8,8 +8,8 @@
 #' @export
 #'
 #' @importFrom FRK eval_basis
-#' @importFrom fields rdist
 #' @importFrom methods as
+#' @importFrom sp spDists
 #'
 #' @examples
 #' # Get the gorilla nesting data
@@ -65,8 +65,12 @@ get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", 
       # obtain the radius
       radius <- object$scale[object$res == res][1]
       # calculate the distances from points to basis function nodes
-      dist.mat <- fields::rdist(point.locations, object[,1:2][object$res == res, ])
-
+      dist.mat <- sp::spDists(as.matrix(point.locations), as.matrix(object[,1:2][object$res == res, ]), longlat = attr(object, "longlat"))
+      # if (is.null(attr(object, "longlat"))) {
+      #   dist.mat <- fields::rdist(point.locations, object[,1:2][object$res == res, ])
+      # } else {
+      #   dist.mat <- sp::spDists(as.matrix(point.locations), as.matrix(object[,1:2][object$res == res, ]), longlat = attr(object, "longlat"))
+      # }
       # We want to get these matrices into sparse format ASAP to save memory and computation times
 
       # record instances of any point exactly on the nodes of the basis functions

@@ -8,7 +8,8 @@ simple_basis(
   nodes.on.long.edge,
   data,
   radius.type = c("diag", "limiting"),
-  coord.names = c("x", "y")
+  coord.names = c("x", "y"),
+  longlat = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ simple_basis(
 \item{radius.type}{character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).}
 
 \item{coord.names}{vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical}
+
+\item{longlat}{a logical indicating whether the coordinates are in Longitude and Latitude so that the radius can be extended to the maximum geodesic distance between nodes. Defaults to \code{FALSE}.}
 }
 \value{
 a simple basis data frame of class 'bf.df'. Consisting of columns: horizontal axis location, vertical axis location, scale (radius), res (resolution id).

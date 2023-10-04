@@ -20,7 +20,7 @@
 #' @importFrom spatstat.geom interp.im
 #' @importFrom methods as
 #' @importFrom MASS mvrnorm
-#' @importFrom fields rdist
+#' @importFrom sp spDists
 #'
 #' @examples
 #' dat <- scampr::gorillas
@@ -234,7 +234,8 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
       for (p in 1:ncol(preds.frame)) {
         # if a factor then assign nearest value
         if (is.factor(preds.frame[ , p])) {
-          pres.dists <- fields::rdist(quad[ , coord.names], pres[ , 1:2]) # distances to nearest quad points
+          # pres.dists <- fields::rdist(quad[ , coord.names], pres[ , 1:2]) # distances to nearest quad points
+          pres.dists <- sp::spDists(as.matrix(quad[ , coord.names]), as.matrix(pres[ , 1:2]), longlat = attr(object, "longlat"))
           nearest.quad <- apply(pres.dists, 2, which.min) # finds the closest
           pres <- cbind(pres, preds.frame[nearest.quad, p])
         } else { # otherwise interpolate
@@ -263,7 +264,9 @@ simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rco
         for (p in 1:ncol(preds.frame)) {
           # if a factor then assign nearest value
           if (is.factor(preds.frame[ , p])) {
-            pres.dists <- fields::rdist(quad[ , coord.names], pres[ , 1:2]) # distances to nearest quad points
+            # pres.dists <- fields::rdist(quad[ , coord.names], pres[ , 1:2]) # distances to nearest quad points
+            pres.dists <- sp::spDists(as.matrix(quad[ , coord.names]), as.matrix(pres[ , 1:2]), longlat = attr(object, "longlat"))
+
             nearest.quad <- apply(pres.dists, 2, which.min) # finds the closest
             pres <- cbind(pres, preds.frame[nearest.quad, p])
           } else { # otherwise interpolate

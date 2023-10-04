@@ -14,7 +14,7 @@
 #'
 #' @importFrom graphics plot.default
 #' @importFrom grDevices topo.colors
-#' @importFrom fields image.plot rdist image.smooth as.image
+#' @importFrom fields image.plot image.smooth as.image
 #'
 #' @examples
 #' # Get the flora data for one of the species

@@ -6,14 +6,17 @@
 #' @param data a data frame containing the two coordinates described by 'coord.names'
 #' @param radius.type character string describing the type of radius length to use. One of 'diag' = diagonal dist. between nodes or 'limiting' = sqrt(Domain Area)/log(k).
 #' @param coord.names vector of character strings describing the names of the coordinates in 'data'. Ordered horizontal axis to vertical
+#' @param longlat a logical indicating whether the coordinates are in Longitude and Latitude so that the radius can be extended to the maximum geodesic distance between nodes. Defaults to \code{FALSE}.
 #'
 #' @return a simple basis data frame of class 'bf.df'. Consisting of columns: horizontal axis location, vertical axis location, scale (radius), res (resolution id).
 #' @export
 #'
+#' @importFrom sp spDists
+#'
 #' @examples
 #' # Base the basis function nodes on the locations of presence records and quadrature
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = gorillas)
-simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limiting"), coord.names = c("x", "y")) {
+simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limiting"), coord.names = c("x", "y"), longlat = FALSE) {
   if (!all(coord.names %in% colnames(data))) {
     stop("at least one of 'coord.names' not found in the data provided")
   }
@@ -42,6 +45,23 @@ simple_basis <- function(nodes.on.long.edge, data, radius.type = c("diag", "limi
                           diag = diff(big.axis.nodes)[1] * sqrt(2),
                           limiting = sqrt(dx * dy) / log(nrow(bf.info))
   )
+  # if dealing with longitudes/latitudes, change the radius to reflect km distances on a curved surface
+  if (longlat) {
+    max_diag_dists <- NULL
+    for (i in 1:nrow(bf.info)) {
+      if (i %% nodes.on.long.edge != 0) {
+        tmp_bloc <- bf.info[c(i:(i+1), i:(i+1) + nodes.on.long.edge), 1:2]
+        tmp_dists <- sp::spDists(as.matrix(na.omit(tmp_bloc)), as.matrix(na.omit(tmp_bloc)), longlat = longlat)
+        max_diag_dists[i] <- max(tmp_dists)
+      } else {
+        max_diag_dists[i] <- 0
+      }
+    }
+    bf.info$scale <- max(max_diag_dists) * 1.5
+    attr(bf.info, "longlat") <- TRUE
+  } else {
+    attr(bf.info, "longlat") <- FALSE
+  }
   bf.info$res <- 1
   class(bf.info) <- c(class(bf.info), "bf.df")
   return(bf.info)

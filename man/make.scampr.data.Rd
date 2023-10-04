@@ -2,7 +2,7 @@
 % Please edit documentation in R/make.scampr.data.R
 \name{make.scampr.data}
 \alias{make.scampr.data}
-\title{Search algorithm for simple 2D basis functions configurations on scampr PA models}
+\title{WIP}
 \usage{
 make.scampr.data(
   pres,
