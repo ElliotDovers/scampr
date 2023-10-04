@@ -52,14 +52,14 @@
 #' dat_po$presence <- dat_po$pres
 #' dat_pa$presence <- dat_pa$sp1
 #'
-#' # Fit models without a latent effects (IPP) #
+#' # Fit models without a latent effects
 #' # Point Process Model
-#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, include.sre = F)
+#' m.ipp <- scampr(presence ~ MNT + D.Main, dat_po, include.sre = F)
 #' # Binary Regression
-#' m.bin <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, include.sre = F)
-#' # Combined Data Model
-#' m.comb <- scampr(pres ~ MNT, dat_po, bias.formula = ~ D.Main,
-#' dat_pa, include.sre = F)
+#' m.bin <- scampr(presence ~ MNT, dat_pa, include.sre = F, model.type = "PA")
+#' # Integrated Data Model
+#' m.comb <- scampr(presence ~ MNT, dat_po, bias.formula = ~ D.Main,
+#' IDM.presence.absence.df = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
@@ -67,12 +67,12 @@
 #' \dontrun{
 #' # Fit with a shared latent field (LGCP) #
 #' # Point Process Model
-#' m.lgcp <- scampr(pres ~ MNT + D.Main, dat_po, basis.functions = bfs)
+#' m.lgcp <- scampr(presence ~ MNT + D.Main, dat_po, basis.functions = bfs)
 #' # Binary Regression with spatial random effects
-#' m.bin_w_sre <- scampr(sp1 ~ MNT, dat_pa, basis.functions = bfs)
-#' # Combined Data Model with spatial random effects
+#' m.bin_w_sre <- scampr(presence ~ MNT, dat_pa, basis.functions = bfs, model.type = "PA")
+#' # Integrated Data Model with spatial random effects
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
-#' dat_pa, basis.functions = bfs)
+#' dat_pa, basis.functions = bfs, model.type = "IDM")
 #' }
 scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
@@ -103,7 +103,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   if (!missing(bias.formula)) {
     if (is(bias.formula, "formula")) {
       if (!all(labels(terms(bias.formula)) %in% colnames(data))) {
-        stop("'data' does not contain the formula terms")
+        stop("'data' does not contain the bias.formula terms")
       }
     } else {
       stop("'bias.formula' must be of class formula")

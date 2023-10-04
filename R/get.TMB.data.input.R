@@ -41,7 +41,6 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
   # arg.info <- as.list(environment())
   arg.info <- as.list(match.call())
 
-
   # approach based on the data type #
 
   if (model.type == "PO") { # Presence-only data
@@ -303,6 +302,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     # get the fixed effect design matrix
     des.mat <- get.design.matrix(formula, data)
 
+    # get the offset term if present
+    offset.vec <- get.offset(formula, data)
+
     ############################################################################
 
     ## Random Effects ##########################################################
@@ -336,10 +338,12 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       X_PA = as.matrix(des.mat),
       Z_PA = pa.bf.matrix,
       Y = Y,
+      OFFSET = as.vector(offset.vec),
       bf_per_res = as.numeric(table(bf.info$res)),
       approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
       bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
-      model_type = 1
+      model_type = 1,
+      pa_offset = if (attr(offset.vec, "check")) {1} else {0}
     )
 
     ## Parameters ##############################################################
@@ -436,6 +440,9 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       }
     }
     pa.des.mat <- get.design.matrix(formula, IDM.presence.absence.df)
+
+    # get the offset term if present
+    offset.vec <- get.offset(formula, IDM.presence.absence.df)
 
     # get the bias predictor design matrix
     if (missing(bias.formula)) {
@@ -633,12 +640,14 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                           Z_PA = pa.bf.matrix,
                                           quad_size = data_quad[ , quad.weights.name],
                                           Y = Y,
+                                          OFFSET = as.vector(offset.vec),
                                           bf_per_res = as.numeric(table(bf.info$res)),
                                           approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                           bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                           fixed_bias_type = 0, # no accounting for biasing via fixed effects
                                           random_bias_type = 0, # no accounting for biasing via random effects
-                                          model_type = 2 # integrated data
+                                          model_type = 2, # integrated data
+                                          pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                         ),
                                         field1 = list(
                                           X_PO_pres = po.des.mat_pres,
@@ -649,12 +658,14 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                           Z_PA = pa.bf.matrix,
                                           quad_size = data_quad[ , quad.weights.name],
                                           Y = Y,
+                                          OFFSET = as.vector(offset.vec),
                                           bf_per_res = as.numeric(table(bf.info$res)),
                                           approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                           bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                           fixed_bias_type = 0, # no accounting for biasing via fixed effects
                                           random_bias_type = 1, # accounting for biasing using additional latent field on existing basis functions
-                                          model_type = 2 # integrated data
+                                          model_type = 2, # integrated data
+                                          pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                         ),
                                         field2 = list(
                                           X_PO_pres = po.des.mat_pres,
@@ -667,13 +678,15 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                           Z_PA = pa.bf.matrix,
                                           quad_size = data_quad[ , quad.weights.name],
                                           Y = Y,
+                                          OFFSET = as.vector(offset.vec),
                                           bf_per_res = as.numeric(table(bf.info$res)),
                                           bias_bf_per_res = as.numeric(table(bias.bf.info$res)),
                                           approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                           bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                           fixed_bias_type = 0, # no accounting for biasing via fixed effects
                                           random_bias_type = 2, # accounting for biasing using additional latent field on additional basis functions
-                                          model_type = 2 # integrated data
+                                          model_type = 2, # integrated data
+                                          pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                         )
                        ),
                        covariates = switch(random.bias.type,
@@ -688,12 +701,14 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                              Z_PA = pa.bf.matrix,
                                              quad_size = data_quad[ , quad.weights.name],
                                              Y = Y,
+                                             OFFSET = as.vector(offset.vec),
                                              bf_per_res = as.numeric(table(bf.info$res)),
                                              approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                              bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                              fixed_bias_type = 1, # accounting for biasing with fixed effects
                                              random_bias_type = 0, # no accounting for biasing via random effects
-                                             model_type = 2 # integrated data
+                                             model_type = 2, # integrated data
+                                             pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                            ),
                                            field1 = list(
                                              X_PO_pres = po.des.mat_pres,
@@ -706,12 +721,14 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                              Z_PA = pa.bf.matrix,
                                              quad_size = data_quad[ , quad.weights.name],
                                              Y = Y,
+                                             OFFSET = as.vector(offset.vec),
                                              bf_per_res = as.numeric(table(bf.info$res)),
                                              approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                              bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                              fixed_bias_type = 1, # accounting for biasing with fixed effects
                                              random_bias_type = 1, # accounting for biasing using additional latent field on existing basis functions
-                                             model_type = 2 # integrated data
+                                             model_type = 2, # integrated data
+                                             pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                            ),
                                            field2 = list(
                                              X_PO_pres = po.des.mat_pres,
@@ -726,13 +743,15 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
                                              Z_PA = pa.bf.matrix,
                                              quad_size = data_quad[ , quad.weights.name],
                                              Y = Y,
+                                             OFFSET = as.vector(offset.vec),
                                              bf_per_res = as.numeric(table(bf.info$res)),
                                              bias_bf_per_res = as.numeric(table(bias.bf.info$res)),
                                              approx_type = as.integer(which(approx.type == c("not_sre", "variational", "laplace")) - 1),
                                              bf_type = as.integer(which(bf.matrix.type == c("sparse", "dense")) - 1),
                                              fixed_bias_type = 1, # accounting for biasing with fixed effects
                                              random_bias_type = 2, # accounting for biasing using additional latent field on additional basis functions
-                                             model_type = 2 # integrated data
+                                             model_type = 2, # integrated data
+                                             pa_offset = if (attr(offset.vec, "check")) {1} else {0}
                                            )
                        )
     )
