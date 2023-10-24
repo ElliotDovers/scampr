@@ -65,7 +65,11 @@ get.bf.matrix <- function(object, point.locations, bf.matrix.type = c("sparse", 
       # obtain the radius
       radius <- object$scale[object$res == res][1]
       # calculate the distances from points to basis function nodes
-      dist.mat <- sp::spDists(as.matrix(point.locations), as.matrix(object[,1:2][object$res == res, ]), longlat = attr(object, "longlat"))
+      if (nrow(point.locations) == 0) { # allows the edge case where there are no points (could arise in cross-validation for example)
+        dist.mat <- matrix(NA, nrow = 0, ncol = nrow(as.matrix(object[,1:2][object$res == res, ])))
+      } else {
+        dist.mat <- sp::spDists(as.matrix(point.locations), as.matrix(object[,1:2][object$res == res, ]), longlat = attr(object, "longlat"))
+      }
       # if (is.null(attr(object, "longlat"))) {
       #   dist.mat <- fields::rdist(point.locations, object[,1:2][object$res == res, ])
       # } else {
