@@ -5,10 +5,13 @@
   DATA_MATRIX(X_PO_pres);                   // Fixed effects n_{PO} x p matrix - at the presence pts
   DATA_MATRIX(X_PO_quad);                   // Fixed effects q x p matrix - at the quadrature pts
   DATA_VECTOR(quad_size);                   // Vector describing the quadrature sizes - length m
+  DATA_VECTOR(OFFSET_pres);                 // Fixed effect vector of offset values - length n_{PO}
+  DATA_VECTOR(OFFSET_quad);                 // Fixed effect vector of offset values - length q
 
   // Utility specific to PPM
   DATA_INTEGER(fixed_bias_type);            // Integer = 0 for none (or included in fixed effects); = 1 for biasing covariates
   DATA_INTEGER(random_bias_type);           // Integer = 0 for none; = 1 for secondary latent field with same basis functions (IDM only); = 2 for secondary latent field with new basis functions (IDM only)
+  DATA_INTEGER(po_offset);                  // Integer = 0 for no offset term; = 1 for an offset term
   // Create enumeration of the bias_type for switch function
   enum fixed_bias_type { missing, covars };
   enum random_bias_type { none, field1, field2};
@@ -20,6 +23,12 @@
   // Shared by all model types:
   vector<Type> Xfixed_PO_pres = X_PO_pres * fixed;  // fixed effects at presence pts. (including intercept depending on formula)
   vector<Type> Xfixed_PO_quad = X_PO_quad * fixed;  // fixed effects at quadrature pts. (including intercept depending on formula)
+
+  // add in the offset term if present
+  if (po_offset == 1) {
+    Xfixed_PO_pres = Xfixed_PO_pres + OFFSET_pres;
+    Xfixed_PO_quad = Xfixed_PO_quad + OFFSET_quad;
+  }
 
   // Initialise the vectors resulting from the switch (will add in bias as needed)
   vector<Type> eta_fixed_pres = Xfixed_PO_pres; // at presence pts.
