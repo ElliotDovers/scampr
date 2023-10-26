@@ -10,8 +10,8 @@
 #'
 #' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.
 #' @param data a data frame containing response and predictors within \code{formula}.
-#' @param bias.formula an object of class "formula" (or one that can be coerced to that class) OR the character string "latent". In the formula case, this is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed). In the case of fitting an integrated data model, \code{bias.formula = "latent"} will fit an approximate latent Gaussian field to account for the bias.
-#' @param IDM.presence.absence.df an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
+#' @param bias.formula an object of class "formula" (or one that can be coerced to that class). This is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed).
+#' @param pa.data an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
 #' @param quad.weights.name a character string of the column name of quadrature weights in the data.
 #' @param include.sre a logical indicating whether to fit the model with spatial random effects (SRE).
@@ -59,7 +59,7 @@
 #' m.bin <- scampr(presence ~ MNT, dat_pa, include.sre = F, model.type = "PA")
 #' # Integrated Data Model
 #' m.comb <- scampr(presence ~ MNT, dat_po, bias.formula = ~ D.Main,
-#' IDM.presence.absence.df = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
+#' pa.data = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
 #'
 #' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 #' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
@@ -74,7 +74,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs, model.type = "IDM")
 #' }
-scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
+scampr <- function(formula, data, bias.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
   ## checks ####################################################################
 
@@ -136,11 +136,11 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   #   latent.po.biasing <- FALSE
   # }
   if (model.type == "IDM") {
-    if (missing(IDM.presence.absence.df)) {
-      stop("Please provide presence/absence data as 'IDM.presence.absence.df' for the Integrated Data Model")
+    if (missing(pa.data)) {
+      stop("Please provide presence/absence data as 'pa.data' for the Integrated Data Model")
     } else {
-      if (!all(c(resp, pred) %in% colnames(IDM.presence.absence.df))) {
-        stop("'IDM.presence.absence.df' does not contain all of the terms in 'formula'")
+      if (!all(c(resp, pred) %in% colnames(pa.data))) {
+        stop("'pa.data' does not contain all of the terms in 'formula'")
       }
     }
   }
@@ -169,10 +169,10 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     data <- data[-rm.rows, ]
   }
 
-  if (!missing(IDM.presence.absence.df)) {
-    rm.rows.df2 <- attr(na.omit(IDM.presence.absence.df[ , c(resp, pred)]), "na.action")
+  if (!missing(pa.data)) {
+    rm.rows.df2 <- attr(na.omit(pa.data[ , c(resp, pred)]), "na.action")
     if (!is.null(rm.rows.df2)) {
-      IDM.presence.absence.df <- IDM.presence.absence.df[-rm.rows.df2, ]
+      pa.data <- pa.data[-rm.rows.df2, ]
     }
   }
   ##############################################################################
@@ -217,8 +217,8 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   call.list$model.type <- model.type
   call.list$sre.approx <- sre.approx
   call.list$data <- data
-  if (!missing(IDM.presence.absence.df)) {
-    call.list$IDM.presence.absence.df <- IDM.presence.absence.df
+  if (!missing(pa.data)) {
+    call.list$pa.data <- pa.data
   }
   mod.call <- as.call(call.list)
   # remove unused terms from the call
@@ -260,8 +260,49 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
     if (any(is.na(tmp.estimates[,2]) | any(is.infinite(tmp.estimates[,2])) | any(is.nan(tmp.estimates[,2])))) {
       res$se.flag <- 1
     }
-  } else {
-    tmp.estimates <- cbind(Estimate = res$par, `Std. Error` = rep(NA, length(res$par)))
+  } else { # Extract the point estimates only but place in the same format as for se = TRUE
+
+    # add in the posterior means of the random coefficients and their corresponding posterior/prior variance components
+    if (inputs$args$approx.type == "laplace") {
+      # posterior means of the random coefficients
+      re.posterior.means <- obj$env$parList()$random
+      names(re.posterior.means) <- rep("random", length(re.posterior.means))
+      # posterior variances of the random coefficients
+      var.comp_post <- NULL # don't exist in the Laplace approximation
+      # prior variances of the random coefficients
+      var.comp_prior <- exp(obj$env$parList()$log_variance_component)^2
+      names(var.comp_prior) <- rep("PriorVar", length(var.comp_prior))
+
+    } else if (inputs$args$approx.type == "variational") {
+      # posterior means of the random coefficients
+      re.posterior.means <- NULL # already included in res$par in this case
+      # posterior variances of the random coefficients
+      var.comp_post <- exp(obj$env$parList()$log_variance_component)
+      names(var.comp_post) <- rep("PosteriorVar", length(var.comp_post))
+      # prior variances of the random coefficients
+      var.comp_prior <- sapply(split(var.comp_post + (obj$env$parList()$random^2), inputs$bf.info$res), mean) # calculate the mean of the sum of variances and squared posterior means, within each basis function resolution
+      names(var.comp_prior) <- rep("PriorVar", length(var.comp_prior))
+    } else {
+      re.posterior.means <- NULL
+      var.comp_post <- NULL
+      var.comp_prior <- NULL
+    }
+    # TODO: add in the random_bias components
+    if (inputs$args$random.bias.type %in% c("field1", "field2")) {
+      # posterior means of the random bias coefficients
+      re.posterior.means_bias <- obj$env$parList()$random_bias
+      names(re.posterior.means_bias) <- rep("random_bias", length(re.posterior.means_bias))
+      # prior variances of the random bias coefficients (included with the other prior variances)
+      tmp.bias_var <- exp(obj$env$parList()$log_variance_component_bias)^2
+      names(tmp.bias_var) <- rep("PriorVar_bias", length(tmp.bias_var))
+      var.comp_prior <- c(tmp.bias_var, var.comp_prior)
+    } else {
+      re.posterior.means_bias <- NULL
+    }
+
+    # combine into the estimates data frame equivalent produced when se = T
+    tmp.estimates <- cbind(Estimate = c(res$par, re.posterior.means, var.comp_post, re.posterior.means_bias, var.comp_prior),
+                           `Std. Error` = rep(NA, sum(length(res$par) + length(re.posterior.means) + length(var.comp_post) + length(re.posterior.means_bias) + length(var.comp_prior))))
   }
 
   ##############################################################################
@@ -535,7 +576,7 @@ scampr <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.n
   res$starting.pars <- inputs$start.pars
   res$data <- data
   if (inputs$args$model.type == "IDM") {
-    attr(res$data, "PA") <- IDM.presence.absence.df
+    attr(res$data, "PA") <- pa.data
   }
   res$formula <- formula
   if (!missing(bias.formula)) {

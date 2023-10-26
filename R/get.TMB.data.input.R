@@ -3,7 +3,7 @@
 #' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.
 #' @param data a data frame containing response and predictors within \code{formula}.
 #' @param bias.formula an object of class "formula" (or one that can be coerced to that class) OR the character string "latent". In the formula case, this is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed). In the case of fitting an integrated data model, \code{bias.formula = "latent"} will fit an approximate latent Gaussian field to account for the bias.
-#' @param IDM.presence.absence.df an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
+#' @param pa.data an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
 #' @param quad.weights.name a charater string of the column name of quadrature weights in the data.
 #' @param approx.type a character string indicating the type of model to be used. May be one of 'laplace' or 'variational' for models involving spatial random effects, OR 'not_sre' for a fixed effect model.
@@ -30,7 +30,7 @@
 #' # Get the TMB data lists for a combined data model without latent field
 #' tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
 #' str(tmb.input)
-get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence.df, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4) {
+get.TMB.data.input <- function(formula, data, bias.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", approx.type = c("variational", "laplace", "not_sre"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), starting.pars, latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4) {
 
   # checks for parameters of restricted strings
   model.type <- match.arg(model.type)
@@ -441,7 +441,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
     data_quad <- data[pt.quad.id == 0, ]
 
     # get the binary response
-    Y = as.numeric(IDM.presence.absence.df[ , all.vars(formula[[2]])] > 0) # corrects in the case of abundance
+    Y = as.numeric(pa.data[ , all.vars(formula[[2]])] > 0) # corrects in the case of abundance
 
     ## Fixed Effects ###########################################################
 
@@ -466,10 +466,10 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
         po.des.mat_quad <- des.mat[pt.quad.id == 0, ]
       }
     }
-    pa.des.mat <- get.design.matrix(formula, IDM.presence.absence.df)
+    pa.des.mat <- get.design.matrix(formula, pa.data)
 
     # get the offset term if present
-    pa.offset.vec <- get.offset(formula, IDM.presence.absence.df)
+    pa.offset.vec <- get.offset(formula, pa.data)
 
     # get the bias predictor design matrix
     if (missing(bias.formula)) {
@@ -557,7 +557,7 @@ get.TMB.data.input <- function(formula, data, bias.formula, IDM.presence.absence
       # calculate the basis function matrices
       po.bf.matrix_pres <- get.bf.matrix(basis.functions, point.locations = data_pres[ , coord.names], bf.matrix.type = bf.matrix.type)
       po.bf.matrix_quad <- get.bf.matrix(basis.functions, point.locations = data_quad[ , coord.names], bf.matrix.type = bf.matrix.type)
-      pa.bf.matrix <- get.bf.matrix(basis.functions, point.locations = IDM.presence.absence.df[ , coord.names], bf.matrix.type = bf.matrix.type)
+      pa.bf.matrix <- get.bf.matrix(basis.functions, point.locations = pa.data[ , coord.names], bf.matrix.type = bf.matrix.type)
       # store the basis function information
       bf.info <- attr(po.bf.matrix_pres, "bf.df")
 
