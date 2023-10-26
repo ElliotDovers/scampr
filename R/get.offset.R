@@ -11,7 +11,7 @@
 #' @importFrom stats model.frame model.matrix update.formula
 #'
 #' @examples
-#' des.mat <- scampr:::get.design.matrix(Petal.Length ~ Petal.Width + Species, iris)
+#' des.mat <- scampr:::get.offset(Petal.Length ~ Petal.Width + Species + offset(Petal.Length), iris)
 #' head(des.mat)
 get.offset <- function(formula, data, subset, na.action) {
   mf <- match.call(expand.dots = FALSE)

@@ -8,7 +8,7 @@
 #' @param field
 #'
 #' @return See spatstat::plot.im
-#' @export
+#' @noRd
 #'
 #' @importFrom spatstat.geom plot.im
 #'

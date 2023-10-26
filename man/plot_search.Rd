@@ -2,16 +2,16 @@
 % Please edit documentation in R/plot_search.R
 \name{plot_search}
 \alias{plot_search}
-\title{Plot basis function search results - for objects of class 'basis.search' ### WIP ###}
+\title{Plot basis function search results - for objects of class 'basis.search'}
 \usage{
-plot_search(x, ..., plot.metric = 1:6)
+plot_search(x, ..., plot.metric = 1)
 }
 \arguments{
-\item{x}{an object of class 'basis.search'}
+\item{x}{a scampr model fitted via \code{basis.search()} or object of class 'basis.search'}
 
 \item{...}{additional plotting arguments}
 
-\item{plot.metric}{one or more numbers from 1 to 6 indicating the metric(s) to be plotted. 1: Fitted approximate log-likelihood. 2: Fitted approx. log-Likelihood (Presence-only component). 3: Fitted approx. log-Likelihood (Presence/absence component). 4: Predicted Conditional log-Likelihood (Presence-only Data). 5: Predicted Conditional log-Likelihood (Presence/absence Data). 6: Area Under the Operator/Receiver Characteristic Curve (AUC) on the Presence/absence data.}
+\item{plot.metric}{one or more numbers from 1 to 3 indicating the metric(s) to be plotted. 1: Fitted approximate log-likelihood. 2: Akaike's Information Criterion. 3: Bayesian Information Criterion}
 }
 \description{
 Plots the results of a simple basis function search created by \code{scampr::basis.search()}.
@@ -21,20 +21,25 @@ Plots the results of a simple basis function search created by \code{scampr::bas
 dat_po <- flora$po$sp1
 dat_pa <- flora$pa
 
-# Create the basis functions on the flora quadrature
-bfs <-  simple_basis(9, flora$quad)
+# obtain a sample of 10,000 quadrature points for the point process model
+set.seed(1)
+quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+set.seed(NULL)
 
-# Plot the bi-square basis functions
-plot(bfs)
+# Attach the quadrature points to the presence-only data
+dat_po <- rbind.data.frame(dat_po, quad.pts)
 
-# Fit a combined data model
-m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-dat_pa, model.type = "ipp")
+# Ensure the "response" variable in each data set shares the same name
+dat_po$presence <- dat_po$pres
+dat_pa$presence <- dat_pa$sp1
 
-# Fit presence/absence model
-m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
+# Fit an integrated data model without a latent effects to initialise the basis search
+base.idm <- scampr(presence ~ MNT, dat_po, bias.formula = ~ D.Main,
+pa.data = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
 
-plot(m.ipp)
-plot(m.comb)
-plot(m.pa)
+# Perform the basis search and fit the optimised model
+idm <- basis.search(base.idm, return.model = TRUE)
+
+# Plot the search results
+plot_search(idm)
 }

@@ -26,7 +26,7 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
+#' m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "PO")
 #'  \dontrun{
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- basis.search(m.ipp)
@@ -53,11 +53,13 @@ basis.search <- function(object, metric = c("ll", "aic", "bic"), return.model = 
       attr(res_pa, "search.res")$data = "PA"
       attr(res_po, "search.res")$data = "PO"
       attr(res, "search.res") <- rbind(attr(res_pa, "search.res"), attr(res_po, "search.res"))
+      attr(res, "prune.stop") <- attr(res_po, "prune.stop")
     } else {
       # collate the different searches to return
       res_pa$data = "PA"
       res_po$data = "PO"
       res <- rbind(res_pa, res_po)
+      attr(res, "prune.stop") <- attr(res_po, "prune.stop")
     }
 
   } else {

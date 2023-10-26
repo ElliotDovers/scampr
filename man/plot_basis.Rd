@@ -20,6 +20,9 @@ Plots the bi-square basis functions created by \code{scampr::simple_basis()}.
 # Create the basis functions on the flora quadrature
 bfs <-  simple_basis(9, flora$quad)
 
-# Plot the bi-square basis functions
-plot_basis(bfs)
+# plot the quadrature points
+plot(flora$quad[,c("x", "y")], asp = 1, pch = ".", col = "blue")
+
+# add the plot of the bi-square basis functions
+plot_basis(bfs, add = T)
 }

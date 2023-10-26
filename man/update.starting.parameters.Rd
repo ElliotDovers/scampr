@@ -25,5 +25,17 @@ Internal scampr function that gets warm starting parameters to pass to TMB
 }
 \examples{
 # Get the gorilla nesting data
+data(gorillas, package = "scampr")
 dat <- gorillas
+
+# Standardise the elevation covariate
+dat$elev.std <- scale(dat$elevation)
+
+# Fit a scampr model to the point pattern
+m <- scampr(pres ~ elev.std, data = dat, include.sre = F)
+
+# Get new start parameters
+update.startingp.parameters(m, list(fixed = rep(0, ncol(dat.list$X_PO_pres)),
+  random = rep(0, ncol(dat.list$Z_PO_pres)),
+  log_variance_component = var.starts))
 }

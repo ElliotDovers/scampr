@@ -39,6 +39,6 @@ Inhomogeneous K function for scampr models (is a wrapper of \code{spatstat}'s ve
 # Get the data
 dat <- scampr::gorillas
 dat$elev <- scale(dat$elevation)
-mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+mod <- scampr(pres ~ elev, dat, model.type = "PO", include.sre = F)
 K_func <- kfunc(mod)
 }

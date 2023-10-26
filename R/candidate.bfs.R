@@ -9,7 +9,7 @@
 #' @param bf.matrix.type a character string, one of 'sparse' or 'dense' indicating whether to use sparse or dense matrix computations for the basis functions created.
 #'
 #' @return a list of basis function configurations up to the maximum supplied
-#' @export
+#' @noRd
 #'
 #' @examples
 #' #' # Get the gorilla nesting data

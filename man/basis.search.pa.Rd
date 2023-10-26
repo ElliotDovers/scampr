@@ -49,15 +49,12 @@ This function takes in a scampr model and fits increasingly dense regular grids 
 }
 \examples{
 #' # Get the gorilla nesting data
-dat <- gorillas
-
-# Standardise the elevation covariate
-dat$elev.std <- scale(dat$elevation)
+dat_pa <- flora$pa
 
 # Fit an IPP model to the point pattern
-m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
+m <- scampr(sp1 ~ MNT, dat_pa, include.sre = F, model.type = "PA")
  \dontrun{
 # perform search
-res <- basis.search(m.ipp)
+res <- basis.search(m)
 }
 }

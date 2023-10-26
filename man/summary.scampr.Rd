@@ -26,7 +26,7 @@ dat <- gorillas
 dat$elev.std <- scale(dat$elevation)
 
 # Fit a scampr model to the point pattern
-m <- scampr(pres ~ elev.std, data = dat, model.type = "not_sre")
+m <- scampr(pres ~ elev.std, data = dat, include.sre = F)
 
 summary(m)
 }

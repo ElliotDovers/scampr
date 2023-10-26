@@ -8,7 +8,8 @@ scampr(
   formula,
   data,
   bias.formula,
-  IDM.presence.absence.df,
+  pa.data,
+  po.data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
   include.sre = TRUE,
@@ -29,11 +30,13 @@ scampr(
 \arguments{
 \item{formula}{an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.}
 
-\item{data}{a data frame containing response and predictors within \code{formula}.}
+\item{data}{a data frame containing response and predictors within \code{formula}. Usually defaults to the point pattern and quadrature but will attempt to cleverly determine this via \code{model.type}, e.g., this is assumed to be presence/absence data when \code{model.type='PA'}. Otherwise, use \code{po.data} and/or \code{pa.dtaa} to supply the appropriate data frame explicitly.}
 
-\item{bias.formula}{an object of class "formula" (or one that can be coerced to that class) OR the character string "latent". In the formula case, this is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed). In the case of fitting an integrated data model, \code{bias.formula = "latent"} will fit an approximate latent Gaussian field to account for the bias.}
+\item{bias.formula}{an object of class "formula" (or one that can be coerced to that class). This is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed).}
 
-\item{IDM.presence.absence.df}{an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.}
+\item{pa.data}{an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.}
+
+\item{po.data}{an optional data frame. Can be use to explicitly define the presence-only data (and quadrature) when fitting an integrated data model.}
 
 \item{coord.names}{a vector of character strings describing the column names of the coordinates in both data frames.}
 
@@ -99,7 +102,7 @@ m.ipp <- scampr(presence ~ MNT + D.Main, dat_po, include.sre = F)
 m.bin <- scampr(presence ~ MNT, dat_pa, include.sre = F, model.type = "PA")
 # Integrated Data Model
 m.comb <- scampr(presence ~ MNT, dat_po, bias.formula = ~ D.Main,
-IDM.presence.absence.df = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
+pa.data = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
 
 # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)

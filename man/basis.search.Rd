@@ -58,7 +58,7 @@ dat <- gorillas
 dat$elev.std <- scale(dat$elevation)
 
 # Fit an IPP model to the point pattern
-m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
+m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "PO")
  \dontrun{
 # Search through an increasingly dense regular grid of basis functions
 res <- basis.search(m.ipp)

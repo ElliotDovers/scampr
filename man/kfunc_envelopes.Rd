@@ -39,6 +39,6 @@ Perform simulations from a scampr model to calculate global envelopes for the in
 # Get the data
 dat <- scampr::gorillas
 dat$elev <- scale(dat$elevation)
-mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+mod <- scampr(pres ~ elev, dat, model.type = "PO", include.sre = F)
 kfunc_envelopes(mod)
 }

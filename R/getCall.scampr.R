@@ -16,7 +16,7 @@
 #' dat_po <- rbind.data.frame(dat_po, flora$quad)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
+#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "PO")
 #'
 #' getCall(m.ipp)
 getCall.scampr <- function(x, ...) {

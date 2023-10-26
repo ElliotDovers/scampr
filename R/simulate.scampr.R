@@ -25,7 +25,7 @@
 #' @examples
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
-#' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+#' mod <- scampr(pres ~ elev, dat, include.sre = F)
 #' \dontrun{pp <- simulate(mod)}
 simulate.scampr <- function(object, nsim = 1, seed = NULL, ..., domain.data, rcoef.density = c("posterior", "prior"), which.intensity = c("expected", "sample"), return.type = c("data.frame", "ppp"), nsurv, log.expected = T) {
 

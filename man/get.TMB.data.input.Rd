@@ -8,7 +8,7 @@ get.TMB.data.input(
   formula,
   data,
   bias.formula,
-  IDM.presence.absence.df,
+  pa.data,
   coord.names = c("x", "y"),
   quad.weights.name = "quad.size",
   approx.type = c("variational", "laplace", "not_sre"),
@@ -28,7 +28,7 @@ get.TMB.data.input(
 
 \item{bias.formula}{an object of class "formula" (or one that can be coerced to that class) OR the character string "latent". In the formula case, this is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed). In the case of fitting an integrated data model, \code{bias.formula = "latent"} will fit an approximate latent Gaussian field to account for the bias.}
 
-\item{IDM.presence.absence.df}{an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.}
+\item{pa.data}{an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.}
 
 \item{coord.names}{a vector of character strings describing the column names of the coordinates in both data frames.}
 
@@ -61,10 +61,19 @@ Internal scampr function that creates a list of data and starting parameters for
 dat_po <- flora$po$sp1
 dat_pa <- flora$pa
 
-# Attach the quadrature to the PO data
-dat_po <- rbind.data.frame(dat_po, flora$quad)
+# obtain a sample of 10,000 quadrature points for the point process model
+set.seed(1)
+quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+set.seed(NULL)
+
+# Attach the quadrature points to the presence-only data
+dat_po <- rbind.data.frame(dat_po, quad.pts)
+
+# Ensure the "response" variable in each data set shares the same name
+dat_po$presence <- dat_po$pres
+dat_pa$presence <- dat_pa$sp1
 
 # Get the TMB data lists for a combined data model without latent field
-tmb.input <- scampr:::get.TMB.data.input(pres ~ MNT + D.Main, sp1 ~ MNT, po.data = dat_po, pa.data = dat_pa, approx.type = "not_sre")
+tmb.input <- scampr:::get.TMB.data.input(presence ~ MNT, bias.formula ~ D.Main, po.data = dat_po, pa.data = dat_pa)
 str(tmb.input)
 }

@@ -18,7 +18,25 @@ a data.frame (sparse or dense depending on parameter bf.matrix.type)
 Internal scampr function that uses TMB to make the objective function of scampr models
 }
 \examples{
-# Get the gorilla nesting data
-dat <- gorillas
+# Get the flora data for one of the species
+dat_po <- flora$po$sp1
+dat_pa <- flora$pa
 
+# obtain a sample of 10,000 quadrature points for the point process model
+set.seed(1)
+quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+set.seed(NULL)
+
+# Attach the quadrature points to the presence-only data
+dat_po <- rbind.data.frame(dat_po, quad.pts)
+
+# Ensure the "response" variable in each data set shares the same name
+dat_po$presence <- dat_po$pres
+dat_pa$presence <- dat_pa$sp1
+
+# Get the TMB data lists for a combined data model without latent field
+tmb.input <- scampr:::get.TMB.data.input(presence ~ MNT, bias.formula ~ D.Main, po.data = dat_po, pa.data = dat_pa)
+
+# create the objective function
+obj <- make.objective.function(tmb.input)
 }

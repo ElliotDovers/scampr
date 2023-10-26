@@ -22,6 +22,6 @@ a data.frame
 Internal scampr function that creates a fixed effect offset vector from a formula and data
 }
 \examples{
-des.mat <- scampr:::get.design.matrix(Petal.Length ~ Petal.Width + Species, iris)
+des.mat <- scampr:::get.offset(Petal.Length ~ Petal.Width + Species + offset(Petal.Length), iris)
 head(des.mat)
 }

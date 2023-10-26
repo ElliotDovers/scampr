@@ -26,7 +26,7 @@
 #' dat$elev.std <- scale(dat$elevation)
 #'
 #' # Fit an IPP model to the point pattern
-#' m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "ipp")
+#' m.ipp <- scampr(pres ~ elev.std, data = dat, model.type = "PO")
 #'  \dontrun{
 #' # Search through an increasingly dense regular grid of basis functions
 #' res <- basis.search(m.ipp)
@@ -67,6 +67,7 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
   basis.functions.list <- list()
   tmp.nodes <- 0
   tmp.k <- 0
+  tmp.k_full <- 0
   tmp.radius <- NA
   tmp.ll <- logLik(base.m)
   tmp.aic <- AIC(base.m)
@@ -88,6 +89,7 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
   mod.list[[2]] <- m2
   # store info
   tmp.k <- c(tmp.k, sum(m2$basis.per.res))
+  tmp.k_full <- c(tmp.k_full, nrow(tmp.bfs))
   tmp.radius <- c(tmp.radius, tmp.bfs$scale[1])
   tmp.ll <- c(tmp.ll, logLik(m2))
   tmp.aic <- c(tmp.aic, AIC(m2))
@@ -139,6 +141,7 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
     basis.functions.list[[counter + 1]] <- tmp.bfs
     # record the number of basis functions, log-likelihood and BIC, etc.
     tmp.k <- c(tmp.k, sum(m2$basis.per.res))
+    tmp.k_full <- c(tmp.k_full, nrow(tmp.bfs))
     tmp.radius <- c(tmp.radius, tmp.bfs$scale[1])
     tmp.ll <- c(tmp.ll, logLik(m2))
     tmp.aic <- c(tmp.aic, AIC(m2))
@@ -174,6 +177,7 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
   opt.mod.id <- length(tmp.ll) - 1
 
   res <- data.frame(nodes = tmp.nodes,
+                    k_full = tmp.k_full,
                     k = tmp.k,
                     radius = tmp.radius,
                     ll = tmp.ll,
@@ -195,5 +199,6 @@ basis.search.po <- function(object, metric = c("ll", "aic", "bic"), return.model
     ret.obj <- res
   }
   attr(ret.obj, "bfs") <- basis.functions.list
+  attr(ret.obj, "prune.stop") <- !continue.if_k
   return(ret.obj)
 }

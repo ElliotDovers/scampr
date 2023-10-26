@@ -15,8 +15,11 @@
 #' # Create the basis functions on the flora quadrature
 #' bfs <-  simple_basis(9, flora$quad)
 #'
-#' # Plot the bi-square basis functions
-#' plot_basis(bfs)
+#' # plot the quadrature points
+#' plot(flora$quad[,c("x", "y")], asp = 1, pch = ".", col = "blue")
+#'
+#' # add the plot of the bi-square basis functions
+#' plot_basis(bfs, add = T)
 plot_basis <- function(x, ..., add = FALSE) {
   if (!is(x, "bf.df")) {
     stop("Please provide an object of class 'bf.df'")

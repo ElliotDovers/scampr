@@ -30,7 +30,7 @@ dat$elev.std <- scale(dat$elevation)
 bfs <- simple_basis(nodes.on.long.edge = 9, data = dat)
 
 # Fit a LGCP model using variational approximation
-m.lgcp_va <- scampr(pres ~ elev.std, data = dat, model.type = "variational", simple.basis = bfs)
+m.lgcp_va <- scampr(pres ~ elev.std, data = dat, model.type = "PO", basis.functions = bfs)
 
 # Get some new locations
 new.sites <- dat[sample(1:nrow(dat), 10), c("x", "y")]

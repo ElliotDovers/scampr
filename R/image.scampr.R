@@ -21,17 +21,21 @@
 #' dat_po <- flora$po$sp1
 #' dat_pa <- flora$pa
 #'
-#' # Attach the quadrature to the PO data
-#' dat_po <- rbind.data.frame(dat_po, flora$quad)
+#' # Attach the quadrature points to the presence-only data
+#' dat_po <- rbind.data.frame(dat_po, flora$quad) # using full quadrature for plotting
 #'
-#' # Fit a combined data model
-#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-#' dat_pa, model.type = "ipp")
+#' # Ensure the "response" variable in each data set shares the same name
+#' dat_po$presence <- dat_po$pres
+#' dat_pa$presence <- dat_pa$sp1
 #'
-#' image(m.comb, "fitted")
+#' # Integrated Data Model
+#' idm <- scampr(presence ~ MNT, dat_po, bias.formula = ~ D.Main,
+#' pa.data = dat_pa, include.sre = F, model.type = "IDM", latent.po.biasing = F)
+#'
+#' image(idm, "fitted")
 #' \dontrun{
-#' image(m.comb, "MNT")
-#' image(m.comb, "residuals")
+#' image(idm, "MNT")
+#' image(idm, "residuals")
 #' }
 image.scampr <- function(x, z, domain.data, residual.type, residual.smoothing = 0.5, ...) {
   xtrargs <- list(...)

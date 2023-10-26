@@ -1,4 +1,4 @@
-#' Performs a spatial hold-one-out K fold cross validation on a scampr model (using parallelisation via \code{foreach})
+#' Performs a spatial hold-one-out K fold cross validation on a scampr model (using parallelisation via \code{foreach}) #WIP#
 #'
 #' @param object a scampr model object
 #' @param po.fold.id An integer or factor vector the same length as the presence-only data used in the model \code{object} - describes the CV fold that each location falls into.
@@ -6,7 +6,7 @@
 #' @param trunc.pa.prob A small positive number by which the predicted probability of presence is truncated. This can be used to ensure infinite values are avoided within the cross-validation.
 #'
 #' @return a list including- 'predicted.cll.pa': the predicted logLikelihood, conditional on the model predictors and latent field, on the held out presence/absence data. 'predicted.cll.po': the predicted logLikelihood, conditional on the model predictors and latent field, on the held out presence-only data. 'auc': the area under the ROC curve on the held out presence/absence sites. 'model': the model upon which the cross validation was performed.
-#' @export
+#' @noRd
 #'
 #' @importFrom pROC roc auc
 #' @importFrom foreach foreach "%dopar%"

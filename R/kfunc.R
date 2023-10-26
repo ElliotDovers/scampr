@@ -18,7 +18,7 @@
 #' # Get the data
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
-#' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+#' mod <- scampr(pres ~ elev, dat, model.type = "PO", include.sre = F)
 #' K_func <- kfunc(mod)
 kfunc <- function(model, correction = c("border", "bord.modif", "isotropic", "translate"), point.pattern, intensity.at.pp, spatstat.win, intensity.at = c("im", "pts"), dists = NULL) {
 

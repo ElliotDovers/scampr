@@ -11,40 +11,20 @@
 #' @examples
 #' # Get the flora data for one of the species
 #' dat_po <- flora$po$sp1
-#' dat_pa <- flora$pa
 #'
-#' # Attach the quadrature to the PO data
-#' dat_po <- rbind.data.frame(dat_po, flora$quad)
+#' # obtain a sample of 10,000 quadrature points for the point process model
+#' set.seed(1)
+#' quad.pts <- flora$quad[sample(1:nrow(flora$quad), 10000, replace = F), ]
+#' set.seed(NULL)
 #'
-#' # Set up a simple 2D grid of basis functions to fit a LGCP model to the data
-#' bfs <- simple_basis(nodes.on.long.edge = 9, data = dat_po)
+#' # Attach the quadrature points to the presence-only data
+#' dat_po <- rbind.data.frame(dat_po, quad.pts)
 #'
-#' # Fit an IPP model to the point pattern
-#' m.ipp <- scampr(pres ~ MNT + D.Main, dat_po, model.type = "ipp")
+#' # Point Process Model
+#' m <- scampr(pres ~ MNT + D.Main, dat_po, include.sre = F)
 #'
-#' # Fit a combined data model
-#' m.comb <- scampr(pres ~ MNT + D.Main, dat_po, sp1 ~ MNT,
-#' dat_pa, model.type = "ipp")
-#'
-#' # Fit presence/absence model
-#' m.pa <- scampr(pa.formula = sp1 ~ MNT, pa.data = dat_pa, model.type = "ipp")
-#'
-#' \dontrun{
-#' # Fit a LGCP model to the point pattern
-#' m.lgcp_va <- scampr(pres ~ MNT + D.Main, dat_po,
-#' model.type = "variational", simple.basis = bfs)
-#' # Or
-#' m.lgcp_lp <- scampr(pres ~ MNT + D.Main, dat_po,
-#' approx.with = "laplace", simple.basis = bfs)
-#' }
-#' residuals(m.ipp)
-#' residuals(m.comb)
-#' residuals(m.comb, which.data = "PA")
-#' residuals(m.pa, which.data = "PO")
-#' \dontrun{
-#' residuals(m.lgcp_va)
-#' residuals(m.lgcp_lp, type = "pearson")
-#' }
+#' # Get the residuals
+#' res <- residuals(m)
 residuals.scampr <- function(object, ..., type = c("raw", "inverse", "pearson"), which.data = c("PO", "PA")) {
   type <- match.arg(type)
   which.data <- match.arg(which.data)

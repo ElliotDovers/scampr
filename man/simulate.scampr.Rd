@@ -47,6 +47,6 @@ Simulates point patterns from a specified scampr model.
 \examples{
 dat <- scampr::gorillas
 dat$elev <- scale(dat$elevation)
-mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+mod <- scampr(pres ~ elev, dat, include.sre = F)
 \dontrun{pp <- simulate(mod)}
 }

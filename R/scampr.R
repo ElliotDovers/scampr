@@ -9,9 +9,10 @@
 #' When \code{model.type = "IDM"}, the function jointly fits a model to presence-only and presence/absence data as linked by response to environmental predictors provided in each formula. The presence-only formula must also contain biasing predictors to account for opportunistic collection. If argument \code{sre.approx} is not equal to "ipp", then the two data sources will additionally share a latent Gaussian random field.
 #'
 #' @param formula an object of class "formula" (or one that can be coerced to that class): a symbolic description of the fixed effects of the model to be fitted. The 'response' must be a binary that indicates whether a datum is a presence or: quadrature point (for point process models)/ absence (for binary models). See GLM function for further formula details.
-#' @param data a data frame containing response and predictors within \code{formula}.
+#' @param data a data frame containing response and predictors within \code{formula}. Usually defaults to the point pattern and quadrature but will attempt to cleverly determine this via \code{model.type}, e.g., this is assumed to be presence/absence data when \code{model.type='PA'}. Otherwise, use \code{po.data} and/or \code{pa.dtaa} to supply the appropriate data frame explicitly.
 #' @param bias.formula an object of class "formula" (or one that can be coerced to that class). This is a symbolic description of the predictors included to account for bias in the presence-only data (no response term is needed).
 #' @param pa.data an optional data frame. When fitting an integrated data model use this to pass in the presence/absence data.
+#' @param po.data an optional data frame. Can be use to explicitly define the presence-only data (and quadrature) when fitting an integrated data model.
 #' @param coord.names a vector of character strings describing the column names of the coordinates in both data frames.
 #' @param quad.weights.name a character string of the column name of quadrature weights in the data.
 #' @param include.sre a logical indicating whether to fit the model with spatial random effects (SRE).
@@ -74,7 +75,7 @@
 #' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs, model.type = "IDM")
 #' }
-scampr <- function(formula, data, bias.formula, pa.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
+scampr <- function(formula, data, bias.formula, pa.data, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
 
   ## checks ####################################################################
 
@@ -82,6 +83,50 @@ scampr <- function(formula, data, bias.formula, pa.data, coord.names = c("x", "y
   model.type <- match.arg(model.type)
   sre.approx <- match.arg(sre.approx)
   bf.matrix.type <- match.arg(bf.matrix.type)
+
+  # determine the data frames supplied (TODO: this is probably a mess of logic gates but I have done this in a rush)
+  if (missing(data) & missing(po.data) & missing(pa.data)) {
+    if (model.type == "IDM") {
+      stop("At least two of 'data', 'pa.data' and 'po.data' must be supplied for an integrated data model")
+    } else {
+      stop("At least one of 'data', 'pa.data' and 'po.data' must be supplied")
+    }
+  }
+  # individual model cases:
+  if (model.type == "PO") {
+    if (missing(data) & missing(po.data) & !missing(pa.data)) {
+      warning("'pa.data' supplied will be assumed to be presence-only data for model.type = 'PO'...")
+      data <- pa.data
+    } else if (!missing(data) & !missing(po.data)) {
+      warning("Both 'data' and 'po.data' supplied for model.type = 'PO'\nModel will be fitted to the 'po.data'...")
+      data <- po.data
+    } else if (missing(data) & !missing(po.data)) {
+      data <- po.data
+    }
+  }
+  if (model.type == "PA") {
+    if (missing(data) & !missing(po.data) & missing(pa.data)) {
+      warning("'po.data' supplied will be assumed to be presence/absence data for model.type = 'PA'...")
+      data <- po.data
+    } else if (!missing(data) & !missing(pa.data)) {
+      warning("Both 'data' and 'pa.data' supplied for model.type = 'PA'\nModel will be fitted to the 'pa.data'...")
+      data <- pa.data
+    } else if (missing(data) & !missing(pa.data)) {
+      data <- pa.data
+    }
+  }
+  if (model.type == "IDM") {
+    if (!missing(data) & !missing(po.data) & !missing(pa.data)) {
+      warning("Each of 'data', 'po.data' and 'pa.data' supplied for model.type = 'IDM'.\n'data' will be ignored...")
+      data <- po.data
+    } else if (!missing(data) & !missing(po.data) & missing(pa.data)) {
+      pa.data <- data
+      data <- po.data
+    } else if (missing(data) & !missing(po.data) & !missing(pa.data)) {
+      data <- po.data
+    }
+  }
+
 
   # get the variables for checking
   resp <- all.vars(formula[[2]])

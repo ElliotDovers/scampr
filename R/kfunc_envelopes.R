@@ -20,7 +20,7 @@
 #' # Get the data
 #' dat <- scampr::gorillas
 #' dat$elev <- scale(dat$elevation)
-#' mod <- scampr(pres ~ elev, dat, model.type = "ipp")
+#' mod <- scampr(pres ~ elev, dat, model.type = "PO", include.sre = F)
 #' kfunc_envelopes(mod)
 kfunc_envelopes <- function(model, conf.level = 0.95, nsims = 100, Kfun.correction = c("border", "bord.modif", "isotropic", "translate"), return.data = F, spatstat.win, dists = NULL) {
 
