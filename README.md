@@ -29,3 +29,7 @@ captures the motivation of this package: to give researchers access to complex s
 As scampr is not on CRAN please install via:
 
 `devtools::install_github("ElliotDovers/scampr", dependencies = "Imports", upgrade = "never")`
+
+## Publications
+- [https://www.tandfonline.com/doi/full/10.1080/10618600.2023.2182311](https://www.tandfonline.com/doi/full/10.1080/10618600.2023.2182311)\
+- [https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14252](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14252)\
