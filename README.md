@@ -2,7 +2,8 @@
 Spatially Correlated, Approximate Modelling of Point patterns in R
 
 scampr is an R package that offers a regression-style framework for modelling spatial point patterns (referred to as presence-only data in ecology)
-using a log-Gaussian Cox Process (LGCP).
+using a log-Gaussian Cox Process (LGCP). The package can also be used to fit a binomial model with spatial random effects to binary data
+(*e.g.* presence/absence data in ecology), as well as an integrated model that combines the two while permitting shared spatially correlated latent field(s).
 
 Unlike the inhomogeneous Poisson process, LGCPs offer a way to incorporate additional spatial clustering into models by including a Gaussian random field (GRF)
 to induce additional spatial correlation between observations — effectively acting as a spatially correlated error term. LGCP models are particularly appropriate
@@ -29,3 +30,7 @@ captures the motivation of this package: to give researchers access to complex s
 As scampr is not on CRAN please install via:
 
 `devtools::install_github("ElliotDovers/scampr", dependencies = "Imports", upgrade = "never")`
+
+## Publications
+- [Dovers et al. (2023) "Fast, Approximate Maximum Likelihood Estimation of Log-Gaussian Cox Processes", *Journal of Computational and Graphical Statistics*](https://www.tandfonline.com/doi/full/10.1080/10618600.2023.2182311)
+- [Dovers et al. (2023) "A fast method for fitting integrated species distribution models", *Methods in Ecology and Evolution*](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14252)
