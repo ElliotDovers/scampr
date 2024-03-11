@@ -3,7 +3,7 @@
 #' @param object A scampr model object
 #' @param ... NA
 #'
-#' @return printed argument displaying summary information of the model fit.
+#' @return a data.frame of the conditional model summary.
 #' @exportS3Method base::summary scampr
 #'
 #' @importFrom stats pnorm aggregate quantile printCoefmat
@@ -66,11 +66,15 @@ summary.scampr <- function(object, ...) {
   tmp.fixed_effects <- as.data.frame(object$fixed.effects)
   tmp.fixed_effects$`z value` <- tmp.fixed_effects$Estimate / tmp.fixed_effects$`Std. Error`
   tmp.fixed_effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed_effects$`z value`), lower.tail = FALSE)
+  # save as object to return
+  ret.obj <- tmp.fixed_effects
   # PO biasing fixed effects if present
   if (!is.null(object$fixed.bias.effects)) {
     tmp.fixed.bias.effects <- as.data.frame(object$fixed.bias.effects)
     tmp.fixed.bias.effects$`z value` <- tmp.fixed.bias.effects$Estimate / tmp.fixed.bias.effects$`Std. Error`
     tmp.fixed.bias.effects$`Pr(>|z|)` <- stats::pnorm(abs(tmp.fixed.bias.effects$`z value`), lower.tail = FALSE)
+    # add to return object
+    ret.obj <- rbind(ret.obj, tmp.fixed.bias.effects)
   }
   # Random effects of the model
   if (object$approx.type == "not_sre") {
@@ -142,4 +146,5 @@ summary.scampr <- function(object, ...) {
     )
     print(prior.variance_bias.field)
   }
+  invisible(ret.obj)
 }

@@ -12,7 +12,7 @@
 \item{...}{NA}
 }
 \value{
-printed argument displaying summary information of the model fit.
+a data.frame of the conditional model summary.
 }
 \description{
 Summary for objects of class 'scampr'

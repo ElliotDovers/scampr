@@ -114,7 +114,7 @@ m.lgcp <- scampr(presence ~ MNT + D.Main, dat_po, basis.functions = bfs)
 # Binary Regression with spatial random effects
 m.bin_w_sre <- scampr(presence ~ MNT, dat_pa, basis.functions = bfs, model.type = "PA")
 # Integrated Data Model with spatial random effects
-m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
+m.comb_w_sre <- scampr(presence ~ MNT, dat_po, ~ D.Main,
 dat_pa, basis.functions = bfs, model.type = "IDM")
 }
 }

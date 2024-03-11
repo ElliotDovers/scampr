@@ -72,7 +72,7 @@
 #' # Binary Regression with spatial random effects
 #' m.bin_w_sre <- scampr(presence ~ MNT, dat_pa, basis.functions = bfs, model.type = "PA")
 #' # Integrated Data Model with spatial random effects
-#' m.comb_w_sre <- scampr(pres ~ MNT, dat_po, ~ D.Main,
+#' m.comb_w_sre <- scampr(presence ~ MNT, dat_po, ~ D.Main,
 #' dat_pa, basis.functions = bfs, model.type = "IDM")
 #' }
 scampr <- function(formula, data, bias.formula, pa.data, po.data, coord.names = c("x", "y"), quad.weights.name = "quad.size", include.sre = TRUE, sre.approx = c("variational", "laplace"), model.type = c("PO", "PA", "IDM"), basis.functions, bf.matrix.type = c("sparse", "dense"), latent.po.biasing = TRUE, po.biasing.basis.functions, prune.bfs = 4, se = TRUE, starting.pars, subset, maxit = 100, ...) {
