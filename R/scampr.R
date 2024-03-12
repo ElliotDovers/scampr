@@ -256,6 +256,7 @@ scampr <- function(formula, data, bias.formula, pa.data, po.data, coord.names = 
   ## Create the TMB data and parameter inputs ##################################
 
   mc <- match.call() # gets the arguments (must be updated to the alterations above)
+
   call.list <- as.list(mc)
   # alter the call according to alterations made above
   call.list$bf.matrix.type <- bf.matrix.type
@@ -270,10 +271,19 @@ scampr <- function(formula, data, bias.formula, pa.data, po.data, coord.names = 
   call.list <- call.list[!names(call.list) %in% c("subset", "se", "include.sre", "sre.approx", "maxit")]
   # add approx.type to the call for get.TMB.data.input()
   call.list$approx.type <- approx.type
+
   # remove the call function
   call.list[[1]] <- NULL
+
+  # quick fix for formulae - re-assign here so they are found in the TMB input call
+  call.list$formula <- as.formula(formula)
+  if (!missing(bias.formula)) {
+    call.list$formula <- as.formula(bias.formula)
+  }
+
   # get the TMB inputs
   inputs <- do.call("get.TMB.data.input", call.list)
+
   ##############################################################################
 
   ## Create the TMB Objective Function and Optimise ############################
