@@ -278,7 +278,7 @@ scampr <- function(formula, data, bias.formula, pa.data, po.data, coord.names = 
   # quick fix for formulae - re-assign here so they are found in the TMB input call
   call.list$formula <- as.formula(formula)
   if (!missing(bias.formula)) {
-    call.list$formula <- as.formula(bias.formula)
+    call.list$bias.formula <- as.formula(bias.formula)
   }
 
   # get the TMB inputs
